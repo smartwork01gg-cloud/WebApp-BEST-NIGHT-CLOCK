@@ -2,870 +2,350 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Aether Station - Professional Weather Interface</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Aether Station Pro - Color Custom</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=JetBrains+Mono:wght@500&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=JetBrains+Mono:wght@700&display=swap');
         :root {
-            --bg-deep: #0f172a;
-            --accent-pink: #ff3366;
-            --accent-blue: #38bdf8;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
-
-            /* Modalità notte */
-            --night-bg: #00040a;
-            --night-text: #ff2b2b;
-            --night-border: rgba(255, 0, 0, 0.4);
-            --night-glow: 0 0 20px rgba(255, 0, 0, 0.8),
-                          0 0 40px rgba(255, 0, 0, 0.5),
-                          0 0 60px rgba(255, 0, 0, 0.3);
+            --bg-deep: #0f172a; --accent-pink: #ff3366; --accent-blue: #38bdf8;
+            --glass: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.1);
+            --night-bg: #000000; --night-text: #ff0000; --night-glow: 0 0 20px rgba(255, 0, 0, 0.8);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background-color: var(--bg-deep);
-            background-image:
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(255, 51, 102, 0.05) 0px, transparent 50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 10px;
-            font-family: 'Inter', sans-serif;
-            color: #e2e8f0;
-            overflow-x: hidden;
-            transition: 0.5s ease;
+            background-color: var(--bg-deep); display: flex; justify-content: center; align-items: center;
+            height: 100dvh; width: 100vw; font-family: 'Inter', sans-serif; color: #e2e8f0; overflow: hidden;
+            position: fixed; transition: background 0.5s ease;
         }
 
-        /* Modalità notte */
-        body.night {
-            background-color: var(--night-bg);
-            background-image: none;
-            color: var(--night-text);
+        /* MODALITÀ NOTTE AGGIORNATA */
+        body.night { background-color: var(--night-bg) !important; color: var(--night-text) !important; }
+        body.night * { 
+            color: var(--night-text) !important; 
+            border-color: var(--night-text) !important; 
+            text-shadow: var(--night-glow); 
+            background-color: transparent !important;
         }
-
-        body.night * {
-            color: var(--night-text) !important;
-            text-shadow: var(--night-glow);
-        }
-
-        body.night .main-station,
-        body.night .day-card,
-        body.night .date-module,
-        body.night .mode-controls button,
-        body.night .mode-controls input {
-            border-color: var(--night-border) !important;
-            background: rgba(255, 0, 0, 0.1) !important;
-        }
-
-        .main-station {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 40px;
-            padding: clamp(20px, 4vw, 40px);
-            width: 95vw;
-            max-width: 1600px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            transition: 0.5s ease;
-        }
-
-        .time-display {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: clamp(60px, 22.5vw, 350px);
-            font-weight: 700;
-            line-height: 0.8;
-            letter-spacing: -0.05em;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            flex-wrap: wrap;
-            margin-bottom: 2vh;
-            gap: clamp(10px, 2vw, 20px);
-        }
-
-        .sec-module {
-            font-size: clamp(20px, 7.5vw, 120px);
-            color: var(--accent-pink);
-            font-weight: 300;
-        }
-
-        /* DATA + LUNA (COMPATTO) */
-        .date-lunar-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: clamp(15px, 3vw, 25px);
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .date-module {
-            font-size: clamp(14px, 6vw, 90px);
-            font-weight: 300;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent-blue);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 1vh 0;
-        }
-
-        .lunar-info {
-            font-size: clamp(12px, 2.5vw, 40px);
-            letter-spacing: 0.05em;
-            display: flex;
-            align-items: center;
-            gap: clamp(10px, 2vw, 15px);
-        }
-
-        .moon-visual {
-            width: clamp(50px, 10vw, 80px);
-            height: clamp(50px, 10vw, 80px);
-            border-radius: 50%;
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
-            box-shadow: 
-                inset -5px -5px 15px rgba(0, 0, 0, 0.4),
-                0 0 30px rgba(255, 255, 255, 0.2),
-                0 0 50px rgba(255, 255, 255, 0.1);
-            background: 
-                radial-gradient(circle at 30% 30%, #fff, #e8e8e8 40%, #c0c0c0 70%, #a0a0a0);
-        }
-
-        .moon-shadow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: radial-gradient(circle at center, 
-                rgba(20, 20, 30, 0.95) 0%, 
-                rgba(20, 20, 30, 0.98) 50%, 
-                rgba(10, 10, 15, 1) 100%);
-            transition: all 0.5s ease;
-        }
-
-        .moon-crater {
-            position: absolute;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, 
-                rgba(150, 150, 150, 0.3), 
-                rgba(100, 100, 100, 0.5));
-            box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.3);
-        }
-
-        .crater-1 { width: 12px; height: 12px; top: 25%; left: 30%; }
-        .crater-2 { width: 8px; height: 8px; top: 45%; left: 55%; }
-        .crater-3 { width: 15px; height: 15px; top: 60%; left: 25%; }
-        .crater-4 { width: 6px; height: 6px; top: 35%; left: 65%; }
-        .crater-5 { width: 10px; height: 10px; top: 70%; left: 50%; }
-
-        .moon-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 5px;
-        }
-
-        .moon-phase-name {
-            font-size: clamp(12px, 2vw, 32px);
-            font-weight: 400;
-        }
-
-        .moon-illumination {
-            font-size: clamp(10px, 1.5vw, 24px);
-            opacity: 0.7;
-        }
-
-        .weather-main {
-            font-size: clamp(30px, 7.5vw, 120px);
-            font-weight: 400;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: clamp(10px, 2vw, 20px);
-            margin-bottom: 4vh;
-            flex-wrap: wrap;
-        }
-
-        .forecast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: clamp(10px, 2vw, 15px);
-            margin-top: 20px;
-        }
-
-        .day-card {
-            background: rgba(255,255,255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: clamp(10px, 2vw, 15px);
-            transition: transform 0.3s;
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .day-card:hover { background: rgba(255,255,255, 0.05); transform: translateY(-5px); }
-
-        .day-label { 
-            font-size: clamp(12px, 1.5vw, 24px); 
-            color: var(--accent-blue); 
-            margin-bottom: 10px; 
-        }
-        .day-icon { 
-            font-size: clamp(24px, 3vw, 48px); 
-            margin-bottom: 5px; 
-        }
-        .day-temp { 
-            font-size: clamp(14px, 2vw, 32px); 
-            font-weight: 700; 
-        }
-
-        .metadata {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: auto;
-            font-size: clamp(8px, 0.8vw, 12px);
-            letter-spacing: 0.3em;
-            opacity: 0.4;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        /* Controlli modalità */
-        .mode-controls {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            gap: clamp(10px, 2vw, 20px);
-            flex-wrap: wrap;
-        }
-
-        .mode-controls button,
-        .mode-controls input {
-            padding: clamp(8px, 1.5vw, 10px) clamp(15px, 3vw, 20px);
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--glass);
-            color: #fff;
-            cursor: pointer;
-            font-size: clamp(10px, 1vw, 16px);
-            transition: 0.3s;
-        }
-
-        .mode-controls button:hover {
-            background: var(--accent-pink);
-        }
-
-        /* FULLSCREEN BUTTON */
-        #fullscreenBtn {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            padding: clamp(15px, 3vw, 20px) clamp(8px, 1.5vw, 10px);
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-left: none;
-            color: #fff;
-            cursor: pointer;
-            border-radius: 0 15px 15px 0;
-            writing-mode: vertical-lr;
-            font-size: clamp(8px, 1.2vw, 10px);
-            letter-spacing: 2px;
-            transition: 0.3s;
-            z-index: 1000;
-        }
-
-        #fullscreenBtn:hover {
-            background: var(--accent-pink);
-        }
-
-        body.night #fullscreenBtn {
-            background: rgba(255, 0, 0, 0.1) !important;
-            border-color: var(--night-border) !important;
-            color: var(--night-text) !important;
-            text-shadow: var(--night-glow);
-        }
-
-        .loading {
-            opacity: 0.5;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
-        /* ====================================
-           MEDIA QUERIES RESPONSIVE
-           ==================================== */
+        body.night .v-line { background-color: var(--night-text) !important; opacity: 0.5; }
+        body.night .main-station { background: transparent; backdrop-filter: none; }
+        body.night .hud-btn, body.night #fullscreenBtn { border: 2px solid var(--night-text) !important; }
         
-        /* Tablet Portrait */
-        @media (max-width: 768px) and (orientation: portrait) {
-            .forecast-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .date-lunar-row {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .moon-text {
-                align-items: center;
-                text-align: center;
-            }
+        .main-station {
+            background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--border);
+            border-radius: 40px; padding: 2vh 2vw; width: 97vw; height: 96dvh;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
         }
 
-        /* Mobile Portrait */
-        @media (max-width: 480px) and (orientation: portrait) {
-            .main-station {
-                border-radius: 20px;
-                padding: 20px;
-            }
-            
-            .forecast-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .time-display {
-                gap: 5px;
-            }
-            
-            #fullscreenBtn {
-                display: none;
-            }
-            
-            .metadata {
-                font-size: 8px;
-                bottom: 10px;
-            }
+        .hud-vertical { 
+            position: fixed; top: 25px; left: 25px; 
+            display: flex; flex-direction: column; gap: 15px; z-index: 6000; 
         }
 
-        /* Landscape Mobile/Tablet */
-        @media (max-height: 600px) and (orientation: landscape) {
-            body {
-                padding: 5px;
-            }
-            
-            .main-station {
-                padding: 15px;
-                border-radius: 20px;
-            }
-            
-            .time-display {
-                margin-bottom: 1vh;
-            }
-            
-            .forecast-grid {
-                grid-template-columns: repeat(6, 1fr);
-                gap: 8px;
-            }
-            
-            .day-card {
-                padding: 8px;
-                min-height: 80px;
-            }
-            
-            .mode-controls {
-                margin-top: 10px;
-            }
-            
-            .weather-main {
-                margin-bottom: 2vh;
-            }
+        .hud-btn, #fullscreenBtn { 
+            background: #1e293b; border: 2px solid var(--accent-blue); color: white; 
+            border-radius: 50%; width: 55px; height: 55px; cursor: pointer; font-size: 22px;
+            display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.3s;
+        }
+        .hud-btn:hover, #fullscreenBtn:hover { opacity: 1; background: var(--accent-blue); color: #000; }
+        #fullscreenBtn { position: fixed; right: 25px; top: 25px; z-index: 6000; }
+
+        .config-panel {
+            position: fixed; top: 25px; left: 90px; z-index: 5000; 
+            display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+            background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 15px; 
+            border: 2px solid var(--accent-blue);
+            transform: translateX(-30px); opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .config-panel.open { transform: translateX(0); opacity: 1; pointer-events: all; }
+        .config-row { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: space-between; }
+        .config-panel label { font-size: 10px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 1px; }
+        .color-picker { background: transparent; border: none; width: 30px; height: 20px; cursor: pointer; }
+
+        #update-rate { background: transparent; color: white; border: none; font-family: 'Inter'; font-weight: 700; cursor: pointer; outline: none; font-size: 12px; }
+        #update-rate option { background: #1e293b; }
+
+        .location-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 3000; }
+        #city-selector { 
+            background: #1e293b; color: var(--accent-blue); border: 2px solid var(--accent-blue); 
+            border-radius: 8px; padding: 8px 15px; font-size: 16px; cursor: pointer; outline: none;
         }
 
-        /* Large Screens */
-        @media (min-width: 1920px) {
-            .main-station {
-                max-width: 1800px;
-            }
+        .time-display { 
+            font-family: Verdana, Geneva, sans-serif; 
+            font-size: clamp(100px, 32vh, 500px); 
+            font-weight: 700;
+            line-height: 0.8; 
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            -moz-font-feature-settings: "tnum";
+            -webkit-font-feature-settings: "tnum";
+            pointer-events: none; 
+            user-select: none;
+        }
+        .sec-module { font-size: 0.25em; color: var(--accent-pink); margin-left: 5px; }
+
+        /* Dimensione data = 1/4 dell'orologio */
+        #date { 
+            font-size: clamp(25px, 8vh, 125px); 
+            font-weight: 300; 
+            text-transform: uppercase; 
+            letter-spacing: 0.3em; 
+            color: var(--accent-blue); 
+        }
+
+        .mid-section {
+            display: flex; width: 100%; justify-content: center; align-items: center; gap: 4vw;
+            background: rgba(255,255,255,0.02); padding: 2vh 3vw; border-radius: 30px; border: 1px solid var(--border);
+        }
+        .info-block { display: flex; align-items: center; gap: 20px; flex: 1; justify-content: center; }
+        .v-line { width: 1px; height: 80px; background: var(--border); }
+        #moon-emoji, #weather-icon { font-size: clamp(60px, 12vh, 150px); line-height: 1; }
+        .info-label { font-weight: 700; color: var(--accent-blue); font-size: 1.6em; }
+
+        .forecast-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; }
+        .day-card { background: var(--glass); border: 1px solid var(--border); border-radius: 25px; padding: 15px 10px; text-align: center; }
+        .day-name { font-size: 1.1em; color: var(--accent-blue); font-weight: 700; }
+        .day-icon { font-size: 2.8em; margin: 8px 0; }
+        .t-max { font-weight: 700; color: #fff; font-size: 1.2em; }
+        .t-min { font-weight: 400; opacity: 0.5; margin-left: 6px; }
+
+        .auto-night-ctrl { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .auto-night-ctrl input {
+            padding: 3px; border-radius: 5px; border: 2px solid var(--accent-blue); 
+            background: #1e293b; color: white; width: 65px; font-family: 'Inter'; font-size: 10px; text-align: center;
         }
     </style>
 </head>
-
 <body>
 
-    <div class="main-station">
+    <button id="fullscreenBtn" onclick="toggleFS()">⛶</button>
 
-        <!-- OROLOGIO -->
-        <div class="time-display">
-            <span id="hours">00</span>:<span id="minutes">00</span>
-            <span class="sec-module" id="seconds">00</span>
+    <div class="hud-vertical">
+        <button class="hud-btn" onclick="toggleConfig()" title="Configurazione">⚙️</button>
+        <button class="hud-btn" onclick="document.body.classList.toggle('night')" title="Notte Manuale">🌙</button>
+        <div class="auto-night-ctrl">
+            <span style="font-size: 9px; color: var(--accent-blue); font-weight: bold;">🌙 START</span>
+            <input type="time" id="nightStartTime" value="21:00">
         </div>
-
-        <!-- DATA + LUNA (COMPATTO) -->
-        <div class="date-lunar-row">
-            <div class="date-module" id="date"></div>
-            <div class="lunar-info" id="lunarInfo">
-                <div class="moon-visual">
-                    <div class="moon-crater crater-1"></div>
-                    <div class="moon-crater crater-2"></div>
-                    <div class="moon-crater crater-3"></div>
-                    <div class="moon-crater crater-4"></div>
-                    <div class="moon-crater crater-5"></div>
-                    <div class="moon-shadow" id="moonShadow"></div>
-                </div>
-                <div class="moon-text">
-                    <div class="moon-phase-name" id="moonPhaseName">Luna Piena</div>
-                    <div class="moon-illumination" id="moonIllumination">100% illuminata</div>
-                </div>
-            </div>
+        <div class="auto-night-ctrl">
+            <span style="font-size: 9px; color: var(--accent-blue); font-weight: bold;">☀️ START</span>
+            <input type="time" id="dayStartTime" value="07:00">
         </div>
-
-        <!-- METEO ATTUALE -->
-        <div class="weather-main">
-            <span id="weather-icon" class="loading">⏳</span>
-            <span id="weather-temp" class="loading">--°C</span>
-        </div>
-
-        <!-- PREVISIONI 6 GIORNI -->
-        <div class="forecast-grid" id="forecast">
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-            <div class="day-card loading">
-                <div class="day-label">...</div>
-                <div class="day-icon">⏳</div>
-                <div class="day-temp">--°</div>
-            </div>
-        </div>
-
-        <!-- CONTROLLI MODALITÀ -->
-        <div class="mode-controls">
-            <button id="toggleNight">Modalità Notte</button>
-            <input type="time" id="autoTime" value="21:00">
-            <button id="autoSwitch">Auto Switch</button>
-        </div>
-
     </div>
 
-    <button id="fullscreenBtn">FULLSCREEN</button>
+    <div class="config-panel" id="gui-panel">
+        <div class="config-row">
+            <label>Update:</label>
+            <select id="update-rate" onchange="changeUpdateInterval(this.value)">
+                <option value="1">1 Min</option>
+                <option value="5">5 Min</option>
+                <option value="15">15 Min</option>
+                <option value="30" selected>30 Min</option>
+                <option value="60">1 Ora</option>
+            </select>
+        </div>
+        <hr style="width:100%; border:0; border-top:1px solid rgba(255,255,255,0.1)">
+        <div class="config-row">
+            <label>Giorno (Blue):</label>
+            <input type="color" class="color-picker" id="colorDay" value="#38bdf8" oninput="updateColors()">
+        </div>
+        <div class="config-row">
+            <label>Giorno (Pink):</label>
+            <input type="color" class="color-picker" id="colorSec" value="#ff3366" oninput="updateColors()">
+        </div>
+        <div class="config-row">
+            <label>Notte (Color):</label>
+            <input type="color" class="color-picker" id="colorNight" value="#ff0000" oninput="updateColors()">
+        </div>
+    </div>
 
-    <div class="metadata">Aether Station Interface • Real-time Weather</div>
+    <div class="main-station">
+        <div class="location-wrapper">
+            <div id="location-name" style="font-size: 12px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 5px;">STAZIONE ATTIVA</div>
+            <select id="city-selector">
+                <option value="" disabled selected>Cambia Località...</option>
+                <option value="41.89,12.51">Roma</option>
+                <option value="45.46,9.19">Milano</option>
+                <option value="40.85,14.26">Napoli</option>
+                <option value="45.07,7.68">Torino</option>
+                <option value="38.11,13.36">Palermo</option>
+                <option value="45.43,12.31">Venezia</option>
+                <option value="43.76,11.25">Firenze</option>
+                <option value="41.11,16.87">Bari</option>
+                <option value="39.22,9.12">Cagliari</option>
+                <option value="44.49,11.34">Bologna</option>
+            </select>
+        </div>
+
+        <div class="time-display">
+            <span id="hours">00</span>:<span id="minutes">00</span><span class="sec-module" id="seconds">00</span>
+        </div>
+
+        <div id="date">-- --- --</div>
+
+        <div class="mid-section">
+            <div class="info-block">
+                <div id="moon-emoji">🌑</div>
+                <div class="info-text">
+                    <div class="info-label" id="moonPhaseName">--</div>
+                    <div id="moonIllumination" style="opacity:0.7">--% ILLUM.</div>
+                </div>
+            </div>
+            <div class="v-line"></div>
+            <div class="info-block">
+                <div id="weather-icon">⏳</div>
+                <div class="info-text">
+                    <div class="info-label" id="weather-temp">--°C</div>
+                    <div id="today-minmax" style="opacity:0.7">-- / --</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="forecast-grid" id="forecast"></div>
+    </div>
 
     <script>
-        /* ============================================
-           OROLOGIO E DATA
-           ============================================ */
+        let lastLat, lastLon, lastCityName;
+        let updateTimer;
+
+        function updateColors() {
+            const dayColor = document.getElementById('colorDay').value;
+            const secColor = document.getElementById('colorSec').value;
+            const nightColor = document.getElementById('colorNight').value;
+
+            document.documentElement.style.setProperty('--accent-blue', dayColor);
+            document.documentElement.style.setProperty('--accent-pink', secColor);
+            document.documentElement.style.setProperty('--night-text', nightColor);
+            document.documentElement.style.setProperty('--night-glow', `0 0 20px ${nightColor}cc`);
+        }
+
         function updateClock() {
             const now = new Date();
+            const h = String(now.getHours()).padStart(2, "0");
+            const m = String(now.getMinutes()).padStart(2, "0");
+            const currentTimeStr = `${h}:${m}`;
 
-            document.getElementById("hours").textContent =
-                String(now.getHours()).padStart(2, "0");
-
-            document.getElementById("minutes").textContent =
-                String(now.getMinutes()).padStart(2, "0");
-
-            document.getElementById("seconds").textContent =
-                String(now.getSeconds()).padStart(2, "0");
-
-            const options = {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            };
-
-            document.getElementById("date").textContent =
-                now.toLocaleDateString("it-IT", options);
+            document.getElementById("hours").textContent = h;
+            document.getElementById("minutes").textContent = m;
+            document.getElementById("seconds").textContent = String(now.getSeconds()).padStart(2, "0");
+            
+            // MODIFICA: Giorno della settimana abbreviato (weekday: 'short')
+            document.getElementById("date").textContent = now.toLocaleDateString("it-IT", { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'long' 
+            }).toUpperCase();
+            
+            if (now.getSeconds() === 0) {
+                if (currentTimeStr === document.getElementById("nightStartTime").value) {
+                    document.body.classList.add('night');
+                } else if (currentTimeStr === document.getElementById("dayStartTime").value) {
+                    document.body.classList.remove('night');
+                }
+            }
         }
-
-        updateClock();
         setInterval(updateClock, 1000);
 
-        /* ============================================
-           METEO REALE CON GEOLOCALIZZAZIONE
-           ============================================ */
-        function getWeatherIcon(code, isDay = true) {
-            const icons = {
-                0: "☀️",      // Sereno
-                1: "🌤️",     // Poco nuvoloso
-                2: "⛅",      // Parzialmente nuvoloso
-                3: "☁️",      // Nuvoloso
-                45: "🌫️",    // Nebbia
-                48: "🌫️",    // Brina
-                51: "🌦️",    // Pioggia leggera
-                53: "🌦️",    // Pioggia moderata
-                55: "🌧️",    // Pioggia intensa
-                61: "🌦️",    // Pioggia leggera
-                63: "🌧️",    // Pioggia moderata
-                65: "🌧️",    // Pioggia forte
-                71: "🌨️",    // Neve leggera
-                73: "🌨️",    // Neve moderata
-                75: "❄️",     // Neve intensa
-                80: "🌦️",    // Rovesci leggeri
-                81: "⛈️",     // Rovesci moderati
-                82: "⛈️",     // Rovesci forti
-                85: "🌨️",    // Neve leggera
-                86: "❄️",     // Neve intensa
-                95: "⛈️",     // Temporale
-                96: "🌩️",    // Temporale con grandine
-                99: "🌩️"     // Temporale forte
-            };
-            return icons[code] || "🌡️";
-        }
-
-        async function loadWeather() {
+        async function loadWeather(lat, lon, cityName = null) {
+            lastLat = lat; lastLon = lon; lastCityName = cityName;
             try {
-                // Ottieni posizione con timeout più lungo e opzioni ottimizzate
-                const position = await new Promise((resolve, reject) => {
-                    if (!navigator.geolocation) {
-                        reject(new Error('Geolocalizzazione non supportata'));
-                        return;
-                    }
-                    
-                    navigator.geolocation.getCurrentPosition(
-                        resolve, 
-                        reject, 
-                        {
-                            enableHighAccuracy: false, // Più veloce
-                            timeout: 30000, // 30 secondi
-                            maximumAge: 300000 // Cache 5 minuti
-                        }
-                    );
-                });
-
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-
-                console.log('Posizione ottenuta:', lat, lon);
-
-                // Salva coordinate per calcolo luna
-                moonCoords = { lat, lon };
-                updateMoonWidget(lat, lon);
-
-                // Chiamata Open-Meteo API
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
-                
-                console.log('Richiesta meteo:', url);
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if(!cityName) {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+                    const data = await res.json();
+                    cityName = data.address.city || data.address.town || data.address.village || "Meteo Locale";
+                    lastCityName = cityName;
                 }
+                document.getElementById("location-name").textContent = cityName;
+                const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`);
+                const wData = await wRes.json();
                 
-                const data = await response.json();
+                document.getElementById("weather-temp").textContent = `${Math.round(wData.current.temperature_2m)}°C`;
+                document.getElementById("weather-icon").textContent = getWeatherIcon(wData.current.weathercode);
+                document.getElementById("today-minmax").textContent = `${Math.round(wData.daily.temperature_2m_max[0])}° / ${Math.round(wData.daily.temperature_2m_min[0])}°`;
                 
-                console.log('Dati meteo ricevuti:', data);
-
-                // Meteo attuale
-                const currentTemp = Math.round(data.current.temperature_2m);
-                const currentCode = data.current.weathercode;
-                
-                const iconEl = document.getElementById("weather-icon");
-                const tempEl = document.getElementById("weather-temp");
-                
-                iconEl.textContent = getWeatherIcon(currentCode);
-                tempEl.textContent = `${currentTemp}°C`;
-                iconEl.classList.remove("loading");
-                tempEl.classList.remove("loading");
-
-                // Previsioni 6 giorni (dal giorno dopo)
                 const grid = document.getElementById("forecast");
-                grid.innerHTML = "";
-
-                const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-
-                for (let i = 1; i <= 6; i++) {
-                    const date = new Date(data.daily.time[i]);
-                    const dayName = dayNames[date.getDay()];
-                    const maxTemp = Math.round(data.daily.temperature_2m_max[i]);
-                    const minTemp = Math.round(data.daily.temperature_2m_min[i]);
-                    const weatherCode = data.daily.weathercode[i];
-
-                    grid.innerHTML += `
-                        <div class="day-card">
-                            <div class="day-label">${dayName}</div>
-                            <div class="day-icon">${getWeatherIcon(weatherCode)}</div>
-                            <div class="day-temp">${maxTemp}° / ${minTemp}°</div>
+                grid.innerHTML = wData.daily.time.slice(1, 7).map((t, i) => `
+                    <div class="day-card">
+                        <div class="day-name">${new Date(t).toLocaleDateString("it-IT", {weekday:"short"}).toUpperCase()}</div>
+                        <div class="day-icon">${getWeatherIcon(wData.daily.weathercode[i+1])}</div>
+                        <div>
+                            <span class="t-max">${Math.round(wData.daily.temperature_2m_max[i+1])}°</span>
+                            <span class="t-min">${Math.round(wData.daily.temperature_2m_min[i+1])}°</span>
                         </div>
-                    `;
-                }
-
-            } catch (error) {
-                console.error("Errore completo:", error);
+                    </div>`).join("");
                 
-                // Usa posizione di fallback (Milano) se geolocalizzazione fallisce
-                if (error.code === 1 || error.code === 3 || error.message) {
-                    console.log('Uso posizione fallback: Milano');
-                    
-                    // Coordinate Milano
-                    const lat = 45.4642;
-                    const lon = 9.1900;
-                    
-                    moonCoords = { lat, lon };
-                    updateMoonWidget(lat, lon);
-                    
-                    try {
-                        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
-                        const response = await fetch(url);
-                        const data = await response.json();
-                        
-                        const currentTemp = Math.round(data.current.temperature_2m);
-                        const currentCode = data.current.weathercode;
-                        
-                        const iconEl = document.getElementById("weather-icon");
-                        const tempEl = document.getElementById("weather-temp");
-                        
-                        iconEl.textContent = getWeatherIcon(currentCode);
-                        tempEl.textContent = `${currentTemp}°C (Milano)`;
-                        iconEl.classList.remove("loading");
-                        tempEl.classList.remove("loading");
-                        
-                        const grid = document.getElementById("forecast");
-                        grid.innerHTML = "";
-                        const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-                        
-                        for (let i = 1; i <= 6; i++) {
-                            const date = new Date(data.daily.time[i]);
-                            const dayName = dayNames[date.getDay()];
-                            const maxTemp = Math.round(data.daily.temperature_2m_max[i]);
-                            const minTemp = Math.round(data.daily.temperature_2m_min[i]);
-                            const weatherCode = data.daily.weathercode[i];
-                            
-                            grid.innerHTML += `
-                                <div class="day-card">
-                                    <div class="day-label">${dayName}</div>
-                                    <div class="day-icon">${getWeatherIcon(weatherCode)}</div>
-                                    <div class="day-temp">${maxTemp}° / ${minTemp}°</div>
-                                </div>
-                            `;
-                        }
-                        
-                        return;
-                    } catch (fallbackError) {
-                        console.error("Errore anche con fallback:", fallbackError);
-                    }
-                }
-                
-                // Se anche il fallback fallisce, mostra errore
-                const iconEl = document.getElementById("weather-icon");
-                const tempEl = document.getElementById("weather-temp");
-                
-                iconEl.textContent = "❌";
-                iconEl.classList.remove("loading");
-                tempEl.classList.remove("loading");
-                
-                if (error.code === 1) {
-                    tempEl.textContent = "Permesso GPS negato";
-                } else if (error.code === 2) {
-                    tempEl.textContent = "GPS non disponibile";
-                } else if (error.code === 3) {
-                    tempEl.textContent = "GPS Timeout";
-                } else {
-                    tempEl.textContent = "Errore connessione";
-                }
-            }
+                updateMoon();
+            } catch (e) { console.error("Errore meteo:", e); }
         }
 
-        // Carica meteo all'avvio
-        loadWeather();
-        
-        // Aggiorna meteo ogni 30 minuti
-        setInterval(loadWeather, 1800000);
-
-        /* ============================================
-           FASI LUNARI REALISTICHE CON CALCOLO ASTRONOMICO
-           ============================================ */
-        
-        // Calcolo accurato fase lunare basato su algoritmo astronomico
-        function getMoonPhase(lat = 45.464, lon = 9.188) { // Default: Milano
-            const now = new Date();
-            
-            // Conversione a Julian Date
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            const day = now.getDate() + now.getHours() / 24;
-            
-            let a = Math.floor((14 - month) / 12);
-            let y = year + 4800 - a;
-            let m = month + 12 * a - 3;
-            
-            let jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + 
-                     Math.floor(y / 4) - Math.floor(y / 100) + 
-                     Math.floor(y / 400) - 32045;
-            
-            // Calcolo giorni dalla Luna Nuova nota (01/01/2000)
-            const knownNewMoon = 2451550.1; // JD della Luna Nuova del 6 gennaio 2000
-            const daysSinceNew = jd - knownNewMoon;
-            const lunarCycle = 29.53058867; // Ciclo lunare sinodico in giorni
-            
-            // Fase attuale (0 = Luna Nuova, 0.5 = Luna Piena)
-            let phase = (daysSinceNew % lunarCycle) / lunarCycle;
-            
-            // Calcolo illuminazione (0-100%)
-            let illumination = (1 - Math.cos(phase * 2 * Math.PI)) / 2;
-            illumination = Math.round(illumination * 100);
-            
-            // Determina nome fase e configurazione visuale
-            let phaseName, phaseIndex;
-            
-            if (phase < 0.033 || phase > 0.967) {
-                phaseName = "Luna Nuova";
-                phaseIndex = 0;
-            } else if (phase < 0.216) {
-                phaseName = "Luna Crescente";
-                phaseIndex = 1;
-            } else if (phase < 0.283) {
-                phaseName = "Primo Quarto";
-                phaseIndex = 2;
-            } else if (phase < 0.467) {
-                phaseName = "Gibbosa Crescente";
-                phaseIndex = 3;
-            } else if (phase < 0.533) {
-                phaseName = "Luna Piena";
-                phaseIndex = 4;
-            } else if (phase < 0.717) {
-                phaseName = "Gibbosa Calante";
-                phaseIndex = 5;
-            } else if (phase < 0.783) {
-                phaseName = "Ultimo Quarto";
-                phaseIndex = 6;
-            } else {
-                phaseName = "Luna Calante";
-                phaseIndex = 7;
-            }
-            
-            return {
-                phase: phase,
-                illumination: illumination,
-                phaseName: phaseName,
-                phaseIndex: phaseIndex
+        function getWeatherIcon(code) {
+            const icons = {
+                0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️*",
+                51: "🌦️-", 53: "🌦️", 55: "🌦️+", 56: "🌧️*", 57: "🌧️**",
+                61: "🌧️-", 63: "🌧️", 65: "🌧️+", 66: "🌧️", 67: "🌧️+",
+                71: "❄-️", 73: "❄️", 75: "❄+️", 77: "❄..️",
+                80: "🌦️-", 81: "🌦️", 82: "🌧️+", 85: "🌨️", 86: "🌨️+",
+                95: "⛈️", 96: "⛈️*", 99: "⛈*+️"
             };
+            return icons[code] || "❓";
         }
 
-        function updateMoonWidget(lat, lon) {
-            const data = getMoonPhase(lat, lon);
-            
-            // Aggiorna testo
-            document.getElementById("moonPhaseName").textContent = data.phaseName;
-            document.getElementById("moonIllumination").textContent = 
-                `${data.illumination}% illuminata`;
-            
-            // Aggiorna visual realistico con ombra sfumata
-            const shadow = document.getElementById("moonShadow");
-            const phase = data.phase;
-            
-            // Luna crescente: ombra da sinistra che si ritira
-            if (phase < 0.5) {
-                const progress = phase * 2; // 0 a 1
-                shadow.style.clipPath = `ellipse(${50 * (1 - progress)}% 50% at 0% 50%)`;
-                shadow.style.opacity = '1';
-            } 
-            // Luna calante: ombra da destra che avanza
-            else {
-                const progress = (phase - 0.5) * 2; // 0 a 1
-                shadow.style.clipPath = `ellipse(${50 * progress}% 50% at 100% 50%)`;
-                shadow.style.opacity = '1';
-            }
-            
-            // Luna piena: nessuna ombra
-            if (data.illumination >= 98) {
-                shadow.style.opacity = '0';
-            } 
-            // Luna nuova: ombra completa
-            else if (data.illumination <= 2) {
-                shadow.style.clipPath = 'ellipse(50% 50% at 50% 50%)';
-                shadow.style.opacity = '1';
-            }
-        }
-
-        // Aggiorna luna con coordinate
-        let moonCoords = { lat: 45.464, lon: 9.188 }; // Default Milano
-
-        updateMoonWidget(moonCoords.lat, moonCoords.lon);
-        setInterval(() => updateMoonWidget(moonCoords.lat, moonCoords.lon), 3600000); // Ogni ora
-
-        /* ============================================
-           MODALITÀ NOTTE (MANUALE + AUTOMATICA)
-           ============================================ */
-        
-        // Switch manuale
-        document.getElementById("toggleNight").onclick = () => {
-            document.body.classList.toggle("night");
-        };
-
-        // Switch automatico
-        let autoEnabled = false;
-
-        document.getElementById("autoSwitch").onclick = () => {
-            autoEnabled = !autoEnabled;
-            const btn = document.getElementById("autoSwitch");
-            btn.textContent = autoEnabled ? "Auto ON ✓" : "Auto Switch";
-            btn.style.background = autoEnabled ? "var(--accent-pink)" : "var(--glass)";
-        };
-
-        setInterval(() => {
-            if (!autoEnabled) return;
-
+        function updateMoon() {
             const now = new Date();
-            const [h, m] = document.getElementById("autoTime").value.split(":").map(Number);
+            const synapticMonth = 29.530588853;
+            const referenceNewMoon = new Date('2000-01-06T18:14:00Z');
+            const diffDays = (now.getTime() - referenceNewMoon.getTime()) / (1000 * 60 * 60 * 24);
+            const phase = (diffDays / synapticMonth) % 1;
+            const normalizedPhase = phase < 0 ? phase + 1 : phase;
+            const illumination = (1 - Math.cos(2 * Math.PI * normalizedPhase)) / 2 * 100;
+            const phases = [
+                {n: "Luna Nuova", e: "🌑", r: [0, 0.03]}, {n: "Crescente", e: "🌒", r: [0.03, 0.22]},
+                {n: "Primo Quarto", e: "🌓", r: [0.22, 0.28]}, {n: "Gibbosa Cres.", e: "🌔", r: [0.28, 0.47]},
+                {n: "Luna Piena", e: "🌕", r: [0.47, 0.53]}, {n: "Gibbosa Cal.", e: "🌖", r: [0.53, 0.72]},
+                {n: "Ultimo Quarto", e: "🌗", r: [0.72, 0.78]}, {n: "Luna Calante", e: "🌘", r: [0.78, 0.97]},
+                {n: "Luna Nuova", e: "🌑", r: [0.97, 1]}
+            ];
+            const current = phases.find(p => normalizedPhase >= p.r[0] && normalizedPhase < p.r[1]);
+            document.getElementById("moon-emoji").textContent = current.e;
+            document.getElementById("moonPhaseName").textContent = current.n;
+            document.getElementById("moonIllumination").textContent = `${Math.round(illumination)}% ILLUM.`;
+        }
 
-            // Attiva modalità notte all'orario impostato
-            if (now.getHours() === h && now.getMinutes() === m) {
-                document.body.classList.add("night");
-            }
-            
-            // Disattiva alle 6:00 del mattino
-            if (now.getHours() === 6 && now.getMinutes() === 0) {
-                document.body.classList.remove("night");
-            }
-        }, 60000); // Controlla ogni minuto
+        function toggleConfig() {
+            document.getElementById('gui-panel').classList.toggle('open');
+        }
 
-        /* ============================================
-           FULLSCREEN
-           ============================================ */
-        document.getElementById("fullscreenBtn").onclick = () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
-        };
+        function changeUpdateInterval(minutes) {
+            clearInterval(updateTimer);
+            updateTimer = setInterval(() => {
+                if(lastLat) loadWeather(lastLat, lastLon, lastCityName);
+            }, minutes * 60 * 1000);
+        }
+
+        changeUpdateInterval(30);
+
+        document.getElementById("city-selector").addEventListener('change', (e) => {
+            const [lat, lon] = e.target.value.split(",");
+            const name = e.target.options[e.target.selectedIndex].text;
+            loadWeather(lat, lon, name);
+        });
+
+        navigator.geolocation.getCurrentPosition(
+            pos => loadWeather(pos.coords.latitude, pos.coords.longitude),
+            async () => {
+                try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    const data = await res.json();
+                    loadWeather(data.latitude, data.longitude, data.city);
+                } catch (e) { loadWeather(41.89, 12.51, "Roma"); }
+            }, { timeout: 4000 }
+        );
+
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+        updateClock();
     </script>
-
 </body>
 </html>
