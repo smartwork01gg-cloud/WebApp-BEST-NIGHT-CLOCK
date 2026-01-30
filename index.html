@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Index | Risorse HTML</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -15,131 +15,243 @@
             --accent-color: #38bdf8;
             --hover-color: #7dd3fc;
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: var(--text-color);
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 20px;
         }
-
         .container {
             width: 90%;
-            max-width: 600px;
+            max-width: 650px;
             background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.1);
         }
-
         header {
             text-align: center;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 1rem;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid rgba(56, 189, 248, 0.2);
+            padding-bottom: 1.5rem;
         }
-
         h2 {
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: -0.5px;
             margin: 0;
-            color: var(--accent-color);
+            font-size: 2rem;
+            background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
+        h2 i {
+            -webkit-text-fill-color: #38bdf8;
+        }
         p.subtitle {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-top: 0.5rem;
+            font-size: 0.95rem;
+            opacity: 0.6;
+            margin-top: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 300;
         }
-
         ul {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         li {
-            margin-bottom: 12px;
-            transition: transform 0.2s ease;
+            margin-bottom: 16px;
+            transition: transform 0.3s ease;
         }
-
         li:hover {
             transform: translateX(8px);
         }
-
         a {
             display: flex;
             align-items: center;
             text-decoration: none;
             color: var(--text-color);
             background: rgba(255,255,255,0.05);
-            padding: 15px 20px;
-            border-radius: 12px;
-            border: 1px solid transparent;
+            padding: 20px 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-
+        a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        a:hover::before {
+            left: 100%;
+        }
         a:hover {
-            background: rgba(56, 189, 248, 0.1);
+            background: rgba(56, 189, 248, 0.15);
             border-color: var(--accent-color);
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2);
+        }
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            margin-right: 18px;
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+        a:hover .icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        /* Clock Icon Styling */
+        .clock-icon {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+        }
+        .clock-icon i {
+            color: #0f172a;
+        }
+        
+        /* Tetris Icon Styling */
+        .tetris-icon {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+        }
+        .tetris-icon i {
+            color: #fff;
+        }
+        
+        /* Space Invaders Icon Styling */
+        .space-icon {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        .space-icon i {
+            color: #fff;
+        }
+        
+        .link-content {
+            flex-grow: 1;
+            position: relative;
+            z-index: 1;
+        }
+        .link-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .link-description {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            font-weight: 300;
+        }
+        .arrow {
+            font-size: 1rem;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        a:hover .arrow {
+            opacity: 1;
+            transform: translateX(4px);
+        }
+        a:hover .link-text {
             color: var(--accent-color);
         }
-
-        .icon {
-            margin-right: 15px;
-            font-size: 1.2rem;
-            width: 30px;
-            text-align: center;
-        }
-
-        .link-text {
-            flex-grow: 1;
-            font-weight: 400;
-        }
-
-        .arrow {
+        
+        /* Decorative elements */
+        .clock-icon::after {
+            content: '☾';
+            position: absolute;
+            top: -4px;
+            right: -4px;
             font-size: 0.8rem;
-            opacity: 0.5;
+            opacity: 0.8;
+        }
+        
+        .tetris-icon::after {
+            content: '▣';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .space-icon::after {
+            content: '👾';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
-        <h2><i class="fas fa-folder-open"></i> GI-FORGE </h2>
-        <p class="subtitle">SELECT A WEB-APP </p>        
+        <h2><i class="fas fa-folder-open"></i> GI-FORGE</h2>
+        <p class="subtitle">Select a Web-App</p>        
     </header>
-
     <ul>         
         <li>
             <a href="CLOCK_NIGHT_DAY.html">
-                <i class="fas fa-clock icon"></i>
-                <span class="link-text">BEST_NIGHT_CLOCK</span>
+                <div class="icon-wrapper clock-icon">
+                    <i class="fas fa-moon"></i>
+                </div>
+                <div class="link-content">
+                    <span class="link-text">BEST NIGHT CLOCK</span>
+                    <span class="link-description">Orologio notturno con ciclo giorno/notte</span>
+                </div>
                 <i class="fas fa-chevron-right arrow"></i>
             </a>
         </li>
         <li>
             <a href="GAME_TETRIS.html">
-                <i class="fas fa-gamepad icon"></i>
-                <span class="link-text">GAME TETRIS</span>
+                <div class="icon-wrapper tetris-icon">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <div class="link-content">
+                    <span class="link-text">GAME TETRIS</span>
+                    <span class="link-description">Classico gioco puzzle con blocchi</span>
+                </div>
                 <i class="fas fa-chevron-right arrow"></i>
             </a>
         </li>
         <li>
             <a href="GAME_SPACE_INVADERS.html">
-                <i class="fas fa-gamepad icon"></i>
-                <span class="link-text">GAME_SPACE_INVADERS</span>
+                <div class="icon-wrapper space-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="link-content">
+                    <span class="link-text">SPACE INVADERS</span>
+                    <span class="link-description">Arcade shooter spaziale retrò</span>
+                </div>
                 <i class="fas fa-chevron-right arrow"></i>
             </a>
         </li>
     </ul>
 </div>
-
 </body>
 </html>
