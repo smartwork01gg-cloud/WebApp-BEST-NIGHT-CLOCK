@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Aether Station Pro - Color Custom</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=JetBrains+Mono:wght@700&display=swap');
+        :root {
+            --bg-deep: #0f172a; --accent-pink: #ff3366; --accent-blue: #38bdf8;
+            --glass: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.1);
+            --night-bg: #000000; --night-text: #ff0000; --night-glow: 0 0 20px rgba(255, 0, 0, 0.8);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-deep); display: flex; justify-content: center; align-items: center;
+            height: 100dvh; width: 100vw; font-family: 'Inter', sans-serif; color: #e2e8f0; overflow: hidden;
+            position: fixed; transition: background 0.5s ease;
+        }
+
+        /* MODALITÀ NOTTE AGGIORNATA */
+        body.night { background-color: var(--night-bg) !important; color: var(--night-text) !important; }
+        body.night * { 
+            color: var(--night-text) !important; 
+            border-color: var(--night-text) !important; 
+            text-shadow: var(--night-glow); 
+            background-color: transparent !important;
+        }
+        body.night .v-line { background-color: var(--night-text) !important; opacity: 0.5; }
+        body.night .main-station { background: transparent; backdrop-filter: none; }
+        body.night .hud-btn, body.night #fullscreenBtn { border: 2px solid var(--night-text) !important; }
+        
+        .main-station {
+            background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--border);
+            border-radius: 40px; padding: 2vh 2vw; width: 97vw; height: 96dvh;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        }
+
+        .hud-vertical { 
+            position: fixed; top: 25px; left: 25px; 
+            display: flex; flex-direction: column; gap: 15px; z-index: 6000; 
+        }
+
+        .hud-btn, #fullscreenBtn { 
+            background: #1e293b; border: 2px solid var(--accent-blue); color: white; 
+            border-radius: 50%; width: 55px; height: 55px; cursor: pointer; font-size: 22px;
+            display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.3s;
+        }
+        .hud-btn:hover, #fullscreenBtn:hover { opacity: 1; background: var(--accent-blue); color: #000; }
+        #fullscreenBtn { position: fixed; right: 25px; top: 25px; z-index: 6000; }
+
+        .config-panel {
+            position: fixed; top: 25px; left: 90px; z-index: 5000; 
+            display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+            background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 15px; 
+            border: 2px solid var(--accent-blue);
+            transform: translateX(-30px); opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .config-panel.open { transform: translateX(0); opacity: 1; pointer-events: all; }
+        .config-row { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: space-between; }
+        .config-panel label { font-size: 10px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 1px; }
+        .color-picker { background: transparent; border: none; width: 30px; height: 20px; cursor: pointer; }
+
+        #update-rate { background: transparent; color: white; border: none; font-family: 'Inter'; font-weight: 700; cursor: pointer; outline: none; font-size: 12px; }
+        #update-rate option { background: #1e293b; }
+
+        .location-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 3000; }
+        #city-selector { 
+            background: #1e293b; color: var(--accent-blue); border: 2px solid var(--accent-blue); 
+            border-radius: 8px; padding: 8px 15px; font-size: 16px; cursor: pointer; outline: none;
+        }
+
+        .time-display { 
+            font-family: Verdana, Geneva, sans-serif; 
+            font-size: clamp(100px, 32vh, 500px); 
+            font-weight: 700;
+            line-height: 0.8; 
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            -moz-font-feature-settings: "tnum";
+            -webkit-font-feature-settings: "tnum";
+            pointer-events: none; 
+            user-select: none;
+        }
+        .sec-module { font-size: 0.25em; color: var(--accent-pink); margin-left: 5px; }
+
+        /* Dimensione data = 1/4 dell'orologio */
+        #date { 
+            font-size: clamp(25px, 8vh, 125px); 
+            font-weight: 300; 
+            text-transform: uppercase; 
+            letter-spacing: 0.3em; 
+            color: var(--accent-blue); 
+        }
+
+        .mid-section {
+            display: flex; width: 100%; justify-content: center; align-items: center; gap: 4vw;
+            background: rgba(255,255,255,0.02); padding: 2vh 3vw; border-radius: 30px; border: 1px solid var(--border);
+        }
+        .info-block { display: flex; align-items: center; gap: 20px; flex: 1; justify-content: center; }
+        .v-line { width: 1px; height: 80px; background: var(--border); }
+        #moon-emoji, #weather-icon { font-size: clamp(60px, 12vh, 150px); line-height: 1; }
+        .info-label { font-weight: 700; color: var(--accent-blue); font-size: 1.6em; }
+
+        .forecast-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; }
+        .day-card { background: var(--glass); border: 1px solid var(--border); border-radius: 25px; padding: 15px 10px; text-align: center; }
+        .day-name { font-size: 1.1em; color: var(--accent-blue); font-weight: 700; }
+        .day-icon { font-size: 2.8em; margin: 8px 0; }
+        .t-max { font-weight: 700; color: #fff; font-size: 1.2em; }
+        .t-min { font-weight: 400; opacity: 0.5; margin-left: 6px; }
+
+        .auto-night-ctrl { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .auto-night-ctrl input {
+            padding: 3px; border-radius: 5px; border: 2px solid var(--accent-blue); 
+            background: #1e293b; color: white; width: 65px; font-family: 'Inter'; font-size: 10px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="fullscreenBtn" onclick="toggleFS()">⛶</button>
+
+    <div class="hud-vertical">
+        <button class="hud-btn" onclick="toggleConfig()" title="Configurazione">⚙️</button>
+        <button class="hud-btn" onclick="document.body.classList.toggle('night')" title="Notte Manuale">🌙</button>
+        <div class="auto-night-ctrl">
+            <span style="font-size: 9px; color: var(--accent-blue); font-weight: bold;">🌙 START</span>
+            <input type="time" id="nightStartTime" value="21:00">
+        </div>
+        <div class="auto-night-ctrl">
+            <span style="font-size: 9px; color: var(--accent-blue); font-weight: bold;">☀️ START</span>
+            <input type="time" id="dayStartTime" value="07:00">
+        </div>
+    </div>
+
+    <div class="config-panel" id="gui-panel">
+        <div class="config-row">
+            <label>Update:</label>
+            <select id="update-rate" onchange="changeUpdateInterval(this.value)">
+                <option value="1">1 Min</option>
+                <option value="5">5 Min</option>
+                <option value="15">15 Min</option>
+                <option value="30" selected>30 Min</option>
+                <option value="60">1 Ora</option>
+            </select>
+        </div>
+        <hr style="width:100%; border:0; border-top:1px solid rgba(255,255,255,0.1)">
+        <div class="config-row">
+            <label>Giorno (Blue):</label>
+            <input type="color" class="color-picker" id="colorDay" value="#38bdf8" oninput="updateColors()">
+        </div>
+        <div class="config-row">
+            <label>Giorno (Pink):</label>
+            <input type="color" class="color-picker" id="colorSec" value="#ff3366" oninput="updateColors()">
+        </div>
+        <div class="config-row">
+            <label>Notte (Color):</label>
+            <input type="color" class="color-picker" id="colorNight" value="#ff0000" oninput="updateColors()">
+        </div>
+    </div>
+
+    <div class="main-station">
+        <div class="location-wrapper">
+            <div id="location-name" style="font-size: 12px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 5px;">STAZIONE ATTIVA</div>
+            <select id="city-selector">
+                <option value="" disabled selected>Cambia Località...</option>
+                <option value="41.89,12.51">Roma</option>
+                <option value="45.46,9.19">Milano</option>
+                <option value="40.85,14.26">Napoli</option>
+                <option value="45.07,7.68">Torino</option>
+                <option value="38.11,13.36">Palermo</option>
+                <option value="45.43,12.31">Venezia</option>
+                <option value="43.76,11.25">Firenze</option>
+                <option value="41.11,16.87">Bari</option>
+                <option value="39.22,9.12">Cagliari</option>
+                <option value="44.49,11.34">Bologna</option>
+            </select>
+        </div>
+
+        <div class="time-display">
+            <span id="hours">00</span>:<span id="minutes">00</span><span class="sec-module" id="seconds">00</span>
+        </div>
+
+        <div id="date">-- --- --</div>
+
+        <div class="mid-section">
+            <div class="info-block">
+                <div id="moon-emoji">🌑</div>
+                <div class="info-text">
+                    <div class="info-label" id="moonPhaseName">--</div>
+                    <div id="moonIllumination" style="opacity:0.7">--% ILLUM.</div>
+                </div>
+            </div>
+            <div class="v-line"></div>
+            <div class="info-block">
+                <div id="weather-icon">⏳</div>
+                <div class="info-text">
+                    <div class="info-label" id="weather-temp">--°C</div>
+                    <div id="today-minmax" style="opacity:0.7">-- / --</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="forecast-grid" id="forecast"></div>
+    </div>
+
+    <script>
+        let lastLat, lastLon, lastCityName;
+        let updateTimer;
+
+        function updateColors() {
+            const dayColor = document.getElementById('colorDay').value;
+            const secColor = document.getElementById('colorSec').value;
+            const nightColor = document.getElementById('colorNight').value;
+
+            document.documentElement.style.setProperty('--accent-blue', dayColor);
+            document.documentElement.style.setProperty('--accent-pink', secColor);
+            document.documentElement.style.setProperty('--night-text', nightColor);
+            document.documentElement.style.setProperty('--night-glow', `0 0 20px ${nightColor}cc`);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, "0");
+            const m = String(now.getMinutes()).padStart(2, "0");
+            const currentTimeStr = `${h}:${m}`;
+
+            document.getElementById("hours").textContent = h;
+            document.getElementById("minutes").textContent = m;
+            document.getElementById("seconds").textContent = String(now.getSeconds()).padStart(2, "0");
+            
+            // MODIFICA: Giorno della settimana abbreviato (weekday: 'short')
+            document.getElementById("date").textContent = now.toLocaleDateString("it-IT", { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'long' 
+            }).toUpperCase();
+            
+            if (now.getSeconds() === 0) {
+                if (currentTimeStr === document.getElementById("nightStartTime").value) {
+                    document.body.classList.add('night');
+                } else if (currentTimeStr === document.getElementById("dayStartTime").value) {
+                    document.body.classList.remove('night');
+                }
+            }
+        }
+        setInterval(updateClock, 1000);
+
+        async function loadWeather(lat, lon, cityName = null) {
+            lastLat = lat; lastLon = lon; lastCityName = cityName;
+            try {
+                if(!cityName) {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+                    const data = await res.json();
+                    cityName = data.address.city || data.address.town || data.address.village || "Meteo Locale";
+                    lastCityName = cityName;
+                }
+                document.getElementById("location-name").textContent = cityName;
+                const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`);
+                const wData = await wRes.json();
+                
+                document.getElementById("weather-temp").textContent = `${Math.round(wData.current.temperature_2m)}°C`;
+                document.getElementById("weather-icon").textContent = getWeatherIcon(wData.current.weathercode);
+                document.getElementById("today-minmax").textContent = `${Math.round(wData.daily.temperature_2m_max[0])}° / ${Math.round(wData.daily.temperature_2m_min[0])}°`;
+                
+                const grid = document.getElementById("forecast");
+                grid.innerHTML = wData.daily.time.slice(1, 7).map((t, i) => `
+                    <div class="day-card">
+                        <div class="day-name">${new Date(t).toLocaleDateString("it-IT", {weekday:"short"}).toUpperCase()}</div>
+                        <div class="day-icon">${getWeatherIcon(wData.daily.weathercode[i+1])}</div>
+                        <div>
+                            <span class="t-max">${Math.round(wData.daily.temperature_2m_max[i+1])}°</span>
+                            <span class="t-min">${Math.round(wData.daily.temperature_2m_min[i+1])}°</span>
+                        </div>
+                    </div>`).join("");
+                
+                updateMoon();
+            } catch (e) { console.error("Errore meteo:", e); }
+        }
+
+        function getWeatherIcon(code) {
+            const icons = {
+                0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️*",
+                51: "🌦️-", 53: "🌦️", 55: "🌦️+", 56: "🌧️*", 57: "🌧️**",
+                61: "🌧️-", 63: "🌧️", 65: "🌧️+", 66: "🌧️", 67: "🌧️+",
+                71: "❄-️", 73: "❄️", 75: "❄+️", 77: "❄..️",
+                80: "🌦️-", 81: "🌦️", 82: "🌧️+", 85: "🌨️", 86: "🌨️+",
+                95: "⛈️", 96: "⛈️*", 99: "⛈*+️"
+            };
+            return icons[code] || "❓";
+        }
+
+        function updateMoon() {
+            const now = new Date();
+            const synapticMonth = 29.530588853;
+            const referenceNewMoon = new Date('2000-01-06T18:14:00Z');
+            const diffDays = (now.getTime() - referenceNewMoon.getTime()) / (1000 * 60 * 60 * 24);
+            const phase = (diffDays / synapticMonth) % 1;
+            const normalizedPhase = phase < 0 ? phase + 1 : phase;
+            const illumination = (1 - Math.cos(2 * Math.PI * normalizedPhase)) / 2 * 100;
+            const phases = [
+                {n: "Luna Nuova", e: "🌑", r: [0, 0.03]}, {n: "Crescente", e: "🌒", r: [0.03, 0.22]},
+                {n: "Primo Quarto", e: "🌓", r: [0.22, 0.28]}, {n: "Gibbosa Cres.", e: "🌔", r: [0.28, 0.47]},
+                {n: "Luna Piena", e: "🌕", r: [0.47, 0.53]}, {n: "Gibbosa Cal.", e: "🌖", r: [0.53, 0.72]},
+                {n: "Ultimo Quarto", e: "🌗", r: [0.72, 0.78]}, {n: "Luna Calante", e: "🌘", r: [0.78, 0.97]},
+                {n: "Luna Nuova", e: "🌑", r: [0.97, 1]}
+            ];
+            const current = phases.find(p => normalizedPhase >= p.r[0] && normalizedPhase < p.r[1]);
+            document.getElementById("moon-emoji").textContent = current.e;
+            document.getElementById("moonPhaseName").textContent = current.n;
+            document.getElementById("moonIllumination").textContent = `${Math.round(illumination)}% ILLUM.`;
+        }
+
+        function toggleConfig() {
+            document.getElementById('gui-panel').classList.toggle('open');
+        }
+
+        function changeUpdateInterval(minutes) {
+            clearInterval(updateTimer);
+            updateTimer = setInterval(() => {
+                if(lastLat) loadWeather(lastLat, lastLon, lastCityName);
+            }, minutes * 60 * 1000);
+        }
+
+        changeUpdateInterval(30);
+
+        document.getElementById("city-selector").addEventListener('change', (e) => {
+            const [lat, lon] = e.target.value.split(",");
+            const name = e.target.options[e.target.selectedIndex].text;
+            loadWeather(lat, lon, name);
+        });
+
+        navigator.geolocation.getCurrentPosition(
+            pos => loadWeather(pos.coords.latitude, pos.coords.longitude),
+            async () => {
+                try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    const data = await res.json();
+                    loadWeather(data.latitude, data.longitude, data.city);
+                } catch (e) { loadWeather(41.89, 12.51, "Roma"); }
+            }, { timeout: 4000 }
+        );
+
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+        updateClock();
+    </script>
+</body>
+</html>
