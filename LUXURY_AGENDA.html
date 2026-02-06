@@ -27,7 +27,7 @@
             perspective: 3000px;
         }
 
-        /* --- UI CONTROLS (ROUND BUTTONS) --- */
+        /* --- UI CONTROLS --- */
         .side-controls {
             position: fixed; display: flex; flex-direction: column; gap: 15px; z-index: 2000;
         }
@@ -36,16 +36,24 @@
 
         .btn-round {
             width: 55px; height: 55px; border-radius: 50%;
-            background: rgba(20, 20, 20, 0.8); border: 1px solid var(--gold);
+            background: rgba(20, 20, 20, 0.85); border: 1px solid var(--gold);
             color: var(--gold); cursor: pointer; display: flex;
-            flex-direction: column; align-items: center; justify-content: center;
-            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px); overflow: hidden; text-align: center;
+            align-items: center; justify-content: center;
+            font-size: 1.5rem; transition: 0.3s; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
         }
         .btn-round:hover { background: var(--gold); color: black; transform: scale(1.1); }
-        .btn-round.active { background: #b89352; color: white; box-shadow: 0 0 15px var(--gold); }
-        .btn-round i { font-style: normal; font-size: 1.2rem; margin-bottom: 2px; }
+        .btn-round.active { background: var(--gold); color: white; box-shadow: 0 0 20px var(--gold); }
+
+        .select-luxury {
+            width: 80px; height: 40px; border-radius: 20px;
+            background: rgba(20, 20, 20, 0.9); border: 1px solid var(--gold);
+            color: var(--gold); cursor: pointer; font-family: 'Inter', sans-serif;
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;
+            padding: 0 10px; appearance: none; text-align: center;
+            transition: 0.3s;
+        }
 
         /* --- BOOK STRUCTURE --- */
         #book {
@@ -61,9 +69,8 @@
             backface-visibility: hidden; z-index: 10; overflow: hidden;
         }
         .page.left { left: 10px; border-radius: 10px 0 0 10px; }
-        .page.right { right: 10px; border-radius: 0 10px 10px 0; border-left: 1px solid rgba(0,0,0,0.1); }
+        .page.right { right: 10px; border-radius: 0 10px 10px 0; border-left: 1px solid rgba(0,0,0,0.05); }
 
-        /* Flipping Mechanism */
         #flipping-page {
             position: absolute; width: calc(50% - 10px); height: calc(100% - 20px);
             top: 10px; left: 50%; transform-style: preserve-3d;
@@ -76,71 +83,69 @@
         }
         .flip-side.back { transform: rotateY(180deg); }
 
-        /* Content Styles */
-        .editor-container { position: relative; flex: 1; margin-top: 10px; }
+        .editor-container { position: relative; flex: 1; margin-top: 20px; }
         .editor {
             height: 100%; background-image: linear-gradient(transparent 34px, var(--line-color) 35px);
             background-size: 100% 35px; line-height: 35px; outline: none;
             padding-left: 15px; border-left: 2px solid var(--margin-color);
             font-size: 1.6rem; white-space: pre-wrap; z-index: 1; position: relative;
+            /* Forza l'ereditarietà del font dinamico */
+            font-family: inherit; 
         }
-        .draw-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 2; pointer-events: none;
-        }
+        .draw-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
         body.pen-active .draw-layer { pointer-events: auto; cursor: crosshair; }
 
-        .page-header { border-bottom: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px; }
-        .header-day-num { font-family: 'Playfair Display', serif; font-size: 5rem; color: var(--gold); line-height: 0.8; }
+        .page-header { border-bottom: 3px solid var(--gold); display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; }
+        .header-date-info h3 { text-transform: uppercase; letter-spacing: 4px; color: var(--gold); font-weight: 700; font-size: 1.1rem; margin: 0; }
+        .header-date-info h2 { margin: 5px 0 0 0; font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-size: 2.8rem; line-height: 1; }
+        .header-day-num { font-family: 'Playfair Display', serif; font-size: 7.5rem; color: var(--gold); line-height: 0.7; font-weight: 700; }
         
         .nav-zone { position: absolute; top: 0; width: 15%; height: 100%; z-index: 1500; cursor: pointer; }
         #nav-prev { left: 0; } #nav-next { right: 0; }
 
         #calendar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 3000; display: none;
-            justify-content: center; align-items: center; padding: 40px;
+            background: rgba(0,0,0,0.92); z-index: 3000; display: none;
+            justify-content: center; align-items: center; padding: 40px; backdrop-filter: blur(10px);
         }
-        .cal-grid-container { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; 
-            max-width: 1000px; max-height: 90vh; overflow-y: auto; 
-        }
+        .cal-grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 1000px; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body class="theme-light">
 
     <div class="side-controls controls-left">
-        <button class="btn-round" onclick="toggleTheme()"><i>◑</i>Tema</button>
-        <button class="btn-round" onclick="toggleCalendar()"><i>📅</i>Calen.</button>
-        <button class="btn-round" onclick="exportData()"><i>💾</i>Backup</button>
-        <button class="btn-round" onclick="document.getElementById('importFile').click()"><i>📂</i>Carica</button>
+        <button class="btn-round" onclick="goDirectlyToToday()" title="Vai ad Oggi">🎯</button>
+        <button class="btn-round" onclick="toggleTheme()" title="Tema">◑</button>
+        <button class="btn-round" onclick="toggleCalendar()" title="Calendario">📅</button>
+        <button class="btn-round" onclick="exportData()" title="Esporta Backup">💾</button>
+        <button class="btn-round" onclick="document.getElementById('importFile').click()" title="Importa Backup">📂</button>
         <input type="file" id="importFile" hidden onchange="importData(event)">
     </div>
 
     <div class="side-controls controls-right">
-        <button class="btn-round" id="pen-toggle" onclick="togglePen()"><i>✎</i>Penna</button>
-        <input type="color" id="inkColor" value="#1a1a1a" style="width:55px; height:30px; border:1px solid var(--gold); background:none; cursor:pointer; border-radius:5px;">
-        <select id="penSize" class="btn-round" style="font-size: 0.5rem;">
+        <button class="btn-round" id="pen-toggle" onclick="togglePen()" title="Scrittura Libera">✎</button>
+        <div class="btn-round" style="padding:0; overflow:hidden;" title="Colore">
+            <input type="color" id="inkColor" onchange="updatePenSettings()" style="width:150%; height:150%; border:none; cursor:pointer; background:none;">
+        </div>
+        <select id="penSize" class="select-luxury" onchange="updatePenSettings()">
             <option value="2">Sottile</option>
-            <option value="4" selected>Media</option>
-            <option value="8">Grossa</option>
+            <option value="4" selected>Medio</option>
+            <option value="8">Grosso</option>
         </select>
-        <button class="btn-round" onclick="clearDraw()"><i>⌫</i>Clear</button>
-        <select id="fontPicker" onchange="changeFont(this.value)" class="btn-round" style="font-size: 0.5rem;">
-            <option value="'Dancing Script'">Hand</option>
-            <option value="'Cormorant Garamond'">Gara</option>
-            <option value="'Playfair Display'">Classic</option>
-            <option value="'Inter'">Modern</option>
+        <button class="btn-round" onclick="clearDraw()" title="Cancella Disegno">⌫</button>
+        <select id="fontPicker" class="select-luxury" onchange="changeFont(this.value)">
+            <option value="'Dancing Script'">Corsivo</option>
+            <option value="'Cormorant Garamond'">Garamond</option>
+            <option value="'Playfair Display'">Classico</option>
+            <option value="'Inter'">Moderno</option>
         </select>
     </div>
 
     <main id="book">
         <div id="nav-prev" class="nav-zone" onclick="turnPage('prev')"></div>
         <div id="nav-next" class="nav-zone" onclick="turnPage('next')"></div>
-        
         <div class="page left" id="p-left-static"></div>
         <div class="page right" id="p-right-static"></div>
-
         <div id="flipping-page">
             <div class="flip-side front" id="f-front"></div>
             <div class="flip-side back" id="f-back"></div>
@@ -152,47 +157,56 @@
     </div>
 
 <script>
-    let state = { d: 1, dark: false, font: "'Dancing Script'", content: {}, draws: {} };
-    let isAnimating = false;
-    let isPenActive = false;
+    let state = { 
+        d: 1, dark: false, font: "'Dancing Script'", content: {}, draws: {},
+        penColor: "#1a1a1a", penWidth: "4" 
+    };
+    let isAnimating = false, isPenActive = false;
 
     window.onload = () => {
-        const saved = localStorage.getItem('agenda_luxury_v20');
+        const saved = localStorage.getItem('agenda_luxury_v23');
         if (saved) state = JSON.parse(saved); else goToToday();
         
+        // Sincronizza UI
+        document.getElementById('inkColor').value = state.penColor;
+        document.getElementById('penSize').value = state.penWidth;
+        document.getElementById('fontPicker').value = state.font;
+
+        // Ordine corretto di inizializzazione
+        renderStatic(); // Prima creo il contenuto
+        applyFont();    // Poi applico il font a ciò che ho creato
         applyTheme();
-        applyFont();
-        renderStatic();
         buildCalendar();
 
         window.addEventListener('wheel', (e) => {
             if (isAnimating || isPenActive) return;
-            if (e.deltaY > 50) turnPage('next');
-            else if (e.deltaY < -50) turnPage('prev');
+            if (e.deltaY > 30) turnPage('next');
+            else if (e.deltaY < -30) turnPage('prev');
         }, { passive: true });
     };
 
-    function saveToLocal() { localStorage.setItem('agenda_luxury_v20', JSON.stringify(state)); }
+    function saveToLocal() { localStorage.setItem('agenda_luxury_v23', JSON.stringify(state)); }
+
+    function updatePenSettings() {
+        state.penColor = document.getElementById('inkColor').value;
+        state.penWidth = document.getElementById('penSize').value;
+        saveToLocal();
+    }
 
     function getPageHTML(day) {
-        if (day < 1 || day > 365) return `<div style="padding:100px; text-align:center; color:var(--gold)"><h3>FINE</h3></div>`;
+        if (day < 1 || day > 365) return `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:var(--gold); opacity:0.3"><h3>FINE</h3></div>`;
         const date = new Date(2026, 0, day);
-        const content = state.content[day] || "";
         return `
             <div class="page-header">
-                <div>
-                    <div style="text-transform:uppercase; letter-spacing:3px; color:var(--gold); font-weight:700; font-size:0.8rem;">
-                        ${date.toLocaleDateString('it-IT', {month:'long'})} 2026
-                    </div>
-                    <h2 style="margin:0; font-family:'Playfair Display'; font-style:italic; font-weight:400;">
-                        ${date.toLocaleDateString('it-IT', {weekday:'long'})}
-                    </h2>
+                <div class="header-date-info">
+                    <h3>${date.toLocaleDateString('it-IT', {month:'long'})} 2026</h3>
+                    <h2>${date.toLocaleDateString('it-IT', {weekday:'long'})}</h2>
                 </div>
                 <div class="header-day-num">${date.getDate()}</div>
             </div>
             <div class="editor-container">
                 <div class="editor" contenteditable="true" spellcheck="false" 
-                     id="edit-${day}" oninput="state.content[${day}]=this.innerHTML; saveToLocal();">${content}</div>
+                     id="edit-${day}" oninput="state.content[${day}]=this.innerHTML; saveToLocal();">${state.content[day] || ""}</div>
                 <canvas id="canv-${day}" class="draw-layer"></canvas>
             </div>
             <div style="margin-top:auto; font-size:0.7rem; opacity:0.5; text-align:center; letter-spacing:2px;">PAGINA ${day}</div>
@@ -221,9 +235,9 @@
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX || e.touches[0].clientX) - rect.left;
             const y = (e.clientY || e.touches[0].clientY) - rect.top;
-            ctx.lineWidth = document.getElementById('penSize').value;
+            ctx.lineWidth = state.penWidth;
             ctx.lineCap = 'round';
-            ctx.strokeStyle = document.getElementById('inkColor').value;
+            ctx.strokeStyle = state.penColor;
             ctx.lineTo(x, y); ctx.stroke(); ctx.moveTo(x, y);
         };
         canvas.onmousedown = start; canvas.onmousemove = draw; canvas.onmouseup = stop;
@@ -232,54 +246,33 @@
     function renderStatic() {
         document.getElementById('p-left-static').innerHTML = getPageHTML(state.d);
         document.getElementById('p-right-static').innerHTML = getPageHTML(state.d + 1);
-        initCanvas(state.d);
-        initCanvas(state.d + 1);
+        initCanvas(state.d); initCanvas(state.d + 1);
+        applyFont(); // Riapplica il font ogni volta che rigenero l'HTML
     }
 
     function turnPage(dir) {
         if (isAnimating) return;
         if ((dir === 'next' && state.d >= 364) || (dir === 'prev' && state.d <= 1)) return;
-        
         isAnimating = true;
         const flip = document.getElementById('flipping-page');
-        const front = document.getElementById('f-front');
-        const back = document.getElementById('f-back');
-        
+        const front = document.getElementById('f-front'), back = document.getElementById('f-back');
         flip.style.display = 'block';
-        
         if (dir === 'next') {
-            front.innerHTML = getPageHTML(state.d + 1);
-            back.innerHTML = getPageHTML(state.d + 2);
-            // Sincronizza i disegni sul volta-pagina
-            setTimeout(() => { initCanvas(state.d+1); initCanvas(state.d+2); }, 0);
-            
-            flip.style.transition = 'none';
-            flip.style.transform = 'rotateY(0deg)';
-            setTimeout(() => {
-                flip.style.transition = `transform var(--speed) ease-in-out`;
-                flip.style.transform = 'rotateY(-180deg)';
-            }, 50);
+            front.innerHTML = getPageHTML(state.d + 1); back.innerHTML = getPageHTML(state.d + 2);
+            setTimeout(() => { initCanvas(state.d+1); initCanvas(state.d+2); applyFont(); }, 0);
+            flip.style.transition = 'none'; flip.style.transform = 'rotateY(0deg)';
+            setTimeout(() => { flip.style.transition = `transform var(--speed) ease-in-out`; flip.style.transform = 'rotateY(-180deg)'; }, 50);
             setTimeout(() => { state.d += 2; finalizeTurn(); }, 800);
         } else {
-            front.innerHTML = getPageHTML(state.d - 1);
-            back.innerHTML = getPageHTML(state.d);
-            setTimeout(() => { initCanvas(state.d-1); initCanvas(state.d); }, 0);
-            
-            flip.style.transition = 'none';
-            flip.style.transform = 'rotateY(-180deg)';
-            setTimeout(() => {
-                flip.style.transition = `transform var(--speed) ease-in-out`;
-                flip.style.transform = 'rotateY(0deg)';
-            }, 50);
+            front.innerHTML = getPageHTML(state.d - 1); back.innerHTML = getPageHTML(state.d);
+            setTimeout(() => { initCanvas(state.d-1); initCanvas(state.d); applyFont(); }, 0);
+            flip.style.transition = 'none'; flip.style.transform = 'rotateY(-180deg)';
+            setTimeout(() => { flip.style.transition = `transform var(--speed) ease-in-out`; flip.style.transform = 'rotateY(0deg)'; }, 50);
             setTimeout(() => { state.d -= 2; finalizeTurn(); }, 800);
         }
     }
 
-    function finalizeTurn() {
-        document.getElementById('flipping-page').style.display = 'none';
-        renderStatic();
-        isAnimating = false;
-    }
+    function finalizeTurn() { document.getElementById('flipping-page').style.display = 'none'; renderStatic(); isAnimating = false; saveToLocal(); }
 
     function togglePen() {
         isPenActive = !isPenActive;
@@ -288,12 +281,12 @@
     }
 
     function clearDraw() {
-        if(confirm("Cancella disegno pagina corrente?")) {
-            const c1 = document.getElementById(`canv-${state.d}`);
-            const c2 = document.getElementById(`canv-${state.d+1}`);
-            if(c1) c1.getContext('2d').clearRect(0,0,c1.width,c1.height);
-            if(c2) c2.getContext('2d').clearRect(0,0,c2.width,c2.height);
-            delete state.draws[state.d]; delete state.draws[state.d+1];
+        if(confirm("Eliminare i disegni di queste pagine?")) {
+            [state.d, state.d+1].forEach(day => {
+                const c = document.getElementById(`canv-${day}`);
+                if(c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+                delete state.draws[day];
+            });
             saveToLocal();
         }
     }
@@ -308,14 +301,14 @@
         const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
         months.forEach((m, mi) => {
             const mDiv = document.createElement('div');
-            mDiv.innerHTML = `<h4 style="color:var(--gold); margin-bottom:5px;">${m}</h4>`;
+            mDiv.innerHTML = `<h4 style="color:var(--gold); font-size:0.8rem; margin-bottom:5px;">${m}</h4>`;
             let days = new Date(2026, mi+1, 0).getDate();
             for(let d=1; d<=days; d++) {
                 const doy = Math.round((new Date(2026, mi, d) - new Date(2026,0,0))/86400000);
                 const btn = document.createElement('button');
-                btn.style = "width:25px; height:25px; margin:2px; font-size:0.6rem; cursor:pointer; background:none; border:1px solid #444; color:#aaa;";
+                btn.style = "width:22px; height:22px; margin:1px; font-size:0.5rem; cursor:pointer; background:none; border:1px solid #444; color:#aaa;";
                 btn.innerText = d;
-                btn.onclick = () => { state.d = (doy%2===0)?doy-1:doy; renderStatic(); toggleCalendar(); };
+                btn.onclick = () => { state.d = (doy%2===0)?doy-1:doy; renderStatic(); toggleCalendar(); saveToLocal(); };
                 mDiv.appendChild(btn);
             }
             box.appendChild(mDiv);
@@ -328,20 +321,39 @@
         state.d = (doy%2===0)?doy-1:doy;
     }
 
+    function goDirectlyToToday() {
+        goToToday();
+        renderStatic();
+        saveToLocal();
+    }
+
     function applyTheme() { document.body.className = state.dark ? 'theme-dark' : 'theme-light'; }
     function toggleTheme() { state.dark = !state.dark; applyTheme(); saveToLocal(); }
-    function applyFont() { document.body.style.setProperty('--current-font', state.font); document.querySelectorAll('.editor').forEach(e => e.style.fontFamily = state.font); }
+    
+    function applyFont() { 
+        document.querySelectorAll('.editor').forEach(e => {
+            e.style.fontFamily = state.font;
+        });
+    }
+    
     function changeFont(f) { state.font = f; applyFont(); saveToLocal(); }
 
     function exportData() {
+        const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type: 'application/json'}));
-        a.download = 'backup_agenda_2026.json'; a.click();
+        a.href = URL.createObjectURL(blob);
+        a.download = `Backup_Agenda_2026.json`; a.click();
     }
 
     function importData(e) {
         const reader = new FileReader();
-        reader.onload = (ev) => { state = JSON.parse(ev.target.result); renderStatic(); applyTheme(); applyFont(); };
+        reader.onload = (ev) => { 
+            state = JSON.parse(ev.target.result); 
+            document.getElementById('inkColor').value = state.penColor || "#1a1a1a";
+            document.getElementById('penSize').value = state.penWidth || "4";
+            document.getElementById('fontPicker').value = state.font;
+            renderStatic(); applyTheme(); applyFont();
+        };
         reader.readAsText(e.target.files[0]);
     }
 </script>
