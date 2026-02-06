@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Agenda Luxury 2026 - Master Responsive</title>
+    <title>Agenda Luxury 2026 - Keyboard Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,7 +11,6 @@
             --paper: #fcfaf2; --ink: #1a1a1a;
             --line-color: rgba(0, 0, 0, 0.12);
             --margin-color: rgba(220, 20, 60, 0.3);
-            --speed: 0.8s;
         }
         .theme-dark {
             --paper: #1a1a1a; --ink: #e0d0b0;
@@ -20,391 +19,328 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body {
             margin: 0; background: var(--desk);
             font-family: 'Cormorant Garamond', serif;
             height: 100vh; display: flex; overflow: hidden;
             justify-content: center; align-items: center;
-            perspective: 3000px;
-            /* IMPORTANTE: touch-action rimosso per permettere focus tastiera */
         }
 
-        /* --- UI CONTROLS --- */
-        .side-controls { position: fixed; display: flex; gap: 10px; z-index: 9999; }
-        
+        /* UI CONTROLS */
+        .side-controls { position: fixed; display: flex; gap: 8px; z-index: 9999; }
         @media (min-width: 769px) {
             .side-controls { flex-direction: column; top: 50%; transform: translateY(-50%); }
-            .controls-left { left: 20px; }
-            .controls-right { right: 20px; }
+            .controls-left { left: 15px; } .controls-right { right: 15px; }
         }
-        
         @media (max-width: 768px) {
-            .side-controls { 
-                flex-direction: row; top: 10px; left: 50%; 
-                transform: translateX(-50%); width: 95%; 
-                justify-content: center; flex-wrap: wrap; gap: 5px;
-            }
-            .controls-right { top: 60px; } 
-            .btn-round { width: 40px !important; height: 40px !important; font-size: 1.1rem !important; }
-            .select-luxury { width: 65px !important; font-size: 0.55rem !important; height: 35px !important; }
+            .side-controls { flex-direction: row; top: 10px; left: 50%; transform: translateX(-50%); width: 95%; justify-content: center; flex-wrap: wrap; }
+            .controls-right { top: 55px; }
+            .btn-round { width: 38px !important; height: 38px !important; font-size: 1rem !important; }
+            .select-luxury { width: 60px !important; font-size: 0.5rem !important; height: 30px !important; }
         }
 
         .btn-round {
-            width: 55px; height: 55px; border-radius: 50%;
+            width: 50px; height: 50px; border-radius: 50%;
             background: rgba(20, 20, 20, 0.9); border: 1px solid var(--gold);
             color: var(--gold); cursor: pointer; display: flex;
-            align-items: center; justify-content: center;
-            font-size: 1.5rem; transition: 0.3s; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
+            align-items: center; justify-content: center; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
         }
-        .btn-round.active { background: var(--gold); color: white; box-shadow: 0 0 20px var(--gold); }
-
+        .btn-round.active { background: var(--gold); color: white; }
         .select-luxury {
-            width: 80px; height: 40px; border-radius: 20px;
+            width: 80px; height: 35px; border-radius: 15px;
             background: rgba(20, 20, 20, 0.9); border: 1px solid var(--gold);
-            color: var(--gold); cursor: pointer; font-family: 'Inter';
-            font-size: 0.7rem; text-transform: uppercase; padding: 0 5px; appearance: none; text-align: center;
+            color: var(--gold); cursor: pointer; font-size: 0.65rem; text-transform: uppercase;
         }
 
-        /* --- BOOK STRUCTURE --- */
-        #book {
-            width: 85vw; height: 85vh; position: relative;
-            transform-style: preserve-3d; background: var(--leather);
-            border-radius: 15px; box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-        }
-
-        .page {
-            position: absolute; background: var(--paper); color: var(--ink);
-            padding: 30px 40px; display: flex; flex-direction: column;
-            backface-visibility: hidden; z-index: 10; overflow: hidden;
-        }
-
+        /* BOOK */
+        #book { width: 85vw; height: 85vh; position: relative; background: var(--leather); border-radius: 15px; box-shadow: 0 40px 80px rgba(0,0,0,0.8); }
+        .page { position: absolute; background: var(--paper); color: var(--ink); padding: 25px 35px; display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
+        
         @media (min-width: 769px) {
-            .page { width: calc(50% - 10px); height: calc(100% - 20px); top: 10px; }
+            .page { width: calc(50% - 15px); height: calc(100% - 20px); top: 10px; }
             .page.left { left: 10px; border-radius: 10px 0 0 10px; }
             .page.right { right: 10px; border-radius: 0 10px 10px 0; border-left: 1px solid rgba(0,0,0,0.05); }
         }
-
         @media (max-width: 768px) {
-            #book { width: 92vw; height: 68vh; margin-top: 120px; }
-            .page { width: calc(100% - 10px); height: calc(100% - 10px); top: 5px; left: 5px; border-radius: 10px; padding: 20px; }
+            #book { width: 98vw; height: 55vh; margin-top: 110px; top: -50px; }
+            .page { width: calc(100% - 10px); height: calc(100% - 10px); top: 5px; left: 5px; border-radius: 10px; padding: 15px; }
             .page.left { display: none; }
         }
 
-        /* --- 3D FLIPPING --- */
-        #flipping-page {
-            position: absolute; width: calc(50% - 10px); height: calc(100% - 20px);
-            top: 10px; left: 50%; transform-style: preserve-3d;
-            transform-origin: left center; display: none; z-index: 100;
-        }
-
-        @media (max-width: 768px) {
-            #flipping-page { 
-                width: calc(100% - 10px); height: calc(100% - 10px); 
-                top: 5px; left: 5px; transform-origin: left center;
-            }
-        }
-
-        .flip-side {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; background: var(--paper); color: var(--ink);
-            padding: 40px 50px; display: flex; flex-direction: column; border-radius: 10px;
-        }
-        .flip-side.back { transform: rotateY(180deg); }
-
-        /* --- EDITOR & DRAW --- */
-        .editor-container { position: relative; flex: 1; margin-top: 20px; overflow: hidden; }
         .editor {
-            height: 100%; background-image: linear-gradient(transparent 34px, var(--line-color) 35px);
-            background-size: 100% 35px; line-height: 35px; outline: none;
+            height: 100%; background-image: linear-gradient(transparent 31px, var(--line-color) 32px);
+            background-size: 100% 32px; line-height: 32px; outline: none;
             padding-left: 15px; border-left: 2px solid var(--margin-color);
-            font-size: 1.4rem; white-space: pre-wrap; z-index: 1; position: relative;
+            font-size: 1.3rem; white-space: pre-wrap; position: relative; z-index: 1;
         }
         .draw-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-        body.pen-active .draw-layer { pointer-events: auto; cursor: crosshair; }
+        body.pen-active .draw-layer { pointer-events: auto; }
 
-        .page-header { border-bottom: 3px solid var(--gold); display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; }
-        .header-date-info h3 { text-transform: uppercase; letter-spacing: 2px; color: var(--gold); font-weight: 700; font-size: 0.9rem; margin: 0; }
-        .header-date-info h2 { margin: 2px 0 0 0; font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-size: 2rem; line-height: 1; }
-        .header-day-num { font-family: 'Playfair Display', serif; font-size: 5rem; color: var(--gold); line-height: 0.7; font-weight: 700; }
-        
-        .nav-zone { position: absolute; top: 0; width: 20%; height: 100%; z-index: 500; cursor: pointer; }
-        #nav-prev { left: 0; } #nav-next { right: 0; }
+        .page-header { border-bottom: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px; margin-bottom: 10px;}
+        .header-day-num { font-family: 'Playfair Display'; font-size: 3.5rem; color: var(--gold); font-weight: 700; line-height: 0.8; }
 
-        #calendar-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 10000; display: none;
-            justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(10px);
+        /* FULL VIRTUAL KEYBOARD */
+        #virtual-keyboard {
+            position: fixed; bottom: -100%; left: 0; width: 100%; 
+            background: #111; padding: 10px 5px; z-index: 10001; 
+            transition: bottom 0.3s ease; display: flex; flex-direction: column; 
+            gap: 5px; border-top: 3px solid var(--gold);
+            user-select: none;
         }
-        .cal-grid-container { 
-            display: grid; gap: 15px; width: 100%; max-width: 1000px; max-height: 85vh; overflow-y: auto; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        .kb-row { display: flex; justify-content: center; gap: 4px; width: 100%; }
+        .kb-key {
+            background: #2a2a2a; color: white; border: 1px solid #444; 
+            border-radius: 5px; height: 45px; flex: 1;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-family: 'Inter'; font-size: 1rem; font-weight: 600;
         }
+        .kb-key:active { background: var(--gold); color: black; }
+        .key-special { background: #3d3d3d; flex: 1.5; font-size: 0.8rem; }
+        .key-space { flex: 4; }
+        .key-gold { background: var(--gold); color: black; border: none; }
+        .key-active { background: var(--gold); color: black; }
+
+        #calendar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .cal-grid-container { display: grid; gap: 15px; width: 100%; max-width: 1000px; max-height: 80vh; overflow-y: auto; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); background: #111; padding: 20px; border: 1px solid var(--gold); }
+        .cal-month button { background: none; border: 1px solid #333; color: white; margin: 2px; width: 30px; height: 30px; cursor: pointer; }
     </style>
 </head>
 <body class="theme-light">
 
     <div class="side-controls controls-left">
-        <button class="btn-round" onclick="toggleFullScreen()" title="Schermo Intero">⛶</button>
-        <button class="btn-round" onclick="goDirectlyToToday()" title="Oggi">🎯</button>
-        <button class="btn-round" onclick="toggleTheme()" title="Tema">◑</button>
-        <button class="btn-round" onclick="toggleCalendar()" title="Calendario">📅</button>
-        <button class="btn-round" onclick="exportData()" title="Salva Backup">💾</button>
-        <button class="btn-round" onclick="document.getElementById('importFile').click()" title="Carica Backup">📂</button>
+        <button class="btn-round" onclick="toggleFullScreen()">⛶</button>
+        <button class="btn-round" onclick="goDirectlyToToday()">🎯</button>
+        <button class="btn-round" onclick="toggleTheme()">◑</button>
+        <button class="btn-round" onclick="toggleCalendar()">📅</button>
+        <button class="btn-round" onclick="exportData()">💾</button>
+        <button class="btn-round" onclick="document.getElementById('importFile').click()">📂</button>
         <input type="file" id="importFile" hidden onchange="importData(event)">
     </div>
 
     <div class="side-controls controls-right">
-        <button class="btn-round" id="pen-toggle" onclick="togglePen()" title="Penna">✎</button>
-        <div class="btn-round" style="padding:0; overflow:hidden;" title="Colore">
-            <input type="color" id="inkColor" onchange="updatePenSettings()" style="width:160%; height:160%; border:none; cursor:pointer; background:none;">
-        </div>
+        <button class="btn-round" id="pen-toggle" onclick="togglePen()">✎</button>
+        <button class="btn-round" id="eraser-toggle" onclick="toggleEraser()">🧹</button>
+        <div class="btn-round" style="overflow:hidden;"><input type="color" id="inkColor" onchange="updatePenSettings()" style="transform:scale(2); cursor:pointer;"></div>
         <select id="penSize" class="select-luxury" onchange="updatePenSettings()">
             <option value="2">Fine</option>
-            <option value="4" selected>Med</option>
-            <option value="8">Big</option>
+            <option value="5" selected>Med</option>
+            <option value="12">Big</option>
         </select>
-        <button class="btn-round" onclick="clearDraw()" title="Elimina">⌫</button>
+        <button class="btn-round" onclick="clearDraw()">⌫</button>
         <select id="fontPicker" class="select-luxury" onchange="changeFont(this.value)">
             <option value="'Dancing Script'">Corsivo</option>
-            <option value="'Cormorant Garamond'">Gara</option>
-            <option value="'Playfair Display'">Classico</option>
             <option value="'Inter'">Moderno</option>
+            <option value="'Playfair Display'">Classico</option>
         </select>
     </div>
 
     <main id="book">
-        <div id="nav-prev" class="nav-zone" onclick="turnPage('prev')"></div>
-        <div id="nav-next" class="nav-zone" onclick="turnPage('next')"></div>
+        <div style="position:absolute; width:100%; height:100%; display:flex; z-index:5;">
+            <div style="flex:1;" onclick="turnPage('prev')"></div>
+            <div style="flex:1;" onclick="turnPage('next')"></div>
+        </div>
         <div class="page left" id="p-left-static"></div>
         <div class="page right" id="p-right-static"></div>
-        <div id="flipping-page">
-            <div class="flip-side front" id="f-front"></div>
-            <div class="flip-side back" id="f-back"></div>
-        </div>
     </main>
+
+    <div id="virtual-keyboard">
+        <div id="kb-container"></div>
+    </div>
 
     <div id="calendar-overlay" onclick="toggleCalendar()">
         <div class="cal-grid-container" id="cal-box" onclick="event.stopPropagation()"></div>
     </div>
 
 <script>
-    let state = { 
-        d: 1, dark: false, font: "'Dancing Script'", content: {}, draws: {},
-        penColor: "#1a1a1a", penWidth: "4" 
+    let state = { d: 1, dark: false, font: "'Dancing Script'", content: {}, draws: {}, penColor: "#1a1a1a", penWidth: "5" };
+    let isPenActive = false, isEraserActive = false, focusedEditor = null;
+    let kbMode = 'lower'; // 'lower', 'upper', 'symbols'
+
+    const keys = {
+        lower: [
+            ['q','w','e','r','t','y','u','i','o','p'],
+            ['a','s','d','f','g','h','j','k','l'],
+            ['SHIFT','z','x','c','v','b','n','m','BKSP'],
+            ['123','SPACE','ENTER','▲','▼','◀','▶','CHIUDI']
+        ],
+        upper: [
+            ['Q','W','E','R','T','Y','U','I','O','P'],
+            ['A','S','D','F','G','H','J','K','L'],
+            ['shift','Z','X','C','V','B','N','M','BKSP'],
+            ['123','SPACE','ENTER','▲','▼','◀','▶','CHIUDI']
+        ],
+        symbols: [
+            ['1','2','3','4','5','6','7','8','9','0'],
+            ['@','#','€','&','*','-','+','(',')','/'],
+            ['ABC','.',',','?','!',"'",'"',':',';','BKSP'],
+            ['123','SPACE','ENTER','▲','▼','◀','▶','CHIUDI']
+        ]
     };
-    let isAnimating = false, isPenActive = false;
 
     window.onload = () => {
         const saved = localStorage.getItem('agenda_luxury_v26_responsive');
-        if (saved) state = JSON.parse(saved); else goToToday();
-        
-        document.getElementById('inkColor').value = state.penColor;
-        document.getElementById('penSize').value = state.penWidth;
-        document.getElementById('fontPicker').value = state.font;
-
-        renderStatic();
-        applyTheme();
-        buildCalendar();
-
-        window.addEventListener('resize', renderStatic);
+        if (saved) state = JSON.parse(saved); else goDirectlyToToday();
+        applyTheme(); renderStatic(); buildCalendar(); renderKeyboard();
     };
 
-    function saveToLocal() { localStorage.setItem('agenda_luxury_v26_responsive', JSON.stringify(state)); }
+    function renderKeyboard() {
+        const container = document.getElementById('kb-container');
+        container.innerHTML = '';
+        keys[kbMode].forEach(row => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'kb-row';
+            row.forEach(key => {
+                const btn = document.createElement('div');
+                btn.className = 'kb-key';
+                if(['SHIFT','shift','BKSP','123','ABC','ENTER','CHIUDI'].includes(key)) btn.classList.add('key-special');
+                if(key === 'SPACE') btn.classList.add('key-space');
+                if(key === 'CHIUDI') btn.classList.add('key-gold');
+                if((kbMode === 'upper' && key === 'shift') || (kbMode === 'symbols' && key === '123')) btn.classList.add('key-active');
+                
+                btn.innerText = key;
+                btn.onclick = (e) => { e.preventDefault(); handleKeyPress(key); };
+                rowDiv.appendChild(btn);
+            });
+            container.appendChild(rowDiv);
+        });
+    }
+
+    function handleKeyPress(key) {
+        if(!focusedEditor) return;
+        focusedEditor.focus();
+
+        switch(key) {
+            case 'CHIUDI': closeKb(); break;
+            case 'SHIFT': kbMode = 'upper'; renderKeyboard(); break;
+            case 'shift': kbMode = 'lower'; renderKeyboard(); break;
+            case '123': kbMode = 'symbols'; renderKeyboard(); break;
+            case 'ABC': kbMode = 'lower'; renderKeyboard(); break;
+            case 'BKSP': document.execCommand('delete', false); break;
+            case 'ENTER': document.execCommand('insertLineBreak', false); break;
+            case 'SPACE': document.execCommand('insertText', false, ' '); break;
+            case '▲': moveCursor('up'); break;
+            case '▼': moveCursor('down'); break;
+            case '◀': moveCursor('left'); break;
+            case '▶': moveCursor('right'); break;
+            default:
+                document.execCommand('insertText', false, key);
+                if(kbMode === 'upper') { kbMode = 'lower'; renderKeyboard(); }
+        }
+        state.content[focusedEditor.id.split('-')[1]] = focusedEditor.innerHTML;
+        saveToLocal();
+    }
+
+    function moveCursor(dir) {
+        const sel = window.getSelection();
+        if(dir === 'left') sel.modify("move", "backward", "character");
+        if(dir === 'right') sel.modify("move", "forward", "character");
+        if(dir === 'up') sel.modify("move", "backward", "line");
+        if(dir === 'down') sel.modify("move", "forward", "line");
+    }
 
     function getPageHTML(day) {
-        if (day < 1 || day > 365) return `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:var(--gold); opacity:0.3"><h3>FINE</h3></div>`;
+        if (day < 1 || day > 365) return `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.2"><h3>FINE 2026</h3></div>`;
         const date = new Date(2026, 0, day);
         return `
             <div class="page-header">
-                <div class="header-date-info">
-                    <h3>${date.toLocaleDateString('it-IT', {month:'long'})} 2026</h3>
-                    <h2>${date.toLocaleDateString('it-IT', {weekday:'long'})}</h2>
+                <div>
+                    <h3 style="margin:0; color:var(--gold); text-transform:uppercase; font-size:0.7rem;">${date.toLocaleDateString('it-IT', {month:'long'})} 2026</h3>
+                    <h2 style="margin:0; font-family:'Playfair Display'; font-size:1.2rem; font-style:italic;">${date.toLocaleDateString('it-IT', {weekday:'long'})}</h2>
                 </div>
                 <div class="header-day-num">${date.getDate()}</div>
             </div>
-            <div class="editor-container">
-                <div class="editor" contenteditable="true" spellcheck="false" 
-                     id="edit-${day}" oninput="state.content[${day}]=this.innerHTML; saveToLocal();">${state.content[day] || ""}</div>
+            <div style="position:relative; flex:1;">
+                <div class="editor" contenteditable="true" id="edit-${day}" 
+                     onfocus="focusedEditor=this; openKb();"
+                     oninput="state.content[${day}] = this.innerHTML; saveToLocal();"
+                     style="font-family: ${state.font}">${state.content[day] || ""}</div>
                 <canvas id="canv-${day}" class="draw-layer"></canvas>
-            </div>
-            <div style="margin-top:auto; font-size:0.6rem; opacity:0.4; text-align:center;">PAG. ${day}</div>
-        `;
-    }
-
-    function initCanvas(day) {
-        const canvas = document.getElementById(`canv-${day}`);
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const container = canvas.parentElement;
-        canvas.width = container.offsetWidth;
-        canvas.height = container.offsetHeight;
-
-        if(state.draws[day]) {
-            const img = new Image();
-            img.onload = () => ctx.drawImage(img, 0, 0);
-            img.src = state.draws[day];
-        }
-
-        let drawing = false;
-        const getCoords = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-            return { x, y };
-        };
-
-        const start = (e) => { if(!isPenActive) return; drawing = true; ctx.beginPath(); const p = getCoords(e); ctx.moveTo(p.x, p.y); };
-        const move = (e) => { if(!drawing || !isPenActive) return; const p = getCoords(e); ctx.lineWidth = state.penWidth; ctx.lineCap = 'round'; ctx.strokeStyle = state.penColor; ctx.lineTo(p.x, p.y); ctx.stroke(); };
-        const stop = () => { if(drawing) { drawing = false; state.draws[day] = canvas.toDataURL(); saveToLocal(); } };
-
-        canvas.onmousedown = start; canvas.onmousemove = move; window.onmouseup = stop;
-        canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = stop;
+            </div>`;
     }
 
     function renderStatic() {
         const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            document.getElementById('p-right-static').innerHTML = getPageHTML(state.d);
-            initCanvas(state.d);
-        } else {
-            document.getElementById('p-left-static').innerHTML = getPageHTML(state.d);
-            document.getElementById('p-right-static').innerHTML = getPageHTML(state.d + 1);
-            initCanvas(state.d); initCanvas(state.d + 1);
-        }
-        applyFont();
+        document.getElementById('p-right-static').innerHTML = getPageHTML(isMobile ? state.d : state.d + 1);
+        if(!isMobile) document.getElementById('p-left-static').innerHTML = getPageHTML(state.d);
+        setTimeout(() => { initCanvas(state.d); if(!isMobile) initCanvas(state.d + 1); }, 100);
+    }
+
+    function openKb() { if(window.innerWidth <= 768) document.getElementById('virtual-keyboard').style.bottom = '0'; }
+    function closeKb() { document.getElementById('virtual-keyboard').style.bottom = '-100%'; if(focusedEditor) focusedEditor.blur(); }
+
+    function initCanvas(day) {
+        const canvas = document.getElementById(`canv-${day}`);
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d'), container = canvas.parentElement;
+        canvas.width = container.offsetWidth; canvas.height = container.offsetHeight;
+        if(state.draws[day]) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = state.draws[day]; }
+
+        let drawing = false;
+        const getCoords = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        };
+
+        canvas.onmousedown = canvas.ontouchstart = (e) => { 
+            if(!isPenActive && !isEraserActive) return;
+            drawing = true; ctx.beginPath(); const p = getCoords(e); ctx.moveTo(p.x, p.y); 
+        };
+        canvas.onmousemove = canvas.ontouchmove = (e) => {
+            if(!drawing) return; const p = getCoords(e);
+            if(isEraserActive) ctx.clearRect(p.x-12, p.y-12, 24, 24);
+            else { ctx.lineWidth = state.penWidth; ctx.lineCap = 'round'; ctx.strokeStyle = state.penColor; ctx.lineTo(p.x, p.y); ctx.stroke(); }
+        };
+        canvas.onmouseup = canvas.ontouchend = () => { if(drawing) { drawing = false; state.draws[day] = canvas.toDataURL(); saveToLocal(); } };
     }
 
     function turnPage(dir) {
-        if (isAnimating || isPenActive) return;
-        animateFlip(dir);
+        if(isPenActive || isEraserActive) return;
+        const step = window.innerWidth <= 768 ? 1 : 2;
+        if (dir === 'next' && state.d + step <= 365) state.d += step;
+        else if (dir === 'prev' && state.d - step >= 1) state.d -= step;
+        renderStatic(); saveToLocal();
     }
 
-    function animateFlip(dir) {
-        isAnimating = true;
-        const isMobile = window.innerWidth <= 768;
-        const step = isMobile ? 1 : 2;
-        const flip = document.getElementById('flipping-page');
-        const front = document.getElementById('f-front'), back = document.getElementById('f-back');
-
-        if (dir === 'next' && state.d + step > 365) { isAnimating = false; return; }
-        if (dir === 'prev' && state.d - step < 1) { isAnimating = false; return; }
-
-        flip.style.display = 'block';
-        
-        if (dir === 'next') {
-            front.innerHTML = getPageHTML(isMobile ? state.d : state.d + 1);
-            back.innerHTML = getPageHTML(isMobile ? state.d + 1 : state.d + 2);
-            flip.style.transition = 'none';
-            flip.style.transform = 'rotateY(0deg)';
-            setTimeout(() => {
-                flip.style.transition = `transform var(--speed) ease-in-out`;
-                flip.style.transform = 'rotateY(-180deg)';
-            }, 50);
-            setTimeout(() => { state.d += step; finalizeTurn(); }, 800);
-        } else {
-            front.innerHTML = getPageHTML(isMobile ? state.d - 1 : state.d - 1);
-            back.innerHTML = getPageHTML(isMobile ? state.d : state.d);
-            flip.style.transition = 'none';
-            flip.style.transform = 'rotateY(-180deg)';
-            setTimeout(() => {
-                flip.style.transition = `transform var(--speed) ease-in-out`;
-                flip.style.transform = 'rotateY(0deg)';
-            }, 50);
-            setTimeout(() => { state.d -= step; finalizeTurn(); }, 800);
-        }
-    }
-
-    function finalizeTurn() { 
-        document.getElementById('flipping-page').style.display = 'none'; 
-        renderStatic(); 
-        isAnimating = false; 
-        saveToLocal();
-    }
-
-    function togglePen() {
-        isPenActive = !isPenActive;
-        document.body.classList.toggle('pen-active', isPenActive);
+    function togglePen() { isPenActive = !isPenActive; isEraserActive = false; updateUI(); }
+    function toggleEraser() { isEraserActive = !isEraserActive; isPenActive = false; updateUI(); }
+    function updateUI() {
+        document.body.classList.toggle('pen-active', isPenActive || isEraserActive);
         document.getElementById('pen-toggle').classList.toggle('active', isPenActive);
+        document.getElementById('eraser-toggle').classList.toggle('active', isEraserActive);
     }
-
-    function updatePenSettings() {
-        state.penColor = document.getElementById('inkColor').value;
-        state.penWidth = document.getElementById('penSize').value;
-        saveToLocal();
+    function clearDraw() {
+        const id = focusedEditor ? focusedEditor.id.split('-')[1] : state.d;
+        const c = document.getElementById(`canv-${id}`);
+        if(c) { c.getContext('2d').clearRect(0,0,c.width,c.height); delete state.draws[id]; saveToLocal(); }
     }
-
-    function toggleCalendar() {
-        const cal = document.getElementById('calendar-overlay');
-        cal.style.display = (cal.style.display === 'flex') ? 'none' : 'flex';
-    }
-
+    function saveToLocal() { localStorage.setItem('agenda_luxury_v26_responsive', JSON.stringify(state)); }
+    function applyTheme() { document.body.className = state.dark ? 'theme-dark' : 'theme-light'; }
+    function toggleTheme() { state.dark = !state.dark; applyTheme(); saveToLocal(); }
+    function changeFont(f) { state.font = f; renderStatic(); saveToLocal(); }
+    function updatePenSettings() { state.penColor = document.getElementById('inkColor').value; state.penWidth = document.getElementById('penSize').value; }
+    function toggleCalendar() { const c = document.getElementById('calendar-overlay'); c.style.display = (c.style.display==='flex')?'none':'flex'; }
+    function goDirectlyToToday() { const n = new Date(); const start = new Date(2026, 0, 0); state.d = Math.floor((new Date(2026, n.getMonth(), n.getDate()) - start) / 86400000); renderStatic(); }
     function buildCalendar() {
         const box = document.getElementById('cal-box');
-        box.innerHTML = '';
         const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
         months.forEach((m, mi) => {
             const mDiv = document.createElement('div');
-            mDiv.style.background = "rgba(255,255,255,0.05)"; mDiv.style.padding = "10px"; mDiv.style.borderRadius="10px";
-            mDiv.innerHTML = `<h4 style="color:var(--gold); margin:0 0 10px 0; text-align:center;">${m}</h4>`;
+            mDiv.innerHTML = `<h4 style="color:var(--gold); margin:5px 0;">${m}</h4>`;
             let days = new Date(2026, mi+1, 0).getDate();
             for(let d=1; d<=days; d++) {
-                const doy = Math.round((new Date(2026, mi, d) - new Date(2026,0,0))/86400000);
-                const btn = document.createElement('button');
-                btn.style = "width:28px; height:28px; margin:2px; font-size:0.7rem; cursor:pointer; background:none; border:1px solid #444; color:#fff;";
-                btn.innerText = d;
-                btn.onclick = () => { 
-                    state.d = (window.innerWidth > 768 && doy%2===0) ? doy-1 : doy; 
-                    renderStatic(); toggleCalendar(); saveToLocal(); 
-                };
+                const btn = document.createElement('button'); btn.innerText = d;
+                btn.onclick = () => { state.d = Math.floor((new Date(2026, mi, d) - new Date(2026,0,0)) / 86400000); renderStatic(); toggleCalendar(); };
                 mDiv.appendChild(btn);
             }
             box.appendChild(mDiv);
         });
     }
-
-    function goToToday() {
-        const n = new Date(); 
-        const doy = Math.floor((new Date(2026, n.getMonth(), n.getDate()) - new Date(2026,0,0))/86400000);
-        state.d = (window.innerWidth > 768 && doy%2===0) ? doy-1 : doy;
-        if(state.d < 1) state.d = 1;
-    }
-
-    function goDirectlyToToday() { goToToday(); renderStatic(); saveToLocal(); }
-    function applyTheme() { document.body.className = state.dark ? 'theme-dark' : 'theme-light'; }
-    function toggleTheme() { state.dark = !state.dark; applyTheme(); saveToLocal(); }
-    function applyFont() { document.querySelectorAll('.editor').forEach(e => e.style.fontFamily = state.font); }
-    function changeFont(f) { state.font = f; applyFont(); saveToLocal(); }
-
-    function clearDraw() {
-        if(confirm("Eliminare i disegni di questa pagina?")) {
-            const c = document.getElementById(`canv-${state.d}`);
-            if(c) c.getContext('2d').clearRect(0,0,c.width,c.height);
-            delete state.draws[state.d]; saveToLocal();
-        }
-    }
-
-    function toggleFullScreen() {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-        else document.exitFullscreen();
-    }
-
-    function exportData() {
-        const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `Backup_Agenda_2026.json`; a.click();
-    }
-
-    function importData(e) {
-        const reader = new FileReader();
-        reader.onload = (ev) => { 
-            state = JSON.parse(ev.target.result); 
-            renderStatic(); applyTheme();
-        };
-        reader.readAsText(e.target.files[0]);
-    }
+    function exportData() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type:'application/json'})); a.download = `agenda_2026.json`; a.click(); }
+    function importData(e) { const r = new FileReader(); r.onload = (ev) => { state = JSON.parse(ev.target.result); renderStatic(); applyTheme(); }; r.readAsText(e.target.files[0]); }
+    function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 </script>
 </body>
 </html>
