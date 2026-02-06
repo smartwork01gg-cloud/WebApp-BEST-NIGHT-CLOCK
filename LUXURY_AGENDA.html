@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Agenda Luxury 2026 - Custom Font</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --desk: #0a0a0a; --leather: #1c130d; --gold: #b89352;
+            --paper: #fcfaf2; --ink: #1a1a1a;
+            --line-color: rgba(0, 0, 0, 0.18);
+            --margin-color: rgba(220, 20, 60, 0.4);
+            --speed: 0.9s;
+            --widget-bg: rgba(15, 15, 15, 0.85);
+        }
+        .theme-dark {
+            --paper: #121212; --ink: #f0e0c0;
+            --line-color: rgba(184, 147, 82, 0.3);
+            --margin-color: rgba(184, 147, 82, 0.5);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background: var(--desk);
+            font-family: 'Cormorant Garamond', serif;
+            height: 100vh; display: flex; overflow: hidden;
+            justify-content: center; align-items: center;
+            perspective: 3500px;
+        }
+
+        /* --- WIDGET --- */
+        #widget {
+            position: absolute; bottom: 30px; left: 50%; 
+            transform: translateX(-50%); width: 320px;
+            background: var(--widget-bg); backdrop-filter: blur(15px);
+            border: 1px solid var(--gold); border-radius: 12px; 
+            z-index: 2000; color: white;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+        }
+        #widget-header { 
+            padding: 10px 15px; cursor: move; border-bottom: 1px solid rgba(184, 147, 82, 0.3); 
+            display: flex; justify-content: space-between; font-size: 0.7rem; 
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        #widget-content { padding: 15px; max-height: 500px; overflow-y: auto; }
+        .w-label { font-size: 0.6rem; color: var(--gold); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .w-btn { 
+            width: 100%; background: transparent; color: var(--gold); 
+            border: 1px solid var(--gold); padding: 8px; margin-bottom: 6px; 
+            cursor: pointer; font-size: 0.65rem; transition: 0.3s;
+            letter-spacing: 1.5px; text-transform: uppercase;
+        }
+        .w-btn:hover { background: var(--gold); color: black; }
+        .font-sel { 
+            width: 100%; background: #222; color: var(--gold); border: 1px solid var(--gold);
+            padding: 5px; margin-bottom: 15px; font-size: 0.8rem; outline: none;
+        }
+        
+        #cal-box { height: 150px; overflow-y: auto; margin-top: 10px; scrollbar-width: thin; }
+        .day-cell { padding: 4px; cursor: pointer; text-align: center; font-size: 0.7rem; color: #888; }
+        .day-cell.active { background: var(--gold); color: black !important; font-weight: bold; border-radius: 4px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 8px; }
+
+        /* --- BOOK --- */
+        #book {
+            width: 88vw; height: 85vh; position: relative;
+            transform-style: preserve-3d; background: var(--leather);
+            border-radius: 10px; box-shadow: 0 60px 130px rgba(0,0,0,1);
+        }
+
+        .page {
+            position: absolute; width: calc(50% - 20px); height: calc(100% - 30px);
+            top: 15px; background: var(--paper); color: var(--ink);
+            padding: 40px 60px; display: flex; flex-direction: column;
+            backface-visibility: hidden; z-index: 10;
+        }
+        .page.left { left: 15px; border-radius: 5px 0 0 5px; }
+        .page.right { right: 15px; border-radius: 0 5px 5px 0; }
+
+        #flipping-page {
+            position: absolute; width: calc(50% - 20px); height: calc(100% - 30px);
+            top: 15px; left: 50%; transform-style: preserve-3d;
+            transform-origin: left center; display: none; z-index: 100;
+        }
+        .flip-side {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; background: var(--paper); color: var(--ink);
+            padding: 40px 60px; display: flex; flex-direction: column;
+        }
+        .flip-side.back { transform: rotateY(180deg); box-shadow: inset 30px 0 60px rgba(0,0,0,0.1); }
+
+        /* --- TEXT & LINES --- */
+        .page-header { border-bottom: 2px solid var(--gold); margin-bottom: 30px; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .header-main h2 { margin: 0; font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 400; font-style: italic; }
+        .header-day-num { font-family: 'Playfair Display', serif; font-size: 5.5rem; line-height: 1; color: var(--gold); font-weight: 300; }
+
+        .editor { 
+            flex: 1; 
+            background-image: linear-gradient(transparent 39px, var(--line-color) 40px);
+            background-size: 100% 40px;
+            line-height: 40px; outline: none;
+            border-left: 2px solid var(--margin-color);
+            padding-left: 25px; margin-left: 10px;
+            font-size: 1.9rem; white-space: pre-wrap;
+            overflow-y: auto;
+        }
+        
+        .page-footer { margin-top: 15px; font-size: 0.8rem; letter-spacing: 2px; color: var(--gold); text-align: center; font-weight: 600; opacity: 0.7; }
+
+        .nav-zone { position: absolute; top: 0; width: 10%; height: 100%; z-index: 1000; cursor: pointer; }
+        #nav-prev { left: 0; } #nav-next { right: 0; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="theme-light">
+
+<div id="widget" onmousedown="dragStart(event)">
+    <div id="widget-header">
+        <span>LUXURY Agenda 2026</span>
+        <span onclick="toggleWidget()" style="cursor:pointer;">[x]</span>
+    </div>
+    <div id="widget-content">
+        <label class="w-label">Stile Scrittura</label>
+        <select class="font-sel" id="fontPicker" onchange="changeFont(this.value)">
+            <option value="'Dancing Script', cursive">Corsivo a Mano</option>
+            <option value="'Cormorant Garamond', serif">Garamond Elegante</option>
+            <option value="'Playfair Display', serif">Classico Editoriale</option>
+            <option value="'Inter', sans-serif">Moderno Tecnico</option>
+        </select>
+
+        <button class="w-btn" onclick="goToToday()">Vai ad Oggi</button>
+        <button class="w-btn" onclick="toggleTheme()">Inverti Colore</button>
+        <button class="w-btn" onclick="exportData()">Salva Backup</button>
+        <button class="w-btn" onclick="document.getElementById('importFile').click()">Carica Backup</button>
+        <input type="file" id="importFile" hidden accept=".json" onchange="importData(event)">
+        <div id="cal-box"></div>
+    </div>
+</div>
+
+<main id="book">
+    <div id="nav-prev" class="nav-zone" onclick="turnPage('prev')"></div>
+    <div id="nav-next" class="nav-zone" onclick="turnPage('next')"></div>
+    <div id="spine" style="position:absolute; left:50%; width:2px; height:100%; background:rgba(0,0,0,0.2); z-index:500; transform:translateX(-50%);"></div>
+    <div class="page left" id="p-left-static"></div>
+    <div class="page right" id="p-right-static"></div>
+    <div id="flipping-page">
+        <div class="flip-side front" id="f-front"></div>
+        <div class="flip-side back" id="f-back"></div>
+    </div>
+</main>
+
+<script>
+    let state = { d: 1, dark: false, font: "'Dancing Script', cursive", content: {} };
+    let isAnimating = false;
+
+    window.onload = () => {
+        const saved = localStorage.getItem('agenda_pro_v14');
+        if (saved) state = JSON.parse(saved); else goToToday(false);
+        
+        document.getElementById('fontPicker').value = state.font;
+        applyTheme(); 
+        applyFont();
+        buildCalendar(); 
+        renderStatic();
+
+        window.addEventListener('wheel', (e) => {
+            if (isAnimating) return;
+            if (e.deltaY > 40) turnPage('next');
+            else if (e.deltaY < -40) turnPage('prev');
+        }, { passive: true });
+    };
+
+    function applyFont() {
+        document.body.style.setProperty('--current-font', state.font);
+        // Applichiamo il font dinamicamente alle aree editabili
+        const style = document.createElement('style');
+        style.innerHTML = `.editor { font-family: ${state.font} !important; }`;
+        document.head.appendChild(style);
+    }
+
+    function changeFont(val) {
+        state.font = val;
+        applyFont();
+        saveToLocal();
+    }
+
+    function getPageHTML(day) {
+        if (day < 1 || day > 365) return '<div class="page-footer">FINE ANNO</div>';
+        const date = new Date(2026, 0, day);
+        return `
+            <div class="page-header">
+                <div class="header-main">
+                    <div style="text-transform:uppercase; letter-spacing:4px; color:var(--gold); font-weight:700; font-size:0.9rem;">${date.toLocaleDateString('it-IT', {month:'long'})} 2026</div>
+                    <h2>${date.toLocaleDateString('it-IT', {weekday:'long'})}</h2>
+                </div>
+                <div class="header-day-num">${date.getDate()}</div>
+            </div>
+            <div class="editor" contenteditable="true" spellcheck="false" oninput="saveText(${day}, this.innerHTML)">${state.content[day] || ""}</div>
+            <div class="page-footer">PAGINA ${day}</div>
+        `;
+    }
+
+    function saveText(day, html) { 
+        state.content[day] = html; 
+        saveToLocal();
+    }
+
+    function saveToLocal() { localStorage.setItem('agenda_pro_v14', JSON.stringify(state)); }
+
+    function renderStatic() {
+        document.getElementById('p-left-static').innerHTML = getPageHTML(state.d);
+        document.getElementById('p-right-static').innerHTML = getPageHTML(state.d + 1);
+        updateCal();
+    }
+
+    function turnPage(dir) {
+        if (isAnimating) return;
+        if ((dir === 'next' && state.d >= 364) || (dir === 'prev' && state.d <= 1)) return;
+        isAnimating = true;
+        const flip = document.getElementById('flipping-page');
+        const front = document.getElementById('f-front');
+        const back = document.getElementById('f-back');
+        flip.style.display = 'block';
+        if (dir === 'next') {
+            front.innerHTML = getPageHTML(state.d + 1);
+            back.innerHTML = getPageHTML(state.d + 2);
+            document.getElementById('p-right-static').innerHTML = getPageHTML(state.d + 3);
+            flip.style.transition = 'none';
+            flip.style.transform = 'rotateY(0deg)';
+            setTimeout(() => {
+                flip.style.transition = `transform var(--speed) cubic-bezier(0.645, 0.045, 0.355, 1)`;
+                flip.style.transform = 'rotateY(-180deg)';
+            }, 50);
+            setTimeout(() => { state.d += 2; finishTurn(); }, 900);
+        } else {
+            front.innerHTML = getPageHTML(state.d - 1);
+            back.innerHTML = getPageHTML(state.d);
+            document.getElementById('p-left-static').innerHTML = getPageHTML(state.d - 2);
+            flip.style.transition = 'none';
+            flip.style.transform = 'rotateY(-180deg)';
+            setTimeout(() => {
+                flip.style.transition = `transform var(--speed) cubic-bezier(0.645, 0.045, 0.355, 1)`;
+                flip.style.transform = 'rotateY(0deg)';
+            }, 50);
+            setTimeout(() => { state.d -= 2; finishTurn(); }, 900);
+        }
+    }
+
+    function finishTurn() {
+        document.getElementById('flipping-page').style.display = 'none';
+        renderStatic();
+        isAnimating = false;
+        saveToLocal();
+    }
+
+    function buildCalendar() {
+        const box = document.getElementById('cal-box');
+        const months = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+        box.innerHTML = "";
+        months.forEach((m, mi) => {
+            const grid = document.createElement('div');
+            grid.className = 'days-grid';
+            box.appendChild(document.createElement('div')).innerHTML = `<div style="color:var(--gold); font-weight:bold; font-size:0.6rem; margin-top:8px">${m.toUpperCase()}</div>`;
+            let days = new Date(2026, mi+1, 0).getDate();
+            for(let d=1; d<=days; d++) {
+                const doy = Math.round((new Date(2026, mi, d) - new Date(2026,0,0))/86400000);
+                const c = document.createElement('div');
+                c.className = 'day-cell'; c.id = `c-${doy}`; c.textContent = d;
+                c.onclick = () => { if(!isAnimating) { state.d = (doy%2===0)?doy-1:doy; renderStatic(); } };
+                grid.appendChild(c);
+            }
+            box.appendChild(grid);
+        });
+    }
+
+    function updateCal() {
+        document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('active'));
+        const active = document.getElementById(`c-${state.d}`);
+        if(active) { active.classList.add('active'); active.scrollIntoView({block:'center'}); }
+    }
+
+    function goToToday(u=true) {
+        const n = new Date(); const start = new Date(2026, 0, 0);
+        const doy = Math.floor((new Date(2026, n.getMonth(), n.getDate()) - start)/86400000);
+        state.d = (doy%2===0)?doy-1:doy; if(u) renderStatic();
+    }
+
+    function toggleTheme() { state.dark = !state.dark; applyTheme(); renderStatic(); }
+    function applyTheme() { document.body.className = state.dark ? 'theme-dark' : 'theme-light'; }
+    function toggleWidget() { document.getElementById('widget-content').classList.toggle('hidden'); }
+
+    function exportData() {
+        const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Agenda_2026_Full_Backup.json`;
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                state = JSON.parse(e.target.result);
+                document.getElementById('fontPicker').value = state.font;
+                applyTheme(); applyFont(); buildCalendar(); renderStatic();
+                alert("Backup ripristinato con successo!");
+            } catch (err) { alert("File non valido!"); }
+        };
+        reader.readAsText(file);
+    }
+
+    let w = document.getElementById('widget');
+    function dragStart(e) {
+        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.classList.contains('day-cell')) return;
+        let ox = e.clientX - w.offsetLeft, oy = e.clientY - w.offsetTop;
+        document.onmousemove = (ev) => { 
+            w.style.left = (ev.clientX - ox)+"px"; w.style.top = (ev.clientY - oy)+"px"; 
+            w.style.bottom = 'auto'; w.style.transform = 'none';
+        };
+        document.onmouseup = () => document.onmousemove = null;
+    }
+</script>
+</body>
+</html>
