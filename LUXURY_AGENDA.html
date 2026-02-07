@@ -203,17 +203,64 @@
          body.pen-active .draw-layer { pointer-events: auto; cursor: crosshair; }
          .page-header { border-bottom: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px; margin-bottom: 15px;}
          .header-day-num { font-family: 'Playfair Display'; font-size: 4rem; color: var(--gold); font-weight: 700; line-height: 0.8; }
-         /* LUXURY CALENDAR */
-         #calendar-overlay { 
-         position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
-         z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px;
-         backdrop-filter: blur(15px);
-         }
-         .cal-container {
-         background: #111; border: 1px solid var(--gold); width: 100%; max-width: 1100px;
-         max-height: 90vh; overflow-y: auto; padding: 40px; border-radius: 8px;
-         box-shadow: 0 0 60px rgba(184, 147, 82, 0.3);
-         }
+/* LUXURY CALENDAR */
+/* LUXURY CALENDAR - COMPACT VERSION */
+#calendar-overlay { 
+    position: fixed; inset: 0; background: rgba(0,0,0,0.96); 
+    z-index: 10000; display: none; justify-content: center; align-items: flex-start;
+    padding: 60px 20px; backdrop-filter: blur(20px); overflow-y: auto;
+}
+
+.cal-container { 
+    position: relative; width: 100%; max-width: 1300px; margin: 0 auto; 
+}
+
+/* Griglia Mesi: 4 colonne su desktop, 2 su tablet, 1 su mobile */
+.cal-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 20px; 
+}
+
+.cal-month-title { 
+    color: var(--gold); font-family: 'Playfair Display'; border-bottom: 1px solid rgba(184, 147, 82, 0.3); 
+    margin-bottom: 10px; padding-bottom: 5px; text-transform: uppercase; 
+    letter-spacing: 2px; font-size: 0.9rem; text-align: center;
+}
+
+/* Griglia Giorni più piccoli */
+.cal-days-grid { 
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; 
+}
+
+.cal-day {
+    background: rgba(255,255,255,0.05); border: 1px solid #222; color: #fff; 
+    padding: 6px 0; cursor: pointer; font-size: 0.75rem; transition: 0.2s; 
+    border-radius: 3px; text-align: center; font-family: 'Inter', sans-serif;
+}
+
+.cal-day:hover { background: var(--gold); color: #000; transform: scale(1.1); z-index: 10; }
+
+.cal-day.today { border: 1px solid var(--gold); color: var(--gold); font-weight: bold; }
+
+/* Pulsante Chiudi Fisso */
+.close-cal {
+    position: fixed; top: 20px; right: 20px; width: 45px; height: 45px;
+    background: var(--gold); color: #000; border: none; border-radius: 50%;
+    font-size: 1.5rem; cursor: pointer; z-index: 10001; 
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px rgba(184, 147, 82, 0.4);
+}
+
+/* Stile della scrollbar del calendario per coerenza luxury */
+#calendar-overlay::-webkit-scrollbar { width: 8px; }
+#calendar-overlay::-webkit-scrollbar-track { background: #000; }
+#calendar-overlay::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+<div class="cal-container" onclick="event.stopPropagation()">
+    <button class="btn-round" onclick="toggleCalendar()" style="position: absolute; top: 15px; right: 15px;">✕</button>
+    <h2 style="color:var(--gold); text-align:center; font-family:'Playfair Display'; letter-spacing:8px; margin-top:0;">2026 LUXURY COLLECTOR</h2>
+    <div class="cal-grid" id="cal-grid"></div>
+</div>
          .cal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 35px; }
          .cal-month-title { color: var(--gold); font-family: 'Playfair Display'; border-bottom: 1px solid #333; margin-bottom: 12px; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; font-size: 1.1rem; }
          .cal-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
@@ -289,12 +336,16 @@
       <div id="virtual-keyboard">
          <div id="kb-container"></div>
       </div>
-      <div id="calendar-overlay" onclick="toggleCalendar()">
-         <div class="cal-container" onclick="event.stopPropagation()">
-            <h2 style="color:var(--gold); text-align:center; font-family:'Playfair Display'; letter-spacing:8px; margin-top:0;">2026 LUXURY COLLECTOR</h2>
-            <div class="cal-grid" id="cal-grid"></div>
-         </div>
-      </div>
+<div id="calendar-overlay">
+    <button class="close-cal" onclick="toggleCalendar()">✕</button>
+    
+    <div class="cal-container">
+        <h2 style="color:var(--gold); text-align:center; font-family:'Playfair Display'; letter-spacing:8px; margin-bottom:40px;">
+            2026 ANNUAL VIEW
+        </h2>
+        <div class="cal-grid" id="cal-grid"></div>
+    </div>
+</div>
       <script>
          let state = { d: 1, dark: false, font: "'Dancing Script'", fSize: "1.3rem", content: {}, draws: {}, penColor: "#1a1a1a", penWidth: "5" };
          let isPenActive = false, isEraserActive = false, focusedEditor = null, isKbOpen = false, isFlipping = false;
@@ -344,13 +395,17 @@
              if (day < 1 || day > 365) return `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.1;"><h3>FINE ANNO</h3></div>`;
              const date = new Date(2026, 0, day);
              return `
-                 <div class="page-header">
-                     <div>
-                         <h3 style="margin:0; color:var(--gold); text-transform:uppercase; font-size:0.75rem; letter-spacing:2px;">${date.toLocaleDateString('it-IT', {month:'long'})} 2026</h3>
-                         <h2 style="margin:0; font-family:'Playfair Display'; font-size:1.5rem; font-style:italic;">${date.toLocaleDateString('it-IT', {weekday:'long'})}</h2>
-                     </div>
-                     <div class="header-day-num">${date.getDate()}</div>
-                 </div>
+<div class="page-header" style="border-bottom: 3px solid var(--gold); padding-bottom: 15px; margin-bottom: 30px;">
+            <div style="flex: 1;">
+                <div style="color: var(--gold); text-transform: uppercase; font-size: 1.4rem; font-weight: 800; letter-spacing: 5px; line-height: 1.2; margin-bottom: 5px;">
+                    ${date.toLocaleDateString('it-IT', {month:'long'})} 2026
+                </div>
+                <div style="font-family: 'Playfair Display'; font-size: 2.2rem; font-style: italic; color: var(--ink); line-height: 1;">
+                    ${date.toLocaleDateString('it-IT', {weekday:'long'})}
+                </div>
+            </div>
+            <div class="header-day-num">${date.getDate()}</div>
+        </div>
                  <div style="position:relative; flex:1; display:flex; flex-direction:column;">
          <div class="editor" contenteditable="true" id="edit-${day}" 
           onfocus="focusedEditor=this"
@@ -378,114 +433,131 @@
              }, 50);
          }
          
-         function turnPage(dir) {
-             if(isFlipping || isPenActive || isEraserActive) return;
-             
-             const isMobile = window.innerWidth <= 768;
-             const step = isMobile ? 1 : 2;
-         
-             if (dir === 'next' && state.d + step <= 365) {
-                 performFlipAnimation(dir, isMobile);
-                 setTimeout(() => {
-                     state.d += step;
-                     renderPages();
-                     saveToLocal();
-                 }, 1000);
-             } else if (dir === 'prev' && state.d - step >= 1) {
-                 performFlipAnimation(dir, isMobile);
-                 setTimeout(() => {
-                     state.d -= step;
-                     renderPages();
-                     saveToLocal();
-                 }, 1000);
-             }
-         }
-         
-         function performFlipAnimation(direction, isMobile) {
-             isFlipping = true;
-             const book = document.getElementById('book');
-             
-             // Crea container per animazione
-             const flipContainer = document.createElement('div');
-             flipContainer.className = 'flip-container';
-             
-             if(direction === 'next') {
-                 flipContainer.classList.add('flip-right');
-             } else {
-                 flipContainer.classList.add('flip-left');
-             }
-             
-             // Crea fronte e retro
-             const flipFront = document.createElement('div');
-             flipFront.className = 'flip-front';
-             const flipBack = document.createElement('div');
-             flipBack.className = 'flip-back';
-             
-             // Imposta contenuto
-             if(direction === 'next') {
-                 // Fronte mostra la pagina corrente che sta girando
-                 flipFront.innerHTML = getPageContentHTML(isMobile ? state.d : state.d + 1);
-                 // Retro mostra la nuova pagina
-                 flipBack.innerHTML = getPageContentHTML(isMobile ? state.d + (isMobile ? 1 : 2) : state.d);
-             } else {
-                 // Per andare indietro
-                 flipFront.innerHTML = getPageContentHTML(state.d);
-                 flipBack.innerHTML = getPageContentHTML(isMobile ? state.d - 1 : state.d - 1);
-             }
-             
-             flipContainer.appendChild(flipFront);
-             flipContainer.appendChild(flipBack);
-             book.appendChild(flipContainer);
-             
-             // Forza reflow
-             flipContainer.offsetHeight;
-             
-             // Avvia animazione
-             setTimeout(() => {
-                 if(direction === 'next') {
-                     flipContainer.classList.add('flipping-forward');
-                 } else {
-                     flipContainer.classList.add('flipping-backward');
-                 }
-             }, 10);
-             
-             // Rimuovi dopo animazione
-             setTimeout(() => {
-                 flipContainer.remove();
-                 isFlipping = false;
-             }, 1050);
-         }
-         
-         function buildCalendar() {
-             const grid = document.getElementById('cal-grid');
-             const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
-             
-             months.forEach((m, mi) => {
-                 const mDiv = document.createElement('div');
-                 mDiv.innerHTML = `<div class="cal-month-title">${m}</div>`;
-                 const daysGrid = document.createElement('div');
-                 daysGrid.className = 'cal-days-grid';
-                 
-                 let daysInMonth = new Date(2026, mi + 1, 0).getDate();
-                 for(let d=1; d<=daysInMonth; d++) {
-                     const btn = document.createElement('div');
-                     btn.className = 'cal-day';
-                     const today = new Date();
-                     if(today.getFullYear() === 2026 && today.getMonth() === mi && today.getDate() === d) btn.classList.add('today');
-                     btn.innerText = d;
-                     btn.onclick = () => {
-                         const targetDate = new Date(2026, mi, d);
-                         const startOfYear = new Date(2026, 0, 1);
-                         state.d = Math.round((targetDate - startOfYear) / 86400000) + 1;
-                         renderPages();
-                         toggleCalendar();
-                     };
-                     daysGrid.appendChild(btn);
-                 }
-                 mDiv.appendChild(daysGrid);
-                 grid.appendChild(mDiv);
-             });
-         }
+
+function turnPage(dir) {
+    if(isFlipping || isPenActive || isEraserActive) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const step = isMobile ? 1 : 2;
+    const oldDay = state.d;
+
+    if (dir === 'next' && state.d + step <= 365) {
+        performFlipAnimation(dir, isMobile);
+        state.d += step;
+
+        if(!isMobile) {
+            // DESKTOP: La pagina DESTRA (sottostante) si aggiorna SUBITO
+            document.getElementById('p-right').innerHTML = getPageContentHTML(state.d + 1);
+            // La pagina SINISTRA si aggiorna solo a fine volo (1000ms)
+            setTimeout(() => {
+                document.getElementById('p-left').innerHTML = getPageContentHTML(state.d);
+                initCanvas(state.d);
+            }, 1000);
+            initCanvas(state.d + 1);
+        } else {
+            // MOBILE: Aggiornamento a fine volo per evitare sfarfallii
+            setTimeout(() => { renderPages(); }, 1000);
+        }
+    } else if (dir === 'prev' && state.d - step >= 1) {
+        performFlipAnimation(dir, isMobile);
+        state.d -= step;
+
+        if(!isMobile) {
+            // DESKTOP: La pagina SINISTRA (sottostante) si aggiorna SUBITO
+            document.getElementById('p-left').innerHTML = getPageContentHTML(state.d);
+            // La pagina DESTRA si aggiorna a fine volo
+            setTimeout(() => {
+                document.getElementById('p-right').innerHTML = getPageContentHTML(state.d + 1);
+                initCanvas(state.d + 1);
+            }, 1000);
+            initCanvas(state.d);
+        } else {
+            setTimeout(() => { renderPages(); }, 1000);
+        }
+    }
+    saveToLocal();
+}
+
+
+function performFlipAnimation(direction, isMobile) {
+    isFlipping = true;
+    const book = document.getElementById('book');
+    const step = isMobile ? 1 : 2;
+    const currentDay = state.d; // Il giorno prima del cambio
+
+    const flipContainer = document.createElement('div');
+    flipContainer.className = 'flip-container';
+    flipContainer.classList.add(direction === 'next' ? 'flip-right' : 'flip-left');
+    
+    const flipFront = document.createElement('div');
+    flipFront.className = 'flip-front';
+    const flipBack = document.createElement('div');
+    flipBack.className = 'flip-back';
+    
+    if(direction === 'next') {
+        // Fronte: Pagina destra attuale
+        flipFront.innerHTML = getPageContentHTML(isMobile ? currentDay : currentDay + 1);
+        // Retro: Pagina che diventerà la nuova sinistra
+        flipBack.innerHTML = getPageContentHTML(isMobile ? currentDay + 1 : currentDay + 2);
+    } else {
+        // Fronte: Pagina sinistra attuale
+        flipFront.innerHTML = getPageContentHTML(currentDay);
+        // Retro: Pagina che diventerà la nuova destra
+        flipBack.innerHTML = getPageContentHTML(isMobile ? currentDay - 1 : currentDay - 1);
+    }
+    
+    flipContainer.appendChild(flipFront);
+    flipContainer.appendChild(flipBack);
+    book.appendChild(flipContainer);
+    
+    flipContainer.offsetHeight; 
+    setTimeout(() => {
+        flipContainer.classList.add(direction === 'next' ? 'flipping-forward' : 'flipping-backward');
+    }, 10);
+    
+    setTimeout(() => {
+        flipContainer.remove();
+        isFlipping = false;
+    }, 1050);
+}
+
+// Modifica la funzione buildCalendar per essere più pulita
+function buildCalendar() {
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = ''; // Svuota prima di buildare
+    
+    const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+    
+    months.forEach((m, mi) => {
+        const mDiv = document.createElement('div');
+        mDiv.className = 'cal-month-container';
+        mDiv.innerHTML = `<div class="cal-month-title">${m}</div>`;
+        
+        const daysGrid = document.createElement('div');
+        daysGrid.className = 'cal-days-grid';
+        
+        let daysInMonth = new Date(2026, mi + 1, 0).getDate();
+        for(let d=1; d<=daysInMonth; d++) {
+            const btn = document.createElement('div');
+            btn.className = 'cal-day';
+            const today = new Date();
+            if(today.getFullYear() === 2026 && today.getMonth() === mi && today.getDate() === d) btn.classList.add('today');
+            btn.innerText = d;
+            btn.onclick = (e) => {
+                e.stopPropagation(); // Evita di chiudere il calendario due volte
+                const targetDate = new Date(2026, mi, d);
+                const startOfYear = new Date(2026, 0, 1);
+                state.d = Math.round((targetDate - startOfYear) / 86400000) + 1;
+                renderPages();
+                toggleCalendar();
+            };
+            daysGrid.appendChild(btn);
+        }
+        mDiv.appendChild(daysGrid);
+        grid.appendChild(mDiv);
+    });
+}
+
          
          function initCanvas(day) {
              const canvas = document.getElementById(`canv-${day}`);
@@ -730,7 +802,18 @@
          function changeFont(f) { state.font = f; renderPages(); saveToLocal(); }
          function changeFontSize(s) { state.fSize = s; renderPages(); saveToLocal(); }
          function updatePenSettings() { state.penColor = document.getElementById('inkColor').value; state.penWidth = document.getElementById('penSize').value; }
-         function toggleCalendar() { const c = document.getElementById('calendar-overlay'); c.style.display = (c.style.display==='flex')?'none':'flex'; }
+function toggleCalendar() {
+    const cal = document.getElementById('calendar-overlay');
+    const isVisible = cal.style.display === 'flex';
+    
+    if (!isVisible) {
+        // Opzionale: scrolla l'overlay in cima quando lo apri
+        cal.scrollTop = 0;
+        cal.style.display = 'flex';
+    } else {
+        cal.style.display = 'none';
+    }
+}
          function goDirectlyToToday() { 
              const now = new Date(); const start = new Date(2026, 0, 1);
              state.d = Math.max(1, Math.floor((now - start) / 86400000) + 1);
