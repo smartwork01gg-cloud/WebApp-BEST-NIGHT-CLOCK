@@ -13,6 +13,47 @@
          --margin-color: rgba(220, 20, 60, 0.3);
          --shadow: rgba(0,0,0,0.5);
          }
+/* Contenitore del gruppo */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(20, 20, 20, 0.6);
+    padding: 10px;
+    border-radius: 25px;
+    border: 1px solid rgba(184, 147, 82, 0.3);
+    backdrop-filter: blur(10px);
+    margin-bottom: 15px;
+    position: relative;
+    align-items: center;
+}
+
+/* Etichetta piccola per ogni gruppo */
+.group-label {
+    font-size: 0.6rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+/* Ottimizzazione per Mobile (riga orizzontale) */
+@media (max-width: 768px) {
+    .controls-right {
+        display: flex;
+        flex-direction: row !important;
+        gap: 10px;
+        top: 60px !important;
+        flex-wrap: nowrap !important;
+    }
+    .control-group {
+        flex-direction: row;
+        margin-bottom: 0;
+        padding: 5px 10px;
+    }
+    .group-label { display: none; } /* Nascondi etichette su mobile per spazio */
+}
          .theme-dark {
          --paper: #1a1a1a; --ink: #e0d0b0;
          --line-color: rgba(184, 147, 82, 0.15);
@@ -361,29 +402,40 @@
          <button class="btn-round" onclick="document.getElementById('importFile').click()">📂</button>
          <input type="file" id="importFile" hidden onchange="importData(event)">
       </div>
-      <div class="side-controls controls-right">
-         <button class="btn-round" onclick="toggleKb()">⌨</button>
-         <button class="btn-round" id="pen-toggle" onclick="togglePen()">✎</button>
-         <button class="btn-round" id="eraser-toggle" onclick="toggleEraser()">🧹</button>
-         <div class="btn-round" style="overflow:hidden;"><input type="color" id="inkColor" onchange="updatePenSettings()" style="transform:scale(2); cursor:pointer;"></div>
-         <select id="penSize" class="select-luxury" onchange="updatePenSettings()">
-            <option value="2">Fine</option>
-            <option value="5" selected>Med</option>
-            <option value="12">Big</option>
-         </select>
-         <button class="btn-round" onclick="clearDraw()">⌫</button>
-         <select id="fontPicker" class="select-luxury" onchange="changeFont(this.value)">
+
+<div class="side-controls controls-right">
+    <div class="control-group">
+        <span class="group-label">Testo</span>
+        <button class="btn-round" onclick="toggleKb()">⌨</button>
+        <select id="fontPicker" class="select-luxury" onchange="changeFont(this.value)">
             <option value="'Dancing Script'">Corsivo</option>
             <option value="'Inter'">Moderno</option>
             <option value="'Playfair Display'">Classico</option>
-         </select>
-         <select id="fontSizePicker" class="select-luxury" onchange="changeFontSize(this.value)">
+        </select>
+        <select id="fontSizePicker" class="select-luxury" onchange="changeFontSize(this.value)">
             <option value="1.1rem">Small</option>
             <option value="1.3rem" selected>Medium</option>
             <option value="1.6rem">Large</option>
-         </select>
-      </div>
-      <main id="book">
+        </select>
+    </div>
+
+    <div class="control-group">
+        <span class="group-label">Disegno</span>
+        <button class="btn-round" id="pen-toggle" onclick="togglePen()">✎</button>
+        <button class="btn-round" id="eraser-toggle" onclick="toggleEraser()">🧹</button>
+        <div class="btn-round" style="overflow:hidden;">
+            <input type="color" id="inkColor" value="#1a1a1a" onchange="updatePenSettings()" style="transform:scale(3); cursor:pointer; border:none;">
+        </div>
+        <select id="penSize" class="select-luxury" onchange="updatePenSettings()">
+            <option value="2">Fine</option>
+            <option value="5" selected>Med</option>
+            <option value="12">Big</option>
+        </select>
+        <button class="btn-round" onclick="clearDraw()">⌫</button>
+    </div>
+</div>
+
+	  <main id="book">
          <div class="page left" id="p-left"></div>
          <div class="page right" id="p-right"></div>
       </main>
