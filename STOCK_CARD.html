@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Wallet Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root { --primary: #007aff; --bg: #f2f2f7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        
+        .panel { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .field { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        
+        /* AREA LOGHI - Migliorata */
+        .logo-container { margin: 15px 0; border: 2px dashed #ccc; border-radius: 12px; padding: 10px; min-height: 100px; }
+        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .logo-item { width: 100%; aspect-ratio: 1; object-fit: contain; border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #f9f9f9; }
+        .logo-item.selected { border-color: var(--primary); background: #eef6ff; }
+
+        .badge { background: white; padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .badge-img { width: 50px; height: 50px; object-fit: contain; border-radius: 8px; }
+        
+        #presenter { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #scanner-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 3000; display: none; }
+        .btn { border: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h2 style="margin:0">Nuovo Badge</h2>
+        <input type="text" id="nameInp" class="field" placeholder="Nome Negozio (es. Coop, Ikea)" oninput="fetchLogos(this.value)">
+        
+        <div class="logo-container">
+            <div id="logoStatus" style="font-size: 12px; color: #666; margin-bottom: 5px;">Cerca un negozio per vedere i loghi...</div>
+            <div id="logoGrid" class="logo-grid"></div>
+            <div style="margin-top:10px; border-top:1px solid #eee; pt:10px">
+                <small>Oppure carica una foto:</small>
+                <input type="file" id="manualLogo" accept="image/*" onchange="loadManualLogo(this)">
+            </div>
+        </div>
+
+        <input type="text" id="codeInp" class="field" placeholder="Codice card">
+        <button class="btn" style="background:#34c759; color:white" onclick="startScan()">📷 SCANSIONA CODICE</button>
+        <button class="btn" style="background:var(--primary); color:white" id="saveBtn" onclick="saveCard()">SALVA NEL WALLET</button>
+    </div>
+
+    <div id="wallet"></div>
+
+    <div id="scanner-modal">
+        <div id="reader" style="width:100%; height:80%"></div>
+        <button class="btn" style="background:red; color:white" onclick="stopScan()">CHIUDI</button>
+    </div>
+
+    <div id="presenter" onclick="this.style.display='none'">
+        <img id="p-img" style="width:100px; margin-bottom:20px;">
+        <h2 id="p-name"></h2>
+        <svg id="p-barcode"></svg>
+        <div id="p-code" style="font-family:monospace; margin-top:10px; letter-spacing:3px"></div>
+    </div>
+
+<script>
+    let cards = JSON.parse(localStorage.getItem('my_wallet_v6')) || [];
+    let selectedLogo = "";
+    let scanner;
+
+    function fetchLogos(val) {
+        const grid = document.getElementById('logoGrid');
+        const status = document.getElementById('logoStatus');
+        if(val.length < 2) { grid.innerHTML = ""; return; }
+        
+        status.innerText = "Ricerca in corso...";
+        const query = val.toLowerCase().trim().replace(/\s/g, '');
+        const domains = [`${query}.it`, `${query}.com`, `e-${query}.it`, `${query}.net` ];
+        
+        grid.innerHTML = ""; 
+        domains.forEach(d => {
+            const url = `https://logo.clearbit.com/${d}`;
+            const img = new Image();
+            img.onload = () => {
+                status.innerText = "Seleziona un logo:";
+                const el = document.createElement('img');
+                el.src = url;
+                el.className = 'logo-item';
+                el.onclick = () => {
+                    document.querySelectorAll('.logo-item').forEach(i => i.classList.remove('selected'));
+                    el.classList.add('selected');
+                    selectedLogo = url;
+                };
+                grid.appendChild(el);
+            };
+            img.src = url;
+        });
+    }
+
+    function loadManualLogo(input) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            selectedLogo = e.target.result;
+            document.getElementById('logoStatus').innerText = "Immagine caricata correttamente!";
+            document.getElementById('logoGrid').innerHTML = `<img src="${selectedLogo}" class="logo-item selected">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function saveCard() {
+        const name = document.getElementById('nameInp').value;
+        const code = document.getElementById('codeInp').value;
+        if(!name || !code || !selectedLogo) return alert("Inserisci nome, codice e scegli un logo!");
+
+        cards.push({ name, code, logo: selectedLogo });
+        localStorage.setItem('my_wallet_v6', JSON.stringify(cards));
+        location.reload();
+    }
+
+    function render() {
+        const container = document.getElementById('wallet');
+        cards.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'badge';
+            div.onclick = () => {
+                document.getElementById('p-img').src = c.logo;
+                document.getElementById('p-name').innerText = c.name;
+                document.getElementById('p-code').innerText = c.code;
+                document.getElementById('presenter').style.display = 'flex';
+                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2, height: 80 });
+            };
+            div.innerHTML = `<img src="${c.logo}" class="badge-img"><b>${c.name}</b>`;
+            container.appendChild(div);
+        });
+    }
+
+    async function startScan() {
+        document.getElementById('scanner-modal').style.display = 'block';
+        scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            document.getElementById('codeInp').value = txt;
+            stopScan();
+        });
+    }
+
+    function stopScan() {
+        scanner.stop().then(() => document.getElementById('scanner-modal').style.display = 'none');
+    }
+
+    render();
+</script>
+</body>
+</html>
