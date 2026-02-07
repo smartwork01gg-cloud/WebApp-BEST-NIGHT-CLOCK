@@ -3,48 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Wallet Italia</title>
+    <title>Smart Wallet Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #007aff; --bg: #f2f2f7; --red: #ff3b30; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
-        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #ddd; }
+        header { 
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; 
+            background: white; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 10;
+        }
         
-        /* LISTA BADGE */
-        #wallet { padding: 15px; }
-        .badge-wrapper { position: relative; margin-bottom: 12px; }
+        .header-btns { display: flex; gap: 10px; }
+        .text-btn { color: var(--primary); background: none; border: none; font-size: 11px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+
+        /* WALLET */
+        #wallet { padding: 15px; padding-bottom: 100px; }
         .badge {
             background: white; padding: 18px; border-radius: 20px;
             display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer; margin-bottom: 12px;
         }
-        .badge-img { width: 50px; height: 50px; border-radius: 12px; object-fit: contain; background: #fff; }
-        .badge-name { font-weight: 700; flex: 1; }
-        .delete-btn { color: var(--red); font-size: 12px; padding: 10px; background: none; border: none; }
+        .badge-img { width: 50px; height: 50px; border-radius: 12px; object-fit: contain; background: #f9f9f9; }
+        .badge-name { font-weight: 700; flex: 1; font-size: 1.1rem; }
+        .delete-btn { color: var(--red); font-size: 11px; padding: 10px; background: none; border: none; font-weight: bold; }
 
-        /* CREAZIONE */
+        /* OVERLAY CREAZIONE */
         #creation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .input-group { background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .field { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        .field { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; }
 
-        /* GRIGLIA LOGHI */
-        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        /* AREA LOGHI */
+        .logo-section { margin: 15px 0; border: 2px dashed #ccc; border-radius: 15px; padding: 15px; background: #fff; }
+        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; min-height: 50px; }
         .logo-item { width: 100%; aspect-ratio: 1; object-fit: contain; border: 2px solid transparent; border-radius: 10px; background: #f9f9f9; padding: 5px; box-sizing: border-box; }
-        .logo-item.selected { border-color: var(--primary); background: #eef6ff; }
+        .logo-item.selected { border-color: var(--primary); background: #eef6ff; transform: scale(1.05); }
+        .manual-btn { background: #f0f0f5; border: 1px solid #ddd; padding: 8px; border-radius: 8px; font-size: 12px; width: 100%; margin-top: 10px; cursor: pointer; color: #555; }
 
         .fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; border: none; box-shadow: 0 10px 25px rgba(0,122,255,0.4); z-index: 50; }
         #presenter { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #scanner-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 2000; display: none; }
-        .btn { border: none; padding: 16px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn { border: none; padding: 16px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 style="margin:0; font-size: 1.2rem;">I MIEI BADGE</h1>
-        <button onclick="exportDB()" style="color:var(--primary); background:none; border:none;">BACKUP</button>
+        <h1 style="margin:0; font-size: 1.1rem; font-weight: 900;">SMART WALLET</h1>
+        <div class="header-btns">
+            <button class="text-btn" onclick="exportDB()">Esporta</button>
+            <button class="text-btn" onclick="document.getElementById('importFile').click()">Importa</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importDB(this)">
+        </div>
     </header>
 
     <div id="wallet"></div>
@@ -54,17 +65,25 @@
     <div id="creation-overlay">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2 style="margin:0">Nuova Card</h2>
-            <button onclick="toggleCreation(false)" style="background:none; border:none; font-size:30px;">&times;</button>
+            <button onclick="toggleCreation(false)" style="background:none; border:none; font-size:35px;">&times;</button>
         </div>
 
         <div class="input-group">
-            <input type="text" id="nameInp" class="field" placeholder="Es: Esselunga, Conad, Coop..." oninput="searchLogosIT(this.value)">
-            <small style="color:#666">Seleziona il logo trovato:</small>
-            <div id="logoGrid" class="logo-grid"></div>
+            <input type="text" id="nameInp" class="field" placeholder="Nome Negozio (es: Coop, Esselunga)" oninput="fetchAllLogos(this.value)">
+            
+            <div class="logo-section">
+                <small id="statusText" style="color:#666">Cerca loghi online...</small>
+                <div id="logoGrid" class="logo-grid"></div>
+                
+                <div style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
+                    <button class="manual-btn" onclick="document.getElementById('fileLogo').click()">📷 USA FOTO O FOTOCAMERA</button>
+                    <input type="file" id="fileLogo" style="display:none" accept="image/*" onchange="handleManualLogo(this)">
+                </div>
+            </div>
 
-            <input type="text" id="codeInp" class="field" placeholder="Codice card">
-            <button class="btn" style="background:#34c759; color:white" onclick="openScanner()">📷 SCANSIONA</button>
-            <button class="btn" id="saveBtn" style="background:var(--primary); color:white; opacity:0.5" disabled onclick="saveCard()">SALVA</button>
+            <input type="text" id="codeInp" class="field" placeholder="Codice tessere">
+            <button class="btn" style="background:#34c759; color:white" onclick="openScanner()">📷 SCANSIONA CODICE</button>
+            <button class="btn" id="saveBtn" style="background:var(--primary); color:white; opacity:0.5" disabled onclick="saveCard()">SALVA NEI BADGE</button>
         </div>
     </div>
 
@@ -81,99 +100,110 @@
     </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('it_wallet_v9')) || [];
+    let db = JSON.parse(localStorage.getItem('it_wallet_v11')) || [];
     let selectedLogoBase64 = "";
     let html5QrCode;
 
     function toggleCreation(show) { document.getElementById('creation-overlay').style.display = show ? 'block' : 'none'; }
 
-    // --- RICERCA LOGHI OTTIMIZZATA PER L'ITALIA ---
-    function searchLogosIT(val) {
+    // --- RICERCA LOGHI POTENZIATA ---
+    function fetchAllLogos(val) {
         const grid = document.getElementById('logoGrid');
-        if(val.length < 2) { grid.innerHTML = ""; return; }
+        const status = document.getElementById('statusText');
+        if(val.length < 2) { grid.innerHTML = ""; status.innerText = "Digita per cercare..."; return; }
         
         grid.innerHTML = "";
-        const name = val.toLowerCase().trim();
+        status.innerText = "Ricerca in corso...";
+        const name = val.toLowerCase().trim().replace(/\s/g, '');
         
-        // Strategia: DuckDuckGo Icons è eccellente per trovare loghi da siti locali
-        const domains = [
-            `${name.replace(/\s/g, '')}.it`,
-            `${name.replace(/\s/g, '')}.com`,
-            `e-${name.replace(/\s/g, '')}.it`, // per e-coop
-            `${name.replace(/\s/g, '')}italia.it`
-        ];
-
+        // Sorgenti multiple
+        const domains = [`${name}.it`, `${name}.com`, `e-${name}.it`, `${name}italia.it` ];
+        
         domains.forEach(domain => {
-            // Usiamo il proxy di DuckDuckGo che estrae le icone dai siti
-            const url = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                const el = document.createElement('img');
-                el.src = url;
-                el.className = 'logo-item';
-                el.onclick = () => {
-                    document.querySelectorAll('.logo-item').forEach(i => i.classList.remove('selected'));
-                    el.classList.add('selected');
-                    
-                    // Converti in Base64 per renderlo permanente offline
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width; canvas.height = img.height;
-                    canvas.getContext('2d').drawImage(img, 0, 0);
-                    selectedLogoBase64 = canvas.toDataURL("image/png");
-                    
-                    document.getElementById('saveBtn').disabled = false;
-                    document.getElementById('saveBtn').style.opacity = "1";
+            const urls = [
+                `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+                `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+                `https://logo.clearbit.com/${domain}`
+            ];
+
+            urls.forEach(url => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    if(grid.querySelector(`img[src="${url}"]`)) return;
+                    status.innerText = "Scegli un logo:";
+                    const el = document.createElement('img');
+                    el.src = url;
+                    el.className = 'logo-item';
+                    el.onclick = () => selectThisLogo(el, img);
+                    grid.appendChild(el);
                 };
-                grid.appendChild(el);
-            };
-            img.src = url;
+                img.src = url;
+            });
         });
     }
 
+    function handleManualLogo(input) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            selectedLogoBase64 = e.target.result;
+            const grid = document.getElementById('logoGrid');
+            grid.innerHTML = `<img src="${selectedLogoBase64}" class="logo-item selected">`;
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('saveBtn').style.opacity = "1";
+            document.getElementById('statusText').innerText = "Logo caricato!";
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function selectThisLogo(el, img) {
+        document.querySelectorAll('.logo-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        selectedLogoBase64 = canvas.toDataURL("image/png");
+        document.getElementById('saveBtn').disabled = false;
+        document.getElementById('saveBtn').style.opacity = "1";
+    }
+
+    // --- SALVATAGGIO & UI ---
     function saveCard() {
         const name = document.getElementById('nameInp').value;
         const code = document.getElementById('codeInp').value;
         db.push({ id: Date.now(), name, code, logo: selectedLogoBase64 });
-        localStorage.setItem('it_wallet_v9', JSON.stringify(db));
+        localStorage.setItem('it_wallet_v11', JSON.stringify(db));
         location.reload();
-    }
-
-    function deleteCard(id, event) {
-        event.stopPropagation();
-        if(confirm("Eliminare questa card?")) {
-            db = db.filter(c => c.id !== id);
-            localStorage.setItem('it_wallet_v9', JSON.stringify(db));
-            renderWallet();
-        }
     }
 
     function renderWallet() {
         const container = document.getElementById('wallet');
-        container.innerHTML = "";
+        container.innerHTML = db.length === 0 ? '<p style="text-align:center; color:#999; margin-top:50px;">Nessun badge.<br>Clicca + per iniziare.</p>' : "";
         db.forEach(c => {
-            const wrap = document.createElement('div');
-            wrap.className = 'badge-wrapper';
-            wrap.innerHTML = `
-                <div class="badge" onclick="showCard('${c.id}')">
-                    <img src="${c.logo}" class="badge-img">
-                    <div class="badge-name">${c.name}</div>
-                    <button class="delete-btn" onclick="deleteCard(${c.id}, event)">ELIMINA</button>
-                </div>
-            `;
-            container.appendChild(wrap);
+            const div = document.createElement('div');
+            div.className = 'badge';
+            div.onclick = () => {
+                document.getElementById('p-img').src = c.logo;
+                document.getElementById('p-name').innerText = c.name;
+                document.getElementById('p-code').innerText = c.code;
+                document.getElementById('presenter').style.display = 'flex';
+                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 100, displayValue: false });
+            };
+            div.innerHTML = `<img src="${c.logo}" class="badge-img"><div class="badge-name">${c.name}</div><button class="delete-btn" onclick="deleteCard(${c.id}, event)">ELIMINA</button>`;
+            container.appendChild(div);
         });
     }
 
-    function showCard(id) {
-        const c = db.find(x => x.id == id);
-        document.getElementById('p-img').src = c.logo;
-        document.getElementById('p-name').innerText = c.name;
-        document.getElementById('p-code').innerText = c.code;
-        document.getElementById('presenter').style.display = 'flex';
-        JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 100, displayValue: false });
+    function deleteCard(id, event) {
+        event.stopPropagation();
+        if(confirm("Eliminare?")) {
+            db = db.filter(c => c.id !== id);
+            localStorage.setItem('it_wallet_v11', JSON.stringify(db));
+            renderWallet();
+        }
     }
 
+    // --- SCANNER CAMERA ---
     async function openScanner() {
         document.getElementById('scanner-modal').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
@@ -187,11 +217,22 @@
         if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-modal').style.display = 'none');
     }
 
+    // --- IMPORT / EXPORT ---
     function exportDB() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type: 'application/json'}));
-        a.download = 'wallet_it.json';
+        a.download = 'backup_wallet.json';
         a.click();
+    }
+
+    function importDB(input) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            db = JSON.parse(e.target.result);
+            localStorage.setItem('it_wallet_v11', JSON.stringify(db));
+            renderWallet();
+        };
+        reader.readAsText(input.files[0]);
     }
 
     renderWallet();
