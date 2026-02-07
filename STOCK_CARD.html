@@ -3,87 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Wallet</title>
+    <title>Smart Wallet Italia</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #007aff; --bg: #f2f2f7; --card: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1c1c1e; }
+        :root { --primary: #007aff; --bg: #f2f2f7; --red: #ff3b30; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
-        /* HEADER */
-        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 10; }
-        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* WALLET LIST */
-        #wallet { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #ddd; }
+        
+        /* LISTA BADGE */
+        #wallet { padding: 15px; }
+        .badge-wrapper { position: relative; margin-bottom: 12px; }
         .badge {
             background: white; padding: 18px; border-radius: 20px;
             display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.02);
-            cursor: pointer; transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer;
         }
-        .badge:active { transform: scale(0.97); }
-        .badge-img { width: 50px; height: 50px; border-radius: 12px; object-fit: contain; }
-        .badge-name { font-weight: 700; font-size: 1.1rem; flex: 1; }
+        .badge-img { width: 50px; height: 50px; border-radius: 12px; object-fit: contain; background: #fff; }
+        .badge-name { font-weight: 700; flex: 1; }
+        .delete-btn { color: var(--red); font-size: 12px; padding: 10px; background: none; border: none; }
 
-        /* FLOATING ACTION BUTTON */
-        .fab {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 65px; height: 65px; background: var(--primary);
-            color: white; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-size: 30px;
-            box-shadow: 0 10px 25px rgba(0,122,255,0.4); border: none; cursor: pointer; z-index: 50;
-        }
-
-        /* SCHERMATA CREAZIONE (Full Screen) */
-        #creation-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 100; display: none; overflow-y: auto; padding: 20px; box-sizing: border-box;
-        }
+        /* CREAZIONE */
+        #creation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .input-group { background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .field { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
 
-        /* LOGO GRID */
-        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; min-height: 50px; }
+        /* GRIGLIA LOGHI */
+        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
         .logo-item { width: 100%; aspect-ratio: 1; object-fit: contain; border: 2px solid transparent; border-radius: 10px; background: #f9f9f9; padding: 5px; box-sizing: border-box; }
         .logo-item.selected { border-color: var(--primary); background: #eef6ff; }
 
-        /* PRESENTER */
-        #presenter { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; border: none; box-shadow: 0 10px 25px rgba(0,122,255,0.4); z-index: 50; }
+        #presenter { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #scanner-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 2000; display: none; }
-        .btn { border: none; padding: 16px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .btn-primary { background: var(--primary); color: white; }
+        .btn { border: none; padding: 16px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Smart Wallet</h1>
-        <button onclick="exportDB()" style="background:none; border:none; color:var(--primary); font-size:12px;">BACKUP</button>
+        <h1 style="margin:0; font-size: 1.2rem;">I MIEI BADGE</h1>
+        <button onclick="exportDB()" style="color:var(--primary); background:none; border:none;">BACKUP</button>
     </header>
 
-    <div id="wallet">
-        </div>
+    <div id="wallet"></div>
 
     <button class="fab" onclick="toggleCreation(true)">+</button>
 
     <div id="creation-overlay">
-        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="margin:0">Nuova Carta</h2>
-            <button onclick="toggleCreation(false)" style="background:none; border:none; font-size:24px;">&times;</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0">Nuova Card</h2>
+            <button onclick="toggleCreation(false)" style="background:none; border:none; font-size:30px;">&times;</button>
         </div>
 
         <div class="input-group">
-            <input type="text" id="nameInp" class="field" placeholder="Nome Negozio (es. Coop, Ikea)" oninput="searchLogos(this.value)">
-            
-            <div id="logoStatus" style="font-size: 12px; color: #666; margin-top:10px;">Cerca loghi...</div>
+            <input type="text" id="nameInp" class="field" placeholder="Es: Esselunga, Conad, Coop..." oninput="searchLogosIT(this.value)">
+            <small style="color:#666">Seleziona il logo trovato:</small>
             <div id="logoGrid" class="logo-grid"></div>
 
-            <input type="text" id="codeInp" class="field" placeholder="Codice numerico">
-            <button class="btn" style="background:#34c759; color:white" onclick="openScanner()">📷 SCANSIONA CODICE</button>
-            <button class="btn btn-primary" id="saveBtn" onclick="saveCard()" disabled style="opacity:0.5">SALVA NEL WALLET</button>
+            <input type="text" id="codeInp" class="field" placeholder="Codice card">
+            <button class="btn" style="background:#34c759; color:white" onclick="openScanner()">📷 SCANSIONA</button>
+            <button class="btn" id="saveBtn" style="background:var(--primary); color:white; opacity:0.5" disabled onclick="saveCard()">SALVA</button>
         </div>
+    </div>
+
+    <div id="presenter" onclick="this.style.display='none'">
+        <img id="p-img" style="width:100px; height:100px; object-fit:contain; margin-bottom:20px;">
+        <h2 id="p-name"></h2>
+        <svg id="p-barcode"></svg>
+        <div id="p-code" style="font-family:monospace; margin-top:15px; letter-spacing:4px; font-size:1.4rem;"></div>
     </div>
 
     <div id="scanner-modal">
@@ -91,37 +80,34 @@
         <button class="btn" style="background:red; color:white; border-radius:0" onclick="closeScanner()">ANNULLA</button>
     </div>
 
-    <div id="presenter" onclick="this.style.display='none'">
-        <img id="p-img" style="width:100px; height:100px; object-fit:contain; margin-bottom:20px;">
-        <h2 id="p-name"></h2>
-        <svg id="p-barcode"></svg>
-        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:4px; font-size:1.4rem;"></div>
-        <p style="color:#999; margin-top:60px;">Tocca per chiudere</p>
-    </div>
-
 <script>
-    let db = JSON.parse(localStorage.getItem('wallet_v8')) || [];
+    let db = JSON.parse(localStorage.getItem('it_wallet_v9')) || [];
     let selectedLogoBase64 = "";
     let html5QrCode;
 
-    // --- LOGICA UI ---
-    function toggleCreation(show) {
-        document.getElementById('creation-overlay').style.display = show ? 'block' : 'none';
-    }
+    function toggleCreation(show) { document.getElementById('creation-overlay').style.display = show ? 'block' : 'none'; }
 
-    // --- RICERCA E CONVERSIONE LOGHI ---
-    async function searchLogos(val) {
+    // --- RICERCA LOGHI OTTIMIZZATA PER L'ITALIA ---
+    function searchLogosIT(val) {
         const grid = document.getElementById('logoGrid');
         if(val.length < 2) { grid.innerHTML = ""; return; }
         
-        const query = val.toLowerCase().trim().replace(/\s/g, '');
-        const domains = [`${query}.it`, `${query}.com`, `e-${query}.it`];
-        
         grid.innerHTML = "";
+        const name = val.toLowerCase().trim();
+        
+        // Strategia: DuckDuckGo Icons è eccellente per trovare loghi da siti locali
+        const domains = [
+            `${name.replace(/\s/g, '')}.it`,
+            `${name.replace(/\s/g, '')}.com`,
+            `e-${name.replace(/\s/g, '')}.it`, // per e-coop
+            `${name.replace(/\s/g, '')}italia.it`
+        ];
+
         domains.forEach(domain => {
-            const url = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+            // Usiamo il proxy di DuckDuckGo che estrae le icone dai siti
+            const url = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
             const img = new Image();
-            img.crossOrigin = "Anonymous"; // Permette la conversione in Base64
+            img.crossOrigin = "Anonymous";
             img.onload = () => {
                 const el = document.createElement('img');
                 el.src = url;
@@ -129,11 +115,11 @@
                 el.onclick = () => {
                     document.querySelectorAll('.logo-item').forEach(i => i.classList.remove('selected'));
                     el.classList.add('selected');
-                    // Convertiamo in Base64 per salvataggio offline
+                    
+                    // Converti in Base64 per renderlo permanente offline
                     const canvas = document.createElement('canvas');
                     canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
+                    canvas.getContext('2d').drawImage(img, 0, 0);
                     selectedLogoBase64 = canvas.toDataURL("image/png");
                     
                     document.getElementById('saveBtn').disabled = false;
@@ -145,36 +131,49 @@
         });
     }
 
-    // --- SALVATAGGIO ---
     function saveCard() {
         const name = document.getElementById('nameInp').value;
         const code = document.getElementById('codeInp').value;
-        if(!name || !code || !selectedLogoBase64) return;
-
         db.push({ id: Date.now(), name, code, logo: selectedLogoBase64 });
-        localStorage.setItem('wallet_v8', JSON.stringify(db));
-        
-        location.reload(); // Ricarica per pulire tutto e mostrare il wallet
+        localStorage.setItem('it_wallet_v9', JSON.stringify(db));
+        location.reload();
+    }
+
+    function deleteCard(id, event) {
+        event.stopPropagation();
+        if(confirm("Eliminare questa card?")) {
+            db = db.filter(c => c.id !== id);
+            localStorage.setItem('it_wallet_v9', JSON.stringify(db));
+            renderWallet();
+        }
     }
 
     function renderWallet() {
         const container = document.getElementById('wallet');
+        container.innerHTML = "";
         db.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'badge';
-            div.onclick = () => {
-                document.getElementById('p-img').src = c.logo;
-                document.getElementById('p-name').innerText = c.name;
-                document.getElementById('p-code').innerText = c.code;
-                document.getElementById('presenter').style.display = 'flex';
-                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 100, displayValue: false });
-            };
-            div.innerHTML = `<img src="${c.logo}" class="badge-img"><div class="badge-name">${c.name}</div><div style="color:#ccc">❯</div>`;
-            container.appendChild(div);
+            const wrap = document.createElement('div');
+            wrap.className = 'badge-wrapper';
+            wrap.innerHTML = `
+                <div class="badge" onclick="showCard('${c.id}')">
+                    <img src="${c.logo}" class="badge-img">
+                    <div class="badge-name">${c.name}</div>
+                    <button class="delete-btn" onclick="deleteCard(${c.id}, event)">ELIMINA</button>
+                </div>
+            `;
+            container.appendChild(wrap);
         });
     }
 
-    // --- SCANNER ---
+    function showCard(id) {
+        const c = db.find(x => x.id == id);
+        document.getElementById('p-img').src = c.logo;
+        document.getElementById('p-name').innerText = c.name;
+        document.getElementById('p-code').innerText = c.code;
+        document.getElementById('presenter').style.display = 'flex';
+        JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 100, displayValue: false });
+    }
+
     async function openScanner() {
         document.getElementById('scanner-modal').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
@@ -189,11 +188,9 @@
     }
 
     function exportDB() {
-        const data = JSON.stringify(db);
-        const blob = new Blob([data], {type: 'application/json'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'wallet_backup.json';
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type: 'application/json'}));
+        a.download = 'wallet_it.json';
         a.click();
     }
 
