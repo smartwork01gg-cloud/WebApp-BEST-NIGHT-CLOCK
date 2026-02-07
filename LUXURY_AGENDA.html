@@ -146,38 +146,52 @@
          transform: rotateY(180deg);
          }
          /* NAVIGATION */
-         .nav-zone {
-         position: fixed; top: 0; width: 70px; height: 100%;
-         z-index: 8000; cursor: pointer; display: flex; align-items: center; justify-content: center;
-         color: var(--gold); font-size: 2.5rem; 
-         background: rgba(184, 147, 82, 0.08);
-         backdrop-filter: blur(5px);
-         opacity: 0.4;
-         transition: all 0.3s;
-         border: 1px solid rgba(184, 147, 82, 0.1);
-         }
-         .nav-zone:hover { 
-         opacity: 1; 
-         background: rgba(184, 147, 82, 0.15); 
-         transform: scaleY(1.05);
-         }
-         .nav-left { 
-         left: 0; 
-         border-radius: 0 20px 20px 0;
-         border-left: none;
-         }
-         .nav-right { 
-         right: 0; 
-         border-radius: 20px 0 0 20px;
-         border-right: none;
-         }
-         @media (max-width: 768px) {
-         .nav-zone { 
-         width: 50px; 
-         font-size: 2rem;
-         opacity: 0.6;
-         }
-         }
+/* MODIFICA NAV-ZONE PER CENTRARLE VERTICALMENTE */
+.nav-zone {
+    position: fixed; 
+    top: 50%;                /* Posiziona l'inizio al 50% dell'altezza */
+    transform: translateY(-50%); /* Centra perfettamente l'elemento */
+    width: 70px; 
+    height: 40%;             /* Regola questa percentuale per l'altezza desiderata */
+    z-index: 8000; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    color: var(--gold); 
+    font-size: 2.5rem; 
+    background: rgba(184, 147, 82, 0.08);
+    backdrop-filter: blur(5px);
+    opacity: 0.4;
+    transition: all 0.3s;
+    border: 1px solid rgba(184, 147, 82, 0.1);
+}
+.nav-zone:hover { 
+    opacity: 1; 
+    background: rgba(184, 147, 82, 0.15); 
+    /* Aggiungi translateY(-50%) anche qui per non farla spostare */
+    transform: translateY(-50%) scale(1.1); 
+}
+/* Mantieni le altre proprietà specifiche per i lati */
+.nav-left { 
+    left: 0; 
+    border-radius: 0 20px 20px 0;
+    border-left: none;
+}
+.nav-right { 
+    right: 0; 
+    border-radius: 20px 0 0 20px;
+    border-right: none;
+}
+/* Regolazione per Mobile */
+@media (max-width: 768px) {
+    .nav-zone { 
+        width: 50px; 
+        height: 30%; /* Leggermente più piccola su mobile se vuoi */
+        font-size: 2rem;
+        opacity: 0.6;
+    }
+}
          /* EDITOR & GRAPHICS */
          .editor {
          height: 100%; background-image: linear-gradient(transparent 31px, var(--line-color) 32px);
