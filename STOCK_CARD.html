@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Wallet Elite 3D - Ordinato A-Z</title>
+    <title>Smart Wallet Elite - XL Edition</title>
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -12,47 +12,89 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 
     <style>
-        :root { --bg: #0a0a0c; --accent: #007aff; --google: #4285F4; }
+        :root { --bg: #0a0a0c; --accent: #007aff; --google: #4285F4; --card: #1c1c1e; --success: #34c759; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: white; margin: 0; overflow-x: hidden; }
 
         header { padding: 40px 25px 20px; background: rgba(10,10,12,0.9); backdrop-filter: blur(20px); display: flex; justify-content: space-between; align-items: baseline; position: sticky; top: 0; z-index: 500; }
 
         #wallet { padding: 20px; display: flex; flex-direction: column; padding-bottom: 150px; }
-        .badge { width: 100%; height: 180px; border-radius: 20px; margin-bottom: -110px; position: relative; transition: all 0.3s ease; border-top: 1.5px solid rgba(255,255,255,0.25); box-shadow: 0 -10px 30px rgba(0,0,0,0.7); cursor: pointer; }
+        
+        .badge { 
+            width: 100%; 
+            height: 200px; 
+            border-radius: 24px; 
+            margin-bottom: -60px; 
+            position: relative; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            border-top: 1.5px solid rgba(255,255,255,0.3); 
+            box-shadow: 0 -15px 35px rgba(0,0,0,0.8); 
+            cursor: pointer;
+            overflow: hidden;
+        }
         .badge:last-child { margin-bottom: 0; }
-        .badge:active { transform: translateY(-30px) scale(1.02); z-index: 450 !important; }
+        .badge:active { transform: translateY(-40px) scale(1.03); z-index: 450 !important; }
         
-        .badge-header { padding: 20px; display: flex; align-items: center; gap: 15px; }
-        .badge-logo { width: 45px; height: 45px; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .badge-header { padding: 25px; display: flex; align-items: center; gap: 20px; }
+        
+        .badge-logo { 
+            width: 110px; 
+            height: 110px; 
+            background: white; 
+            border-radius: 18px; 
+            overflow: hidden; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            flex-shrink: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 5px;
+        }
         .badge-logo img { width: 100%; height: 100%; object-fit: contain; }
-        .badge-name { font-size: 18px; font-weight: 700; text-transform: uppercase; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .action-btns { display: flex; gap: 12px; }
-        .btn-icon { background: none; border: none; font-size: 20px; cursor: pointer; opacity: 0.6; padding: 5px; }
-
-        .overlay { position: fixed; inset: 0; background: #121214; z-index: 1000; display: none; padding: 25px; overflow-y: auto; }
-        .glass-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
-        input { width: 100%; background: #2c2c2e; border: none; padding: 18px; border-radius: 15px; color: white; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
         
-        .btn { padding: 16px; border-radius: 14px; font-weight: 700; border: none; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-google { background: var(--google); color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .badge-name { 
+            font-size: 24px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            flex: 1; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.6); 
+        }
+
+        .action-btns { display: flex; gap: 10px; position: absolute; right: 20px; bottom: 80px; z-index: 10; }
+        .btn-icon { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); font-size: 20px; cursor: pointer; padding: 12px; border-radius: 14px; color: white; backdrop-filter: blur(10px); }
+
+        .overlay { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; padding: 20px; overflow-y: auto; }
+        .wizard-section { background: var(--card); padding: 20px; border-radius: 25px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); }
+        .step-tag { background: var(--accent); color: white; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; display: inline-block; }
+        
+        input { width: 100%; background: #2c2c2e; border: 1px solid #444; padding: 16px; border-radius: 15px; color: white; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
+        
+        .logo-preview-box { width: 100%; height: 120px; background: #111; border-radius: 15px; display: flex; align-items: center; justify-content: center; border: 2px dashed #444; margin: 10px 0; }
+        .logo-preview-box img { max-height: 90%; max-width: 90%; object-fit: contain; }
+
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { padding: 16px; border-radius: 15px; font-weight: 700; border: none; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-primary { background: var(--accent); color: white; }
-        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-secondary { background: #3a3a3c; color: white; }
+        .btn-success { background: var(--success); color: white; margin-top: 15px; font-size: 18px; height: 65px; box-shadow: 0 10px 20px rgba(52,199,89,0.3); }
+        
+        .logo-grid { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; min-height: 80px; }
+        .logo-item { width: 70px; height: 70px; background: white; border-radius: 12px; flex-shrink: 0; padding: 6px; box-sizing: border-box; border: 3px solid transparent; transition: 0.2s; cursor: pointer; object-fit: contain; }
 
-        .fab { position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px; background: var(--accent); color: white; border-radius: 50%; font-size: 35px; border: none; box-shadow: 0 10px 30px rgba(0,122,255,0.4); z-index: 400; }
-        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
-        .logo-item { width: 100%; aspect-ratio: 1; background: white; border-radius: 10px; padding: 5px; box-sizing: border-box; }
-
+        .fab { position: fixed; bottom: 35px; right: 25px; width: 70px; height: 70px; background: var(--accent); color: white; border-radius: 50%; font-size: 40px; border: none; box-shadow: 0 15px 35px rgba(0,122,255,0.5); z-index: 400; }
+        
         #presenter { position: fixed; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: black; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 style="margin:0">Wallet</h1>
+        <h1 style="margin:0; font-size: 32px; font-weight: 800;">Wallet</h1>
         <div style="font-size: 14px;">
-            <span onclick="exportData()" style="color:var(--accent); font-weight:bold;">Backup</span> • 
-            <span onclick="document.getElementById('importFile').click()" style="color:var(--accent); font-weight:bold;">Ripristina</span>
+            <span onclick="exportData()" style="color:var(--accent); font-weight:bold; cursor:pointer;">Backup</span> • 
+            <span onclick="document.getElementById('importFile').click()" style="color:var(--accent); font-weight:bold; cursor:pointer;">Ripristina</span>
             <input type="file" id="importFile" style="display:none" onchange="importData(this)">
         </div>
     </header>
@@ -62,53 +104,53 @@
     <button class="fab" onclick="openCreator()">+</button>
 
     <div id="add-ui" class="overlay">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
             <h2 id="ui-title" style="margin:0">Nuova Card</h2>
-            <button onclick="closeCreator()" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:bold;">Chiudi</button>
+            <button onclick="closeCreator()" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:bold;">Esci</button>
         </div>
 
-        <div class="glass-card">
-            <input type="text" id="nameInp" placeholder="Nome Negozio..." oninput="searchLogos(this.value)">
+        <div class="wizard-section">
+            <span class="step-tag">1. NOME & RICERCA</span>
+            <input type="text" id="nameInp" placeholder="Cerca negozio (es: Conad, Lidl...)" oninput="searchLogos(this.value)">
             <div id="logoGrid" class="logo-grid"></div>
-
-            <button class="btn btn-google" onclick="searchOnGoogle()">
-                <img src="https://www.google.com/favicon.ico" width="18"> CERCA LOGO SU GOOGLE IMAGES
-            </button>
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn btn-ghost" onclick="document.getElementById('fileInp').click()">📷 CARICA FOTO</button>
-                <button class="btn btn-ghost" onclick="pasteUrl()">🔗 LINK URL</button>
-            </div>
-            <div style="font-size:11px; color:#888; text-align:center; margin-top:10px;">💡 Incolla un'immagine copiata (Ctrl+V)</div>
-            
-            <input type="file" id="fileInp" style="display:none" accept="image/*" onchange="handleFile(this.files[0])">
-
-            <div style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-                <input type="text" id="codeInp" placeholder="Codice tessera">
-                <button class="btn btn-primary" style="background:#34c759;" onclick="startScanner()">📷 SCANSIONA CODICE</button>
-            </div>
-            
-            <button class="btn btn-primary" id="saveBtn" style="margin-top:30px;" onclick="saveCard()">SALVA NEI BADGE</button>
         </div>
+
+        <div class="wizard-section">
+            <span class="step-tag">2. LOGO XL</span>
+            <div class="logo-preview-box" id="logoPreview">Anteprima Logo</div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="document.getElementById('fileInp').click()">🖼️ FOTO</button>
+                <button class="btn btn-secondary" onclick="pasteUrl()">🔗 URL</button>
+            </div>
+            <button class="btn btn-secondary" style="margin-top:12px; background:var(--google);" onclick="searchOnGoogle()">🔍 GOOGLE IMAGES</button>
+            <input type="file" id="fileInp" style="display:none" accept="image/*" onchange="handleFile(this.files[0])">
+        </div>
+
+        <div class="wizard-section">
+            <span class="step-tag">3. CODICE</span>
+            <input type="text" id="codeInp" placeholder="Codice tessera">
+            <button class="btn btn-primary" style="background:#34c759;" onclick="startScanner()">📷 SCANSIONA</button>
+        </div>
+
+        <button class="btn btn-success" id="saveBtn" onclick="saveCard()">SALVA NEL WALLET</button>
     </div>
 
-    <div id="scan-ui" class="overlay" style="background:black; z-index:1100;"><div id="reader"></div><button class="btn btn-ghost" onclick="stopScanner()">Annulla</button></div>
-    <div id="crop-ui" class="overlay" style="background:#000; z-index:1050;"><div style="height:70vh; overflow:hidden;"><img id="crop-img" style="max-width:100%;"></div><button class="btn btn-primary" onclick="finalizeCrop()">Ritaglia</button></div>
+    <div id="scan-ui" class="overlay" style="background:black; z-index:1100;"><div id="reader"></div><button class="btn btn-secondary" onclick="stopScanner()">Annulla</button></div>
+    <div id="crop-ui" class="overlay" style="background:#000; z-index:1050; display:none; flex-direction:column;"><div style="flex:1; overflow:hidden;"><img id="crop-img" style="max-width:100%;"></div><button class="btn btn-primary" onclick="finalizeCrop()">CONFERMA RITAGLIO</button></div>
 
     <div id="presenter" onclick="this.style.display='none'">
-        <div id="p-bg" style="position:absolute; top:0; width:100%; height:250px; z-index:-1;"></div>
-        <div style="background:white; padding:15px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); margin-bottom:20px;"><img id="p-logo" style="max-width:150px; max-height:70px; object-fit:contain;"></div>
-        <h2 id="p-name" style="margin-bottom:30px; font-size:24px; font-weight:800;"></h2>
+        <div id="p-bg" style="position:absolute; top:0; width:100%; height:280px; z-index:-1;"></div>
+        <div style="background:white; padding:20px; border-radius:25px; box-shadow:0 15px 40px rgba(0,0,0,0.1); margin-bottom:20px;"><img id="p-logo" style="max-width:200px; max-height:100px; object-fit:contain;"></div>
+        <h2 id="p-name" style="margin-bottom:30px; font-size:28px; font-weight:800;"></h2>
         <svg id="p-barcode"></svg>
-        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:6px; font-size:1.2rem; font-weight:bold;"></div>
+        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:8px; font-size:1.4rem; font-weight:bold;"></div>
     </div>
 
 <script>
-    let cards = JSON.parse(localStorage.getItem('wallet_3d_v4')) || [];
+    let cards = JSON.parse(localStorage.getItem('wallet_xl_v1')) || [];
     let curLogo = "", curColor = "#1c1c1e", cropper, html5QrCode, editId = null;
     const thief = new ColorThief();
 
-    // --- PASTE LISTENER ---
     window.addEventListener('paste', e => {
         if (document.getElementById('add-ui').style.display !== 'block') return;
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -119,7 +161,7 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = e => {
-            document.getElementById('crop-ui').style.display = 'block';
+            document.getElementById('crop-ui').style.display = 'flex';
             const img = document.getElementById('crop-img');
             img.src = e.target.result;
             if(cropper) cropper.destroy();
@@ -128,63 +170,76 @@
         reader.readAsDataURL(file);
     }
 
-    // --- LOGICA UI ---
     function openCreator(id = null) {
         editId = id;
+        document.getElementById('add-ui').style.display = 'block';
         if (id !== null) {
             const c = cards.find(x => x.id === id);
             document.getElementById('ui-title').innerText = "Modifica Card";
             document.getElementById('nameInp').value = c.name;
             document.getElementById('codeInp').value = c.code;
             curLogo = c.logo; curColor = c.color;
-            document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item" style="border:2px solid var(--accent)">`;
+            updatePreview(curLogo);
         } else {
             document.getElementById('ui-title').innerText = "Nuova Card";
-            document.getElementById('nameInp').value = ""; document.getElementById('codeInp').value = "";
-            document.getElementById('logoGrid').innerHTML = ""; curLogo = "";
+            document.getElementById('nameInp').value = ""; 
+            document.getElementById('codeInp').value = "";
+            document.getElementById('logoPreview').innerHTML = "Anteprima Logo"; 
+            curLogo = "";
+            document.getElementById('logoGrid').innerHTML = "";
         }
-        document.getElementById('add-ui').style.display = 'block';
     }
 
-    function closeCreator() { document.getElementById('add-ui').style.display = 'none'; }
+    function closeCreator() { document.getElementById('add-ui').style.display = 'none'; editId = null; }
 
-    function saveCard() {
-        const name = document.getElementById('nameInp').value.trim();
-        const code = document.getElementById('codeInp').value.trim();
-        if(!name || !code || !curLogo) return alert("Dati mancanti!");
-        
-        const cardData = { id: editId || Date.now(), name, code, logo: curLogo, color: curColor };
-        
-        if (editId !== null) {
-            const idx = cards.findIndex(c => c.id === editId);
-            cards[idx] = cardData;
-        } else { cards.push(cardData); }
-
-        localStorage.setItem('wallet_3d_v4', JSON.stringify(cards));
-        location.reload();
+    function updatePreview(src) {
+        const box = document.getElementById('logoPreview');
+        box.innerHTML = `<img src="${src}">`;
     }
 
-    // --- MEDIA ---
-    function searchOnGoogle() { window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(document.getElementById('nameInp').value)}+logo+png+transparent`, '_blank'); }
-
+    let searchTimeout;
     async function searchLogos(val) {
+        clearTimeout(searchTimeout);
         const grid = document.getElementById('logoGrid');
-        if(val.length < 2) return;
-        const clean = val.toLowerCase().trim().replace(/\s/g, '');
-        const url = `https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.it&w=200`;
-        const img = new Image(); img.crossOrigin = "anonymous";
-        img.onload = () => {
+        if(val.length < 2) { grid.innerHTML = ""; return; }
+        
+        searchTimeout = setTimeout(() => {
+            const query = val.toLowerCase().trim().replace(/\s/g, '');
             grid.innerHTML = "";
-            const el = document.createElement('img'); el.src = url; el.className = 'logo-item';
-            el.onclick = () => {
-                const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
-                canvas.getContext('2d').drawImage(img, 0, 0); curLogo = canvas.toDataURL();
-                try { curColor = `rgb(${thief.getColor(img).join(',')})`; } catch(e) {}
-                grid.innerHTML = `<img src="${curLogo}" class="logo-item" style="border-color:var(--accent)">`;
+            const variants = [ `${query}.it`, `${query}.com`, query ];
+            variants.forEach(domain => {
+                addLogoOption(`https://logo.clearbit.com/${domain}`);
+                addLogoOption(`https://www.google.com/s2/favicons?sz=128&domain_url=${domain}`);
+            });
+        }, 600);
+    }
+
+    function addLogoOption(rawUrl) {
+        const grid = document.getElementById('logoGrid');
+        const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=128&n=-1`;
+        
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.className = 'logo-item';
+        img.onload = () => {
+            if (img.naturalWidth <= 16) return;
+            img.onclick = () => {
+                // CORREZIONE: naturalWidth/Height per mantenere l'immagine intera
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                curLogo = canvas.toDataURL();
+                try { 
+                    const rgb = thief.getColor(img);
+                    curColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                } catch(e) { curColor = "#1c1c1e"; }
+                updatePreview(curLogo);
+                document.querySelectorAll('.logo-item').forEach(i => i.style.borderColor="transparent");
+                img.style.borderColor = "var(--accent)";
             };
-            grid.appendChild(el);
+            grid.appendChild(img);
         };
-        img.src = url;
+        img.src = proxiedUrl;
     }
 
     function finalizeCrop() {
@@ -193,9 +248,27 @@
         temp.onload = () => {
             try { curColor = `rgb(${thief.getColor(temp).join(',')})`; } catch(e) {}
             document.getElementById('crop-ui').style.display = 'none';
-            document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
+            updatePreview(curLogo);
         };
         temp.src = curLogo;
+    }
+
+    function saveCard() {
+        const name = document.getElementById('nameInp').value.trim();
+        const code = document.getElementById('codeInp').value.trim();
+        if(!name || !code || !curLogo) return alert("Dati incompleti!");
+        
+        const cardData = { id: editId || Date.now(), name, code, logo: curLogo, color: curColor };
+        if (editId !== null) {
+            const index = cards.findIndex(c => c.id === editId);
+            cards[index] = cardData;
+        } else {
+            cards.push(cardData);
+        }
+
+        localStorage.setItem('wallet_xl_v1', JSON.stringify(cards));
+        closeCreator();
+        render();
     }
 
     function startScanner() {
@@ -203,58 +276,52 @@
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (txt) => {
             document.getElementById('codeInp').value = txt;
-            if (navigator.vibrate) navigator.vibrate(80);
             stopScanner();
         });
     }
 
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scan-ui').style.display = 'none'); }
-
+    function searchOnGoogle() { window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(document.getElementById('nameInp').value)}+logo+png`, '_blank'); }
+    
     function pasteUrl() {
-        const url = prompt("Link immagine:");
+        const url = prompt("Incolla URL logo:");
         if(url) {
             const img = new Image(); img.crossOrigin = "anonymous";
             img.onload = () => {
                 const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
                 cv.getContext('2d').drawImage(img, 0, 0); curLogo = cv.toDataURL();
-                document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
+                updatePreview(curLogo);
             };
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400`;
         }
     }
 
-    // --- RENDER (Con Ordinamento Alfabetico) ---
     function render() {
         const wallet = document.getElementById('wallet');
-        
-        // 1. Ordina l'array 'cards' alfabeticamente per nome
-        cards.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-
-        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.4; margin-top:100px;'>Nessuna tessera salvata</p>";
+        cards.sort((a, b) => a.name.localeCompare(b.name));
+        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.3; margin-top:100px;'>Nessuna tessera</p>";
         
         cards.forEach((c, i) => {
             const div = document.createElement('div');
             div.className = 'badge';
             div.style.backgroundColor = c.color;
-            div.style.zIndex = i; // Z-index dinamico per mantenere lo stack
-            
+            div.style.zIndex = i;
             div.onclick = () => {
                 document.getElementById('p-logo').src = c.logo;
                 document.getElementById('p-name').innerText = c.name;
                 document.getElementById('p-code').innerText = c.code;
                 document.getElementById('p-bg').style.backgroundColor = c.color;
                 document.getElementById('presenter').style.display = 'flex';
-                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 110, displayValue: false });
+                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.8, height: 120, displayValue: false });
             };
-
             div.innerHTML = `
                 <div class="badge-header">
                     <div class="badge-logo"><img src="${c.logo}"></div>
                     <div class="badge-name">${c.name}</div>
-                    <div class="action-btns">
-                        <button class="btn-icon" onclick="event.stopPropagation(); openCreator(${c.id})">✏️</button>
-                        <button class="btn-icon" onclick="event.stopPropagation(); if(confirm('Elimina ${c.name}?')){deleteCard(${c.id});}">🗑️</button>
-                    </div>
+                </div>
+                <div class="action-btns">
+                    <button class="btn-icon" onclick="event.stopPropagation(); openCreator(${c.id})">✏️</button>
+                    <button class="btn-icon" onclick="event.stopPropagation(); if(confirm('Eliminare ${c.name.replace(/'/g, "\\'")}?')){deleteCard(${c.id});}">🗑️</button>
                 </div>`;
             wallet.appendChild(div);
         });
@@ -262,7 +329,7 @@
 
     function deleteCard(id) {
         cards = cards.filter(c => c.id !== id);
-        localStorage.setItem('wallet_3d_v4', JSON.stringify(cards));
+        localStorage.setItem('wallet_xl_v1', JSON.stringify(cards));
         render();
     }
 
@@ -273,7 +340,7 @@
 
     function importData(input) {
         const reader = new FileReader();
-        reader.onload = e => { cards = JSON.parse(e.target.result); localStorage.setItem('wallet_3d_v4', JSON.stringify(cards)); render(); };
+        reader.onload = e => { cards = JSON.parse(e.target.result); localStorage.setItem('wallet_xl_v1', JSON.stringify(cards)); render(); };
         reader.readAsText(input.files[0]);
     }
 
