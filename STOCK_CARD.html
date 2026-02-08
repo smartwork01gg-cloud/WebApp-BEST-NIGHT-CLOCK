@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Wallet Elite</title>
+    <title>Smart Wallet Elite - Scan Fix</title>
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 
     <style>
-        :root { --bg: #000; --accent: #007aff; }
+        :root { --bg: #000; --accent: #007aff; --card-bg: #1c1c1e; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             background: var(--bg); color: white; margin: 0; overflow-x: hidden;
         }
 
@@ -22,158 +23,129 @@
             display: flex; justify-content: space-between; align-items: flex-end;
             position: sticky; top: 0; z-index: 100;
         }
-        header h1 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+        header h1 { margin: 0; font-size: 32px; font-weight: 800; }
 
-        /* Effetto Stacked Badge */
-        #wallet { 
-            padding: 20px; display: flex; flex-direction: column; 
-            margin-top: 10px; padding-bottom: 120px;
-        }
-
+        /* Stacked Layout */
+        #wallet { padding: 20px; display: flex; flex-direction: column; padding-bottom: 120px; }
         .badge {
             width: 100%; height: 180px; border-radius: 20px;
-            margin-bottom: -130px; /* Sovrapposizione cruciale */
-            position: relative; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
-            cursor: pointer; display: flex; flex-direction: column;
+            margin-bottom: -130px; position: relative; 
+            transition: transform 0.3s ease;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
         }
-
         .badge:last-child { margin-bottom: 0; }
-        
-        /* Animazione al tocco */
-        .badge:active { transform: translateY(-20px) scale(1.02); z-index: 50 !important; }
+        .badge:active { transform: translateY(-30px); z-index: 90 !important; }
 
-        .badge-header {
-            padding: 15px 20px; display: flex; align-items: center; gap: 15px;
-        }
+        .badge-header { padding: 18px 20px; display: flex; align-items: center; gap: 15px; }
+        .badge-logo { width: 45px; height: 45px; background: white; border-radius: 12px; padding: 4px; }
+        .badge-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .badge-name { font-size: 18px; font-weight: 700; text-transform: uppercase; }
 
-        .badge-logo-container {
-            width: 45px; height: 45px; background: white; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; padding: 4px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .badge-logo-container img { width: 100%; height: 100%; object-fit: contain; }
-
-        .badge-name { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* Overlay Creazione Moderno */
+        /* Overlays */
         .overlay { 
-            position: fixed; inset: 0; background: #1c1c1e; z-index: 500; 
-            display: none; padding: 25px; overflow-y: auto; border-radius: 30px 30px 0 0;
-            transform: translateY(100%); transition: transform 0.4s ease;
-        }
-        .overlay.active { display: block; transform: translateY(0); }
-
-        .glass-card {
-            background: rgba(255,255,255,0.05); padding: 25px; border-radius: 25px;
-            border: 1px solid rgba(255,255,255,0.1); margin-top: 20px;
-        }
-
-        input {
-            width: 100%; background: #2c2c2e; border: none; padding: 18px;
-            border-radius: 15px; color: white; font-size: 16px; margin-bottom: 15px; box-sizing: border-box;
-        }
-
-        .btn {
-            padding: 18px; border-radius: 15px; font-weight: 700; border: none;
-            cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s;
-        }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-ghost { background: rgba(255,255,255,0.1); color: white; margin-top: 10px; }
-
-        .fab {
-            position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px;
-            background: var(--accent); color: white; border-radius: 50%;
-            font-size: 35px; border: none; box-shadow: 0 15px 35px rgba(0,122,255,0.4); z-index: 200;
-        }
-
-        /* Presenter Codice a Barre */
-        #presenter {
-            position: fixed; inset: 0; background: white; z-index: 1000;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            color: black; animation: slideUp 0.3s ease;
+            position: fixed; inset: 0; background: var(--card-bg); z-index: 500; 
+            display: none; padding: 25px; overflow-y: auto; 
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        .crop-container { height: 300px; background: #000; border-radius: 20px; overflow: hidden; margin: 15px 0; }
+        .glass-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.1); }
         
+        input { width: 100%; background: #2c2c2e; border: none; padding: 18px; border-radius: 15px; color: white; font-size: 16px; margin-bottom: 12px; box-sizing: border-box; }
+        
+        .btn { padding: 16px; border-radius: 14px; font-weight: 700; border: none; cursor: pointer; font-size: 15px; width: 100%; margin-top: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+
+        /* Scanner */
+        #scanner-container { height: 300px; border-radius: 20px; overflow: hidden; margin: 15px 0; background: #000; position: relative; }
+        
+        .fab { position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px; background: var(--accent); color: white; border-radius: 50%; font-size: 35px; border: none; box-shadow: 0 10px 30px rgba(0,122,255,0.4); z-index: 200; }
+
+        #presenter { position: fixed; inset: 0; background: white; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; color: black; }
         .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0; }
-        .logo-item { width: 100%; aspect-ratio: 1; background: white; border-radius: 10px; padding: 5px; box-sizing: border-box; }
+        .logo-item { width: 100%; aspect-ratio: 1; background: white; border-radius: 10px; padding: 5px; box-sizing: border-box; border: 2px solid transparent; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Wallet</h1>
-        <div style="display:flex; gap:15px;">
-            <span onclick="document.getElementById('importFile').click()" style="color:var(--accent); font-weight:600;">Importa</span>
-            <span onclick="exportData()" style="color:var(--accent); font-weight:600;">Backup</span>
+        <div style="font-size: 14px; font-weight: 600; color: var(--accent);">
+            <span onclick="exportData()">Backup</span> • <span onclick="document.getElementById('importFile').click()">Importa</span>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
         </div>
-        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
     </header>
 
     <div id="wallet"></div>
 
-    <button class="fab" onclick="toggleOverlay(true)">+</button>
+    <button class="fab" onclick="showAddUI(true)">+</button>
 
     <div id="add-ui" class="overlay">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="margin:0">Nuova Tessera</h2>
-            <button onclick="toggleOverlay(false)" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:600;">Chiudi</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0">Nuova Card</h2>
+            <button onclick="showAddUI(false)" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:600;">Annulla</button>
         </div>
 
         <div class="glass-card">
-            <input type="text" id="nameInp" placeholder="Nome Negozio..." oninput="searchLogos(this.value)">
+            <input type="text" id="nameInp" placeholder="Nome Negozio (es: Coop)" oninput="searchLogos(this.value)">
             <div id="logoGrid" class="logo-grid"></div>
             
-            <button class="btn btn-ghost" onclick="window.open('https://www.google.com/search?tbm=isch&q=' + document.getElementById('nameInp').value + '+logo+png', '_blank')">🔍 Cerca su Google Immagini</button>
+            <button class="btn btn-secondary" onclick="window.open('https://www.google.com/search?tbm=isch&q=' + document.getElementById('nameInp').value + '+logo+png', '_blank')">🔍 Cerca su Google</button>
             
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <button class="btn btn-ghost" onclick="document.getElementById('fileInp').click()">📷 Carica / Foto</button>
-                <button class="btn btn-ghost" onclick="pasteFromUrl()">🔗 Incolla Link</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('fileInp').click()">📷 Foto/File</button>
+                <input type="file" id="fileInp" style="display:none" accept="image/*" onchange="startCrop(this)">
+                <button class="btn btn-secondary" onclick="pasteUrl()">🔗 Link</button>
             </div>
-            <input type="file" id="fileInp" style="display:none" accept="image/*" onchange="startCrop(this)">
 
-            <input type="text" id="codeInp" placeholder="Codice a barre..." style="margin-top:20px;">
-            <button class="btn btn-primary" id="saveBtn" style="margin-top:20px; opacity:0.3" disabled onclick="saveCard()">Aggiungi al Wallet</button>
+            <div style="margin-top:25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:20px;">
+                <input type="text" id="codeInp" placeholder="Codice a barre">
+                <button class="btn btn-primary" style="background:#34c759;" onclick="startScanner()">📷 SCANSIONA CODICE</button>
+            </div>
+            
+            <button class="btn btn-primary" id="saveBtn" style="margin-top:40px; opacity:0.3" disabled onclick="saveCard()">Salva nel Wallet</button>
         </div>
+    </div>
+
+    <div id="scan-ui" class="overlay" style="background:black; z-index:700;">
+        <h3 style="text-align:center;">Inquadra il codice</h3>
+        <div id="reader" style="width:100%; border-radius:20px; overflow:hidden;"></div>
+        <button class="btn btn-secondary" onclick="stopScanner()">Chiudi Fotocamera</button>
     </div>
 
     <div id="crop-ui" class="overlay" style="background:#000; z-index:600;">
-        <div class="crop-container"><img id="crop-img" style="max-width:100%;"></div>
+        <div style="height:70vh; position:relative;"><img id="crop-img" style="max-width:100%;"></div>
         <button class="btn btn-primary" onclick="finalizeCrop()">Conferma Ritaglio</button>
-        <button class="btn btn-ghost" onclick="document.getElementById('crop-ui').classList.remove('active')">Annulla</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('crop-ui').style.display='none'">Annulla</button>
     </div>
 
     <div id="presenter" onclick="this.style.display='none'">
-        <div id="p-bg" style="position:absolute; top:0; width:100%; height:220px; z-index:-1;"></div>
-        <div style="background:white; padding:15px; border-radius:20px; box-shadow:0 20px 40px rgba(0,0,0,0.2); margin-bottom:20px;">
-            <img id="p-logo" style="max-width:150px; max-height:70px; object-fit:contain;">
+        <div id="p-bg" style="position:absolute; top:0; width:100%; height:250px; z-index:-1;"></div>
+        <div style="background:white; padding:15px; border-radius:20px; box-shadow:0 15px 40px rgba(0,0,0,0.1); margin-bottom:25px;">
+            <img id="p-logo" style="max-width:160px; max-height:80px; object-fit:contain;">
         </div>
-        <h2 id="p-name" style="margin-bottom:40px; font-size:24px; font-weight:800;"></h2>
+        <h2 id="p-name" style="margin:0 0 30px 0; font-size:26px; font-weight:800;"></h2>
         <svg id="p-barcode"></svg>
-        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:8px; font-size:1.2rem; font-weight:bold;"></div>
-        <p style="margin-top:50px; color:#888; font-size:12px;">Tocca per chiudere</p>
+        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:6px; font-size:1.3rem; font-weight:bold;"></div>
     </div>
 
 <script>
-    let cards = JSON.parse(localStorage.getItem('wallet_elite_v1')) || [];
-    let curLogo = "", curColor = "#007aff", cropper;
+    let cards = JSON.parse(localStorage.getItem('wallet_stacked_v2')) || [];
+    let curLogo = "", curColor = "#1c1c1e", cropper, html5QrCode;
     const thief = new ColorThief();
 
-    function toggleOverlay(show) {
-        document.getElementById('add-ui').classList.toggle('active', show);
-    }
+    function showAddUI(show) { document.getElementById('add-ui').style.display = show ? 'block' : 'none'; }
 
-    // --- RICERCA LOGHI HD ---
+    // --- RICERCA LOGHI ---
     async function searchLogos(val) {
         const grid = document.getElementById('logoGrid');
         if(val.length < 2) { grid.innerHTML = ""; return; }
         const clean = val.toLowerCase().trim().replace(/\s/g, '');
         const urls = [
-            `https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.it&w=128`,
-            `https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.com&w=128`,
+            `https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.it&w=150`,
             `https://wsrv.nl/?url=https://www.google.com/s2/favicons?domain=${clean}.it&sz=128`
         ];
         grid.innerHTML = "";
@@ -183,22 +155,43 @@
             img.onload = () => {
                 const el = document.createElement('img');
                 el.src = url; el.className = 'logo-item';
-                el.onclick = () => selectLogo(img);
+                el.onclick = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    curLogo = canvas.toDataURL();
+                    try { curColor = `rgb(${thief.getColor(img).join(',')})`; } catch(e) { curColor = "#1c1c1e"; }
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('saveBtn').style.opacity = 1;
+                    grid.innerHTML = `<img src="${curLogo}" class="logo-item" style="border-color:var(--accent)">`;
+                };
                 grid.appendChild(el);
             };
             img.src = url;
         });
     }
 
-    function selectLogo(img) {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        curLogo = canvas.toDataURL();
-        try { curColor = `rgb(${thief.getColor(img).join(',')})`; } catch(e) { curColor = "#1c1c1e"; }
-        document.getElementById('saveBtn').disabled = false;
-        document.getElementById('saveBtn').style.opacity = 1;
-        document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item" style="border:3px solid var(--accent)">`;
+    // --- SCANNER CAMERA ---
+    function startScanner() {
+        document.getElementById('scan-ui').style.display = 'block';
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 15, qrbox: { width: 250, height: 150 } },
+            (decodedText) => {
+                document.getElementById('codeInp').value = decodedText;
+                if (navigator.vibrate) navigator.vibrate(100);
+                stopScanner();
+            }
+        ).catch(err => alert("Errore camera: " + err));
+    }
+
+    function stopScanner() {
+        if(html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('scan-ui').style.display = 'none';
+            });
+        }
     }
 
     // --- RITAGLIO LIBERO ---
@@ -206,7 +199,7 @@
         if (!input.files[0]) return;
         const reader = new FileReader();
         reader.onload = e => {
-            document.getElementById('crop-ui').classList.add('active');
+            document.getElementById('crop-ui').style.display = 'block';
             const img = document.getElementById('crop-img');
             img.src = e.target.result;
             if(cropper) cropper.destroy();
@@ -223,34 +216,53 @@
             try { curColor = `rgb(${thief.getColor(temp).join(',')})`; } catch(e) {}
             document.getElementById('saveBtn').disabled = false;
             document.getElementById('saveBtn').style.opacity = 1;
-            document.getElementById('crop-ui').classList.remove('active');
+            document.getElementById('crop-ui').style.display = 'none';
             document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
         };
         temp.src = curLogo;
     }
 
-    // --- LOGICA CORE ---
+    function pasteUrl() {
+        const url = prompt("Incolla indirizzo immagine:");
+        if(url) {
+            const proxied = `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400`;
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                curLogo = canvas.toDataURL();
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').style.opacity = 1;
+                document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
+            };
+            img.src = proxied;
+        }
+    }
+
+    // --- CORE ---
     function saveCard() {
         cards.push({ id: Date.now(), name: document.getElementById('nameInp').value, code: document.getElementById('codeInp').value, logo: curLogo, color: curColor });
-        localStorage.setItem('wallet_elite_v1', JSON.stringify(cards));
+        localStorage.setItem('wallet_stacked_v2', JSON.stringify(cards));
         location.reload();
     }
 
     function render() {
         const wallet = document.getElementById('wallet');
-        wallet.innerHTML = "";
-        cards.forEach((c, index) => {
+        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.5; margin-top:100px;'>Tocca + per aggiungere una tessera</p>";
+        cards.forEach((c, i) => {
             const div = document.createElement('div');
             div.className = 'badge';
             div.style.backgroundColor = c.color;
-            div.style.zIndex = index;
+            div.style.zIndex = i;
             div.onclick = () => showCard(c);
             div.innerHTML = `
                 <div class="badge-header">
-                    <div class="badge-logo-container"><img src="${c.logo}"></div>
+                    <div class="badge-logo"><img src="${c.logo}"></div>
                     <div class="badge-name">${c.name}</div>
                     <div style="flex:1; text-align:right;" onclick="deleteCard(${c.id}, event)">
-                        <span style="opacity:0.5; font-size:20px;">&times;</span>
+                        <span style="opacity:0.4; font-size:24px;">&times;</span>
                     </div>
                 </div>
             `;
@@ -269,9 +281,9 @@
 
     function deleteCard(id, e) {
         e.stopPropagation();
-        if(confirm("Rimuovere questa tessera?")) {
+        if(confirm("Eliminare?")) {
             cards = cards.filter(x => x.id !== id);
-            localStorage.setItem('wallet_elite_v1', JSON.stringify(cards));
+            localStorage.setItem('wallet_stacked_v2', JSON.stringify(cards));
             render();
         }
     }
@@ -279,7 +291,7 @@
     function exportData() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(cards)], {type:'application/json'}));
-        a.download = 'wallet_backup.json';
+        a.download = 'backup_wallet.json';
         a.click();
     }
 
@@ -287,7 +299,7 @@
         const reader = new FileReader();
         reader.onload = e => {
             cards = JSON.parse(e.target.result);
-            localStorage.setItem('wallet_elite_v1', JSON.stringify(cards));
+            localStorage.setItem('wallet_stacked_v2', JSON.stringify(cards));
             render();
         };
         reader.readAsText(input.files[0]);
