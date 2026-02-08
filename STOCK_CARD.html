@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Wallet 3D Elite</title>
+    <title>Smart Wallet Elite 3D - Edit Mode</title>
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -12,187 +12,166 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 
     <style>
-        :root { --bg: #0a0a0c; --accent: #007aff; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
-            background: var(--bg); color: white; margin: 0; overflow-x: hidden;
-        }
+        :root { --bg: #0a0a0c; --accent: #007aff; --google: #4285F4; --edit: #ff9f0a; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: white; margin: 0; overflow-x: hidden; }
 
-        header { 
-            padding: 45px 25px 25px; background: rgba(10,10,12,0.9); backdrop-filter: blur(25px);
-            display: flex; justify-content: space-between; align-items: baseline;
-            position: sticky; top: 0; z-index: 500;
-        }
-        header h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+        header { padding: 40px 25px 20px; background: rgba(10,10,12,0.9); backdrop-filter: blur(20px); display: flex; justify-content: space-between; align-items: baseline; position: sticky; top: 0; z-index: 500; }
 
-        /* Stacked 3D Layout */
-        #wallet { 
-            padding: 20px; display: flex; flex-direction: column; 
-            padding-bottom: 150px; perspective: 1000px;
-        }
-
-        .badge {
-            width: 100%; height: 200px; border-radius: 20px;
-            /* Aumentato il margine visibile per non coprire i loghi */
-            margin-bottom: -115px; 
-            position: relative; transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-            
-            /* Effetto 3D Spessore */
-            border-top: 1.5px solid rgba(255,255,255,0.3);
-            border-left: 0.5px solid rgba(255,255,255,0.1);
-            box-shadow: 
-                0 -8px 20px rgba(0,0,0,0.8),
-                inset 0 10px 10px rgba(255,255,255,0.05); /* Riflesso interno */
-            
-            cursor: pointer; overflow: hidden;
-        }
-
+        #wallet { padding: 20px; display: flex; flex-direction: column; padding-bottom: 150px; }
+        .badge { width: 100%; height: 180px; border-radius: 20px; margin-bottom: -110px; position: relative; transition: all 0.3s ease; border-top: 1.5px solid rgba(255,255,255,0.25); box-shadow: 0 -10px 30px rgba(0,0,0,0.7); cursor: pointer; }
         .badge:last-child { margin-bottom: 0; }
-        
-        /* Animazione hover/tocco */
-        .badge:active { transform: translateY(-35px) rotateX(5deg); z-index: 100 !important; }
+        .badge:active { transform: translateY(-30px) scale(1.02); z-index: 100 !important; }
 
-        .badge-header {
-            padding: 22px 20px; display: flex; align-items: center; gap: 18px;
-        }
-
-        .badge-logo {
-            width: 48px; height: 48px; background: white; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; padding: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            border: 0.5px solid rgba(0,0,0,0.1);
-        }
+        .badge-header { padding: 20px; display: flex; align-items: center; gap: 15px; }
+        .badge-logo { width: 45px; height: 45px; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .badge-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .badge-name { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; flex: 1; }
 
-        .badge-name { 
-            font-size: 19px; font-weight: 700; text-transform: uppercase; 
-            letter-spacing: 0.8px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+        .action-btns { display: flex; gap: 15px; align-items: center; }
+        .btn-icon { background: none; border: none; font-size: 22px; cursor: pointer; padding: 5px; opacity: 0.5; transition: 0.2s; }
+        .btn-icon:hover { opacity: 1; }
 
-        /* Overlay & Scanner (Stessa logica precedente, Grafica aggiornata) */
         .overlay { position: fixed; inset: 0; background: #121214; z-index: 1000; display: none; padding: 25px; overflow-y: auto; }
-        .glass-card { background: rgba(255,255,255,0.03); padding: 25px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.08); }
+        .glass-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        input { width: 100%; background: #2c2c2e; border: none; padding: 18px; border-radius: 15px; color: white; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
         
-        input { width: 100%; background: #242426; border: none; padding: 18px; border-radius: 15px; color: white; font-size: 16px; margin-bottom: 12px; outline: none; box-sizing: border-box; }
-        
-        .btn { padding: 18px; border-radius: 16px; font-weight: 700; border: none; cursor: pointer; font-size: 16px; transition: 0.3s; width: 100%; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
-        .btn-ghost { background: rgba(255,255,255,0.08); color: white; margin-top: 10px; }
+        .btn { padding: 16px; border-radius: 14px; font-weight: 700; border: none; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
+        .btn-google { background: var(--google); color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
 
-        .fab { position: fixed; bottom: 35px; right: 25px; width: 68px; height: 68px; background: var(--accent); color: white; border-radius: 50%; font-size: 35px; border: none; box-shadow: 0 12px 30px rgba(0,122,255,0.4); z-index: 400; }
+        .fab { position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px; background: var(--accent); color: white; border-radius: 50%; font-size: 35px; border: none; box-shadow: 0 10px 30px rgba(0,122,255,0.4); z-index: 400; }
+        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .logo-item { width: 100%; aspect-ratio: 1; background: white; border-radius: 10px; padding: 5px; box-sizing: border-box; border: 2px solid transparent; }
 
-        #presenter { position: fixed; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: black; padding: 20px; }
-        .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 15px 0; }
-        .logo-item { width: 100%; aspect-ratio: 1; background: white; border-radius: 12px; padding: 6px; box-sizing: border-box; }
+        #presenter { position: fixed; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: black; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Wallet</h1>
-        <div style="font-size: 14px; font-weight: 600;">
-            <span onclick="exportData()" style="color:var(--accent);">Backup</span> • 
-            <span onclick="document.getElementById('importFile').click()" style="color:var(--accent);">Ripristina</span>
+        <h1 style="margin:0">Wallet</h1>
+        <div style="font-size: 14px;">
+            <span onclick="exportData()" style="color:var(--accent); font-weight:bold;">Backup</span> • 
+            <span onclick="document.getElementById('importFile').click()" style="color:var(--accent); font-weight:bold;">Ripristina</span>
             <input type="file" id="importFile" style="display:none" onchange="importData(this)">
         </div>
     </header>
 
     <div id="wallet"></div>
 
-    <button class="fab" onclick="document.getElementById('add-ui').style.display='block'">+</button>
+    <button class="fab" onclick="openCreator()">+</button>
 
     <div id="add-ui" class="overlay">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h2 style="margin:0">Nuova Card</h2>
-            <button onclick="document.getElementById('add-ui').style.display='none'" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:600;">Chiudi</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 id="ui-title" style="margin:0">Nuova Card</h2>
+            <button onclick="closeCreator()" style="background:none; border:none; color:var(--accent); font-size:18px; font-weight:bold;">Chiudi</button>
         </div>
 
         <div class="glass-card">
-            <input type="text" id="nameInp" placeholder="Nome (es: Esselunga, Coop)" oninput="searchLogos(this.value)">
+            <input type="text" id="nameInp" placeholder="Nome Negozio..." oninput="searchLogos(this.value)">
             <div id="logoGrid" class="logo-grid"></div>
+
+            <button class="btn btn-google" onclick="searchOnGoogle()">
+                <img src="https://www.google.com/favicon.ico" width="18"> CERCA LOGO SU GOOGLE IMAGES
+            </button>
             
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
-                <button class="btn btn-ghost" onclick="document.getElementById('fileInp').click()">📷 Foto/File</button>
-                <button class="btn btn-ghost" onclick="pasteUrl()">🔗 Link</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn btn-ghost" onclick="document.getElementById('fileInp').click()">📷 FOTO/FILE</button>
+                <button class="btn btn-ghost" onclick="pasteUrl()">🔗 INCOLLA LINK</button>
             </div>
             <input type="file" id="fileInp" style="display:none" accept="image/*" onchange="startCrop(this)">
 
-            <div style="margin-top:25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:25px;">
-                <input type="text" id="codeInp" placeholder="Numero tessera">
+            <div style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+                <input type="text" id="codeInp" placeholder="Codice tessera">
                 <button class="btn btn-primary" style="background:#34c759;" onclick="startScanner()">📷 SCANSIONA CODICE</button>
             </div>
             
-            <button class="btn btn-primary" id="saveBtn" style="margin-top:40px; opacity:0.3" disabled onclick="saveCard()">SALVA BADGE</button>
+            <button class="btn btn-primary" id="saveBtn" style="margin-top:30px;" onclick="saveCard()">SALVA MODIFICHE</button>
         </div>
     </div>
 
-    <div id="scan-ui" class="overlay" style="background:black; z-index:1100; text-align:center;">
-        <div id="reader" style="width:100%; border-radius:20px; overflow:hidden; margin-top:50px;"></div>
-        <button class="btn btn-ghost" onclick="stopScanner()">Annulla</button>
-    </div>
-
-    <div id="crop-ui" class="overlay" style="background:#000; z-index:1050;">
-        <div style="height:75vh; overflow:hidden;"><img id="crop-img" style="max-width:100%;"></div>
-        <button class="btn btn-primary" onclick="finalizeCrop()">Conferma</button>
-        <button class="btn btn-ghost" onclick="document.getElementById('crop-ui').style.display='none'">Esci</button>
-    </div>
+    <div id="scan-ui" class="overlay" style="background:black; z-index:1100;"><div id="reader"></div><button class="btn btn-ghost" onclick="stopScanner()">Annulla</button></div>
+    <div id="crop-ui" class="overlay" style="background:#000; z-index:1050;"><div style="height:70vh; overflow:hidden;"><img id="crop-img" style="max-width:100%;"></div><button class="btn btn-primary" onclick="finalizeCrop()">Ritaglia</button></div>
 
     <div id="presenter" onclick="this.style.display='none'">
-        <div id="p-bg" style="position:absolute; top:0; width:100%; height:260px; z-index:-1;"></div>
-        <div style="background:white; padding:15px; border-radius:22px; box-shadow:0 20px 50px rgba(0,0,0,0.15); margin-bottom:25px;">
-            <img id="p-logo" style="max-width:160px; max-height:80px; object-fit:contain;">
-        </div>
-        <h2 id="p-name" style="margin:0 0 35px 0; font-size:28px; font-weight:800; text-transform:uppercase;"></h2>
+        <div id="p-bg" style="position:absolute; top:0; width:100%; height:250px; z-index:-1;"></div>
+        <div style="background:white; padding:15px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); margin-bottom:20px;"><img id="p-logo" style="max-width:150px; max-height:70px; object-fit:contain;"></div>
+        <h2 id="p-name" style="margin-bottom:30px; font-size:24px; font-weight:800;"></h2>
         <svg id="p-barcode"></svg>
-        <div id="p-code" style="font-family:monospace; margin-top:25px; letter-spacing:8px; font-size:1.4rem; font-weight:bold;"></div>
+        <div id="p-code" style="font-family:monospace; margin-top:20px; letter-spacing:6px; font-size:1.2rem; font-weight:bold;"></div>
     </div>
 
 <script>
-    let cards = JSON.parse(localStorage.getItem('wallet_3d_v1')) || [];
-    let curLogo = "", curColor = "#1c1c1e", cropper, html5QrCode;
+    let cards = JSON.parse(localStorage.getItem('wallet_3d_final')) || [];
+    let curLogo = "", curColor = "#1c1c1e", cropper, html5QrCode, editId = null;
     const thief = new ColorThief();
 
-    // --- LOGICA RENDERING ---
-    function render() {
-        const wallet = document.getElementById('wallet');
-        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.4; margin-top:120px;'>Tocca + per iniziare</p>";
-        cards.forEach((c, i) => {
-            const div = document.createElement('div');
-            div.className = 'badge';
-            div.style.backgroundColor = c.color;
-            div.style.zIndex = i;
-            div.onclick = () => showCard(c);
-            div.innerHTML = `
-                <div class="badge-header">
-                    <div class="badge-logo"><img src="${c.logo}"></div>
-                    <div class="badge-name">${c.name}</div>
-                    <div style="flex:1; text-align:right;" onclick="deleteCard(${c.id}, event)">
-                        <span style="opacity:0.4; font-size:26px;">&times;</span>
-                    </div>
-                </div>
-            `;
-            wallet.appendChild(div);
-        });
+    // --- LOGICA UI ---
+    function openCreator(id = null) {
+        editId = id;
+        const ui = document.getElementById('add-ui');
+        const title = document.getElementById('ui-title');
+        
+        if (id !== null) {
+            const card = cards.find(c => c.id === id);
+            title.innerText = "Modifica Card";
+            document.getElementById('nameInp').value = card.name;
+            document.getElementById('codeInp').value = card.code;
+            curLogo = card.logo;
+            curColor = card.color;
+            document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item" style="border-color:var(--accent)">`;
+        } else {
+            title.innerText = "Nuova Card";
+            document.getElementById('nameInp').value = "";
+            document.getElementById('codeInp').value = "";
+            document.getElementById('logoGrid').innerHTML = "";
+            curLogo = ""; curColor = "#1c1c1e";
+        }
+        ui.style.display = 'block';
     }
 
-    // --- RICERCA & MEDIA ---
+    function closeCreator() { document.getElementById('add-ui').style.display = 'none'; }
+
+    function saveCard() {
+        const name = document.getElementById('nameInp').value;
+        const code = document.getElementById('codeInp').value;
+        if(!name || !code || !curLogo) return alert("Inserisci tutti i dati");
+
+        const cardData = { id: editId || Date.now(), name, code, logo: curLogo, color: curColor };
+
+        if (editId !== null) {
+            const idx = cards.findIndex(c => c.id === editId);
+            cards[idx] = cardData;
+        } else {
+            cards.push(cardData);
+        }
+
+        localStorage.setItem('wallet_3d_final', JSON.stringify(cards));
+        location.reload();
+    }
+
+    // --- FUNZIONI MEDIA (Google, Crop, Scan) ---
+    function searchOnGoogle() { window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(document.getElementById('nameInp').value)}+logo+png+transparent`, '_blank'); }
+
     async function searchLogos(val) {
         const grid = document.getElementById('logoGrid');
-        if(val.length < 2) { grid.innerHTML = ""; return; }
+        if(val.length < 2) return;
         const clean = val.toLowerCase().trim().replace(/\s/g, '');
-        const urls = [
-            `https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.it&w=200`,
-            `https://wsrv.nl/?url=https://www.google.com/s2/favicons?domain=${clean}.it&sz=128`
-        ];
+        const urls = [`https://wsrv.nl/?url=https://logo.clearbit.com/${clean}.it&w=200`, `https://wsrv.nl/?url=https://www.google.com/s2/favicons?domain=${clean}.it&sz=128` ];
         grid.innerHTML = "";
         urls.forEach(url => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
+            const img = new Image(); img.crossOrigin = "anonymous";
             img.onload = () => {
                 const el = document.createElement('img');
                 el.src = url; el.className = 'logo-item';
                 el.onclick = () => {
-                    selectFinalMedia(img, url);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    curLogo = canvas.toDataURL();
+                    try { curColor = `rgb(${thief.getColor(img).join(',')})`; } catch(e) { curColor = "#1c1c1e"; }
+                    grid.innerHTML = `<img src="${curLogo}" class="logo-item" style="border-color:var(--accent)">`;
                 };
                 grid.appendChild(el);
             };
@@ -200,21 +179,10 @@
         });
     }
 
-    function selectFinalMedia(img, url) {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        curLogo = canvas.toDataURL();
-        try { curColor = `rgb(${thief.getColor(img).join(',')})`; } catch(e) { curColor = "#1c1c1e"; }
-        document.getElementById('saveBtn').disabled = false;
-        document.getElementById('saveBtn').style.opacity = 1;
-        document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item" style="border:3px solid var(--accent)">`;
-    }
-
     function startScanner() {
         document.getElementById('scan-ui').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 150 } }, (txt) => {
+        html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (txt) => {
             document.getElementById('codeInp').value = txt;
             if (navigator.vibrate) navigator.vibrate(80);
             stopScanner();
@@ -224,7 +192,6 @@
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scan-ui').style.display = 'none'); }
 
     function startCrop(input) {
-        if (!input.files[0]) return;
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('crop-ui').style.display = 'block';
@@ -237,13 +204,10 @@
     }
 
     function finalizeCrop() {
-        const canvas = cropper.getCroppedCanvas();
-        curLogo = canvas.toDataURL('image/png');
+        curLogo = cropper.getCroppedCanvas().toDataURL('image/png');
         const temp = new Image();
         temp.onload = () => {
             try { curColor = `rgb(${thief.getColor(temp).join(',')})`; } catch(e) {}
-            document.getElementById('saveBtn').disabled = false;
-            document.getElementById('saveBtn').style.opacity = 1;
             document.getElementById('crop-ui').style.display = 'none';
             document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
         };
@@ -255,48 +219,59 @@
         if(url) {
             const proxied = `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400`;
             const img = new Image(); img.crossOrigin = "anonymous";
-            img.onload = () => selectFinalMedia(img, proxied);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                curLogo = canvas.toDataURL();
+                document.getElementById('logoGrid').innerHTML = `<img src="${curLogo}" class="logo-item">`;
+            };
             img.src = proxied;
         }
     }
 
-    // --- CORE ---
-    function saveCard() {
-        cards.push({ id: Date.now(), name: document.getElementById('nameInp').value, code: document.getElementById('codeInp').value, logo: curLogo, color: curColor });
-        localStorage.setItem('wallet_3d_v1', JSON.stringify(cards));
-        location.reload();
-    }
-
-    function showCard(c) {
-        document.getElementById('p-logo').src = c.logo;
-        document.getElementById('p-name').innerText = c.name;
-        document.getElementById('p-code').innerText = c.code;
-        document.getElementById('p-bg').style.backgroundColor = c.color;
-        document.getElementById('presenter').style.display = 'flex';
-        JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 110, displayValue: false });
-    }
-
-    function deleteCard(id, e) {
-        e.stopPropagation();
-        if(confirm("Eliminare?")) {
-            cards = cards.filter(x => x.id !== id);
-            localStorage.setItem('wallet_3d_v1', JSON.stringify(cards));
-            render();
-        }
+    // --- RENDER ---
+    function render() {
+        const wallet = document.getElementById('wallet');
+        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.4; margin-top:100px;'>Vuoto</p>";
+        cards.forEach((c, i) => {
+            const div = document.createElement('div');
+            div.className = 'badge';
+            div.style.backgroundColor = c.color;
+            div.style.zIndex = i;
+            div.onclick = () => {
+                document.getElementById('p-logo').src = c.logo;
+                document.getElementById('p-name').innerText = c.name;
+                document.getElementById('p-code').innerText = c.code;
+                document.getElementById('p-bg').style.backgroundColor = c.color;
+                document.getElementById('presenter').style.display = 'flex';
+                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.5, height: 110, displayValue: false });
+            };
+            div.innerHTML = `
+                <div class="badge-header">
+                    <div class="badge-logo"><img src="${c.logo}"></div>
+                    <div class="badge-name">${c.name}</div>
+                    <div class="action-btns">
+                        <button class="btn-icon" onclick="event.stopPropagation(); openCreator(${c.id})">✏️</button>
+                        <button class="btn-icon" onclick="event.stopPropagation(); if(confirm('Elimina?')){cards.splice(${i},1); localStorage.setItem('wallet_3d_final', JSON.stringify(cards)); render();}">🗑️</button>
+                    </div>
+                </div>
+            `;
+            wallet.appendChild(div);
+        });
     }
 
     function exportData() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(cards)], {type:'application/json'}));
-        a.download = 'wallet_backup.json';
-        a.click();
+        a.download = 'wallet_backup.json'; a.click();
     }
 
     function importData(input) {
         const reader = new FileReader();
         reader.onload = e => {
             cards = JSON.parse(e.target.result);
-            localStorage.setItem('wallet_3d_v1', JSON.stringify(cards));
+            localStorage.setItem('wallet_3d_final', JSON.stringify(cards));
             render();
         };
         reader.readAsText(input.files[0]);
