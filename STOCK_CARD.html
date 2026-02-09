@@ -333,38 +333,75 @@
         }
     }
 
-    function render() {
-        const wallet = document.getElementById('wallet');
-        cards.sort((a, b) => a.name.localeCompare(b.name));
-        wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.3; margin-top:100px;'>Nessuna tessera</p>";
+function render() {
+    const wallet = document.getElementById('wallet');
+    // Ordina le tessere alfabeticamente
+    cards.sort((a, b) => a.name.localeCompare(b.name));
+    wallet.innerHTML = cards.length ? "" : "<p style='text-align:center; opacity:0.3; margin-top:100px;'>Nessuna tessera</p>";
+    
+    cards.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'badge';
+        div.style.backgroundColor = c.color;
+        div.style.zIndex = i;
         
-        cards.forEach((c, i) => {
-            const div = document.createElement('div');
-            div.className = 'badge';
-            div.style.backgroundColor = c.color;
-            div.style.zIndex = i;
-            div.onclick = () => {
-                document.getElementById('p-logo').src = c.logo;
-                document.getElementById('p-name').innerText = c.name;
-                document.getElementById('p-code').innerText = c.code;
-                document.getElementById('p-bg').style.backgroundColor = c.color;
-                document.getElementById('presenter').style.display = 'flex';
-                JsBarcode("#p-barcode", c.code, { format: "CODE128", width: 2.8, height: 120, displayValue: false });
-            };
-            
-            // CORRETTO: Logica di eliminazione migliorata
-            div.innerHTML = `
-                <div class="action-btns">
-                    <button class="btn-icon" onclick="event.stopPropagation(); openCreator(${c.id})">✏️</button>
-                    <button class="btn-icon" onclick="handleDelete(event, ${c.id})">🗑️</button>
-                </div>
-                <div class="badge-header">
-                    <div class="badge-logo"><img src="${c.logo}"></div>
-                    <div class="badge-name">${c.name}</div>
-                </div>`;
-            wallet.appendChild(div);
-        });
-    }
+        div.onclick = () => {
+            document.getElementById('p-logo').src = c.logo;
+            document.getElementById('p-name').innerText = c.name;
+            document.getElementById('p-code').innerText = c.code;
+            document.getElementById('p-bg').style.backgroundColor = c.color;
+            document.getElementById('presenter').style.display = 'flex';
+
+            // PULIZIA E IDENTIFICAZIONE FORMATO
+            let cleanCode = c.code.trim();
+            let formatStr = "CODE128"; // Standard generico
+
+            // Controllo se il codice è puramente numerico
+            if (/^\d+$/.test(cleanCode)) {
+                // Se ha 12 o 13 cifre, è lo standard dei supermercati (EAN13/UPC)
+                if (cleanCode.length === 13 || cleanCode.length === 12) {
+                    formatStr = "EAN13";
+                    // Se ha 12 cifre, JsBarcode aggiunge automaticamente lo 0 davanti per l'EAN13
+                } else if (cleanCode.length === 8) {
+                    formatStr = "EAN8";
+                }
+            }
+
+            try {
+                JsBarcode("#p-barcode", cleanCode, {
+                    format: formatStr,
+                    width: 2.8,        // Spessore barra ottimizzato per display
+                    height: 150,       // Altezza generosa per facilitare i laser
+                    displayValue: false, 
+                    background: "#ffffff",
+                    lineColor: "#000000",
+                    margin: 35,        // "Quiet Zone" ampia per evitare errori di lettura
+                    flat: true         // Disabilita anti-aliasing per bordi netti
+                });
+            } catch (e) {
+                console.warn("Errore formato specifico, uso fallback CODE128");
+                JsBarcode("#p-barcode", cleanCode, { 
+                    format: "CODE128", 
+                    width: 2, 
+                    height: 120,
+                    background: "#ffffff"
+                });
+            }
+        };
+        
+        // Struttura HTML della tessera nel wallet
+        div.innerHTML = `
+            <div class="action-btns">
+                <button class="btn-icon" onclick="event.stopPropagation(); openCreator(${c.id})">✏️</button>
+                <button class="btn-icon" onclick="handleDelete(event, ${c.id})">🗑️</button>
+            </div>
+            <div class="badge-header">
+                <div class="badge-logo"><img src="${c.logo}"></div>
+                <div class="badge-name">${c.name}</div>
+            </div>`;
+        wallet.appendChild(div);
+    });
+}
 
     function handleDelete(event, id) {
         event.stopPropagation();
