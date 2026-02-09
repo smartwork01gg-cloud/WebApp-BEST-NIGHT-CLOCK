@@ -837,35 +837,57 @@ async function setupBiometrics(password, vaultName) { // <--- Aggiungi vaultName
 
 // 2. Sblocca con Impronta
 async function unlockWithBiometrics() {
-    // VERIFICA SE IL FILE È STATO SELEZIONATO
     const fileInput = document.getElementById('vaultFile');
+    
+    // 1. Verifica se il file è selezionato e aggiorna il nome globale
     if (!fileInput.files.length) {
         showNotification("⚠️ Seleziona prima il file del vault", "warning");
         return;
     }
+    currentVaultName = fileInput.files[0].name;
 
+    // 2. Prepariamo le opzioni per cercare la passkey specifica
     const options = {
         publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
-            userVerification: "required"
+            userVerification: "required",
+            // Limitiamo la ricerca alla passkey creata per questo specifico file
+            allowCredentials: [{
+                id: new TextEncoder().encode(currentVaultName),
+                type: 'public-key'
+            }]
         }
     };
 
     try {
+        // Il browser cercherà nel chip di sicurezza la passkey che corrisponde all'ID (nome file)
         await navigator.credentials.get(options); 
         
-        const encryptedPass = localStorage.getItem("vault_biometric_key");
+        // 3. RECUPERO MIRATO DELLA PASSWORD
+        // Usiamo il nome del file come chiave per il localStorage
+        const storageKey = "bio_key_" + currentVaultName;
+        const encryptedPass = localStorage.getItem(storageKey);
+        
+        if (!encryptedPass) {
+            showNotification("⚠️ Biometria non configurata per questo file", "warning");
+            return;
+        }
+
+        // Decriptazione (Usa la tua chiave di sessione o un segreto locale)
         const decryptedBytes = CryptoJS.AES.decrypt(encryptedPass, "BIO-SESSION-KEY");
         const savedPassword = decryptedBytes.toString(CryptoJS.enc.Utf8);
 
         if (savedPassword) {
             document.getElementById('vaultPassword').value = savedPassword;
-            loadVault(); // Ora funzionerà perché il file c'è
+            // Chiamiamo loadVault che ora userà la password inserita automaticamente
+            loadVault(); 
         }
     } catch (e) {
-        showNotification("❌ Autenticazione fallita", "error");
+        console.error(e);
+        showNotification("❌ Autenticazione fallita o passkey non trovata", "error");
     }
 }
+        
         // Struttura dati vault
         let vaultData = {
             meta: {
@@ -2195,4 +2217,5 @@ function decryptAES(encryptedPayload, password) {
     </script>
 </body>
 </html>
+
 
