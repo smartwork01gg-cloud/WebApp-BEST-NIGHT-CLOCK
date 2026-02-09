@@ -89,11 +89,14 @@
         }
         a:hover .icon-wrapper { transform: scale(1.1) rotate(5deg); }
         
-        /* Icon Colors */
+        /* Icon Categories Colors */
         .clock-icon { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; }
-        .tetris-icon { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; }
-        .space-icon { background: linear-gradient(135deg, #10b981, #06b6d4); color: #fff; }
+        .agenda-icon { background: linear-gradient(135deg, #c8a96a, #8a6a3a); color: #fff; }
+        .stock-icon { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+        .pass-icon { background: linear-gradient(135deg, #f43f5e, #9f1239); color: #fff; }
         .gantt-icon { background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; }
+        .tetris-icon { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; }
+        .space-icon { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
 
         .link-content { flex-grow: 1; position: relative; z-index: 1; }
         .link-text { font-weight: 600; font-size: 1.05rem; display: block; margin-bottom: 4px; }
@@ -113,7 +116,7 @@
     <ul>         
         <li>
             <a href="CLOCK_NIGHT_DAY.html">
-                <div class="icon-wrapper clock-icon"><i class="fas fa-moon"></i></div>
+                <div class="icon-wrapper clock-icon"><i class="fas fa-clock"></i></div>
                 <div class="link-content">
                     <span class="link-text">BEST METEO NIGHT/DAY CLOCK</span>
                     <span class="link-description">Orologio notturno con ciclo giorno/notte</span>
@@ -121,43 +124,36 @@
                 <i class="fas fa-chevron-right arrow"></i>
             </a>
         </li>
-<li>
-    <a href="LUXURY_AGENDA.html">
-        <div class="icon-wrapper" style="background: linear-gradient(135deg, #c8a96a, #8a6a3a);color: #0f172a;">
-            <i class="fas fa-book"></i>
-        </div>
-        <div class="link-content">
-            <span class="link-text">AGENDA LUXURY</span>
-            <span class="link-description">Luxury Agenda 3D (import/export su file)</span>
-        </div>
-        <i class="fas fa-chevron-right arrow"></i>
-    </a>
-</li>
-<li>
-    <a href="STOCK_CARD.html">
-        <div class="icon-wrapper" style="background: linear-gradient(135deg, #c8a96a, #8a6a3a);color: #0f172a;">
-            <i class="fas fa-book"></i>
-        </div>
-        <div class="link-content">
-            <span class="link-text">STOCK CARD</span>
-            <span class="link-description">POINT/GIFT SHOPPING CARD ARCHIVE</span>
-        </div>
-        <i class="fas fa-chevron-right arrow"></i>
-    </a>
-</li>        
-<li>
-    <a href="PASSWOR_MANAGER.html">
-        <div class="icon-wrapper" style="background: linear-gradient(135deg, #c8a96a, #8a6a3a);color: #0f172a;">
-            <i class="fas fa-book"></i>
-        </div>
-        <div class="link-content">
-            <span class="link-text">PASSWORMANAGER</span>
-            <span class="link-description">PASSWOR_MANAGER.html</span>
-        </div>
-        <i class="fas fa-chevron-right arrow"></i>
-    </a>
-</li>    
-        
+        <li>
+            <a href="LUXURY_AGENDA.html">
+                <div class="icon-wrapper agenda-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="link-content">
+                    <span class="link-text">AGENDA LUXURY</span>
+                    <span class="link-description">Luxury Agenda 3D (import/export su file)</span>
+                </div>
+                <i class="fas fa-chevron-right arrow"></i>
+            </a>
+        </li>
+        <li>
+            <a href="STOCK_CARD.html">
+                <div class="icon-wrapper stock-icon"><i class="fas fa-wallet"></i></div>
+                <div class="link-content">
+                    <span class="link-text">STOCK CARD</span>
+                    <span class="link-description">POINT/GIFT SHOPPING CARD ARCHIVE</span>
+                </div>
+                <i class="fas fa-chevron-right arrow"></i>
+            </a>
+        </li>        
+        <li>
+            <a href="PASSWOR_MANAGER.html">
+                <div class="icon-wrapper pass-icon"><i class="fas fa-key"></i></div>
+                <div class="link-content">
+                    <span class="link-text">PASSWORD MANAGER</span>
+                    <span class="link-description">Gestione sicura delle tue credenziali</span>
+                </div>
+                <i class="fas fa-chevron-right arrow"></i>
+            </a>
+        </li>    
         <li>
             <a href="WORK_GANTT_PROJECT.html">
                 <div class="icon-wrapper gantt-icon"><i class="fas fa-chart-gantt"></i></div>
@@ -170,7 +166,7 @@
         </li>
         <li>
             <a href="GAME_TETRIS.html">
-                <div class="icon-wrapper tetris-icon"><i class="fas fa-cube"></i></div>
+                <div class="icon-wrapper tetris-icon"><i class="fas fa-shapes"></i></div>
                 <div class="link-content">
                     <span class="link-text">GAME TETRIS</span>
                     <span class="link-description">Classico gioco puzzle con blocchi</span>
