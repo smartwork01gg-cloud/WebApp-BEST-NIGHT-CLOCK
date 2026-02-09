@@ -738,17 +738,6 @@ async function loadVault() {
     const fileInput = document.getElementById('vaultFile');
     const passwordInput = document.getElementById('vaultPassword');
     const password = passwordInput.value;
-
-
-async function initBiometrics() {
-    if (window.PublicKeyCredential) {
-        const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        if (isAvailable) {
-            // Mostra sempre il pulsante se il PC supporta l'impronta
-            document.getElementById('btnUnlockBiometric').style.display = 'inline-block';
-        }
-    }
-}
     
     if (!fileInput.files.length || !password) {
         showNotification('⚠️ Seleziona file e inserisci password', 'error');
@@ -758,8 +747,7 @@ async function initBiometrics() {
     try {
         const file = fileInput.files[0];
         
-        // 1. AGGIORNA IL NOME DEL VAULT ATTUALE
-        // Questo permetterà a setupBiometrics di usare il nome del file come ID
+        // Aggiorna il nome del vault PRIMA di qualsiasi altra operazione
         currentVaultName = file.name; 
 
         const content = await readFileAsText(file);
@@ -776,17 +764,19 @@ async function initBiometrics() {
         openMainApplication(); 
         showNotification('✅ Vault aperto!');
 
-        // 2. LOGICA BIOMETRIA MIGLIORATA
+        // Logica biometria migliorata
         if (window.PublicKeyCredential) {
             const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
             
-            /* Invece di controllare un generico localStorage, 
-               lasciamo che setupBiometrics gestisca la proposta. 
-               Passiamo esplicitamente masterPassword e currentVaultName.
-            */
             if (isAvailable) {
-                // Usiamo un timeout per non bloccare l'apertura della UI
-                setTimeout(() => setupBiometrics(masterPassword, currentVaultName), 1000);
+                // Controlla se esiste già una chiave biometrica per questo vault
+                const storageKey = "bio_key_" + currentVaultName;
+                const existingKey = localStorage.getItem(storageKey);
+                
+                // Solo se NON esiste già, proponi di crearla
+                if (!existingKey) {
+                    setTimeout(() => setupBiometrics(masterPassword, currentVaultName), 1000);
+                }
             }
         }
         
@@ -2289,6 +2279,7 @@ function decryptAES(encryptedPayload, password) {
     </script>
 </body>
 </html>
+
 
 
 
