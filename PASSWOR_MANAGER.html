@@ -732,16 +732,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     
     <script>
-        
-// Controlla se il browser supporta la biometria all'avvio
-// All'avvio della pagina
-let currentVaultName = "vault.json"; // Nome predefinito
-        
 async function loadVault() {
     const fileInput = document.getElementById('vaultFile');
     const passwordInput = document.getElementById('vaultPassword');
     const password = passwordInput.value;
-    
+
     if (!fileInput.files.length || !password) {
         showNotification('⚠️ Seleziona file e inserisci password', 'error');
         return;
@@ -749,10 +744,6 @@ async function loadVault() {
 
     try {
         const file = fileInput.files[0];
-        
-        // Aggiorna il nome del vault PRIMA di qualsiasi altra operazione
-        currentVaultName = file.name; 
-
         const content = await readFileAsText(file);
         
         // Caricamento dati (XML o Criptato)
@@ -764,150 +755,95 @@ async function loadVault() {
 
         // Se arriviamo qui, la password è corretta
         masterPassword = password;
-        openMainApplication(); 
+        openMainApplication(); // Questa funzione DEVE esistere nel tuo codice
         showNotification('✅ Vault aperto!');
 
-        // Logica biometria migliorata
+        // Setup biometria se supportata e non ancora attiva
         if (window.PublicKeyCredential) {
             const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            
-            if (isAvailable) {
-                // Controlla se esiste già una chiave biometrica per questo vault
-                const storageKey = "bio_key_" + currentVaultName;
-                const existingKey = localStorage.getItem(storageKey);
-                
-                // Solo se NON esiste già, proponi di crearla
-                if (!existingKey) {
-                    setTimeout(() => setupBiometrics(masterPassword, currentVaultName), 1000);
-                }
+            if (isAvailable && !localStorage.getItem("vault_biometric_key")) {
+                setTimeout(() => setupBiometrics(masterPassword), 1000);
             }
         }
-        
         passwordInput.value = ""; 
     } catch (error) {
         console.error(error);
         showNotification('❌ Errore: password errata o file non valido', 'error');
     }
 }
-
+// Controlla se il browser supporta la biometria all'avvio
+// All'avvio della pagina
 window.onload = async () => {
-    // Controlla se il browser supporta la biometria
-    if (window.PublicKeyCredential) {
-        const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        if (isAvailable) {
-            // Controlla se esistono chiavi biometriche salvate
-            // Cerchiamo qualsiasi chiave che inizi con "bio_key_"
-            let hasBioKey = false;
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith("bio_key_")) {
-                    hasBioKey = true;
-                    break;
-                }
-            }
-            
-            if (hasBioKey) {
-                const btnBio = document.getElementById('btnBiometric');
-                if (btnBio) btnBio.style.display = 'inline-block';
-            }
-        }
+    // Verifichiamo se esiste una chiave biometrica salvata
+    const hasBioKey = localStorage.getItem("vault_biometric_key");
+    
+    if (window.PublicKeyCredential && hasBioKey) {
+        // Se esiste, rendiamo visibile il pulsante biometrico nel form
+        const btnBio = document.getElementById('btnBiometric');
+        if (btnBio) btnBio.style.display = 'inline-block';
     }
 };
-        
-        
 // 1. Registra l'impronta (da chiamare dopo un login riuscito)
-async function setupBiometrics(password, vaultName) { // <--- Aggiungi vaultName qui
-    if (!confirm(`Vuoi abilitare l'impronta digitale per il vault "${vaultName}"?`)) return;
-
-    // L'ID deve essere unico per questo vault, ma costante nel tempo.
-    // Possiamo usare un hash del nome del file per generare un ID fisso.
-    const encoder = new TextEncoder();
-    const userId = encoder.encode(vaultName); 
+async function setupBiometrics(password) {
+    if (!confirm("Vuoi abilitare l'impronta digitale per i prossimi accessi?")) return;
 
     const options = {
         publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
             rp: { name: "KeePass Web" },
-            user: { 
-                id: userId, 
-                name: vaultName,          // <--- Questo apparirà nel gestore passkey
-                displayName: vaultName    // <--- Questo apparirà nel pop-up dell'impronta
-            },
+            user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "user", displayName: "User" },
             pubKeyCredParams: [{ alg: -7, type: "public-key" }],
             authenticatorSelection: {
-                residentKey: "required",
-                userVerification: "required",
-                authenticatorAttachment: "platform"
-            },
+    residentKey: "required", // Obbligatoria per trovare la passkey senza input
+    userVerification: "required" // Forza l'uso dell'impronta (biometria)
+},
             timeout: 60000
         }
     };
 
     try {
         const credential = await navigator.credentials.create(options);
-        // Dentro setupBiometrics, dopo navigator.credentials.create:
-        const storageKey = "bio_key_" + vaultName;
-        const encrypted = CryptoJS.AES.encrypt(password, "BIO-SESSION-KEY").toString();
-        localStorage.setItem(storageKey, encrypted);        showNotification("✅ Biometria configurata per " + vaultName);
-        
-    } catch (err) {
-        console.error(err);
-        showNotification("❌ Errore configurazione biometria", "error");
+        // Criptiamo la master password e la salviamo nel browser
+        // In un caso reale, useremmo la chiave della credenziale, qui simuliamo con un token sicuro
+        const encryptedPass = CryptoJS.AES.encrypt(password, "BIO-SESSION-KEY").toString();
+        localStorage.setItem("vault_biometric_key", encryptedPass);
+        showNotification("✅ Biometria configurata!");
+    } catch (e) {
+        console.error(e);
     }
 }
 
 // 2. Sblocca con Impronta
-
 async function unlockWithBiometrics() {
+    // VERIFICA SE IL FILE È STATO SELEZIONATO
     const fileInput = document.getElementById('vaultFile');
-    
-    // Verifica se il file è selezionato
     if (!fileInput.files.length) {
         showNotification("⚠️ Seleziona prima il file del vault", "warning");
         return;
     }
-    
-    currentVaultName = fileInput.files[0].name;
-    const storageKey = "bio_key_" + currentVaultName;
-    const encryptedPass = localStorage.getItem(storageKey);
-    
-    if (!encryptedPass) {
-        showNotification("⚠️ Nessuna impronta configurata per questo vault", "warning");
-        return;
-    }
 
-    // Prepara le opzioni per la verifica biometrica
     const options = {
         publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
-            userVerification: "required",
-            allowCredentials: [{
-                id: new TextEncoder().encode(currentVaultName),
-                type: 'public-key'
-            }]
+            userVerification: "required"
         }
     };
 
     try {
-        // Verifica l'impronta
         await navigator.credentials.get(options); 
         
-        // Decripta la password salvata
+        const encryptedPass = localStorage.getItem("vault_biometric_key");
         const decryptedBytes = CryptoJS.AES.decrypt(encryptedPass, "BIO-SESSION-KEY");
         const savedPassword = decryptedBytes.toString(CryptoJS.enc.Utf8);
 
         if (savedPassword) {
             document.getElementById('vaultPassword').value = savedPassword;
-            loadVault(); 
-        } else {
-            showNotification("❌ Errore nel recupero della password", "error");
+            loadVault(); // Ora funzionerà perché il file c'è
         }
     } catch (e) {
-        console.error(e);
-        showNotification("❌ Autenticazione biometrica fallita", "error");
+        showNotification("❌ Autenticazione fallita", "error");
     }
 }
-        
         // Struttura dati vault
         let vaultData = {
             meta: {
@@ -984,59 +920,17 @@ window.onload = async () => {
 };
 
 // Modifica la funzione che mostra il form per assicurarti che il tasto sia lì
-async function loadVault() {
-    const fileInput = document.getElementById('vaultFile');
-    const passwordInput = document.getElementById('vaultPassword');
-    const password = passwordInput.value;
+function showLoadVault() {
+    hideAllForms();
+    document.getElementById('loadVaultForm').style.display = 'block';
     
-    if (!fileInput.files.length || !password) {
-        showNotification('⚠️ Seleziona file e inserisci password', 'error');
-        return;
-    }
-
-    try {
-        const file = fileInput.files[0];
-        
-        // Aggiorna il nome del vault PRIMA di qualsiasi altra operazione
-        currentVaultName = file.name; 
-
-        const content = await readFileAsText(file);
-        
-        // Caricamento dati (XML o Criptato)
-        if (file.name.endsWith('.xml')) {
-            await loadFromXML(content, password);
-        } else {
-            await loadEncryptedVault(content, password);
-        }
-
-        // Se arriviamo qui, la password è corretta
-        masterPassword = password;
-        openMainApplication(); 
-        showNotification('✅ Vault aperto!');
-
-        // Logica biometria migliorata
-        if (window.PublicKeyCredential) {
-            const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            
-            if (isAvailable) {
-                // Controlla se esiste già una chiave biometrica per questo vault
-                const storageKey = "bio_key_" + currentVaultName;
-                const existingKey = localStorage.getItem(storageKey);
-                
-                // Solo se NON esiste già, proponi di crearla
-                if (!existingKey) {
-                    setTimeout(() => setupBiometrics(masterPassword, currentVaultName), 1000);
-                }
-            }
-        }
-        
-        passwordInput.value = ""; 
-    } catch (error) {
-        console.error(error);
-        showNotification('❌ Errore: password errata o file non valido', 'error');
+    // IMPORTANTE: Controlla se mostrare il tasto biometria appena apri il form
+    const hasBioKey = localStorage.getItem("vault_biometric_key");
+    const btnBio = document.getElementById('btnBiometric');
+    if (hasBioKey && btnBio) {
+        btnBio.style.display = 'inline-block';
     }
 }
-        
 // Assicuriamoci che il controllo avvenga anche al caricamento pagina
 window.addEventListener('DOMContentLoaded', () => {
     const biometricKey = localStorage.getItem("vault_biometric_key");
@@ -1089,6 +983,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // Carica vault esistente - FIX PRINCIPALE
+loadVault
         // Leggi file come testo
         function readFileAsText(file) {
             return new Promise((resolve, reject) => {
@@ -2279,11 +2174,3 @@ function decryptAES(encryptedPayload, password) {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
