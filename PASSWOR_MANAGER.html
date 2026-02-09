@@ -793,7 +793,10 @@ async function setupBiometrics(password) {
             rp: { name: "KeePass Web" },
             user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "user", displayName: "User" },
             pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-            authenticatorSelection: { userVerification: "required" },
+            authenticatorSelection: {
+    residentKey: "required", // Obbligatoria per trovare la passkey senza input
+    userVerification: "required" // Forza l'uso dell'impronta (biometria)
+},
             timeout: 60000
         }
     };
