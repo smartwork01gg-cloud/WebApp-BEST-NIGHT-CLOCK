@@ -732,6 +732,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     
     <script>
+let currentVaultName = "vault.json"; // Nome predefinito
+        
 async function loadVault() {
     const fileInput = document.getElementById('vaultFile');
     const passwordInput = document.getElementById('vaultPassword');
@@ -744,6 +746,11 @@ async function loadVault() {
 
     try {
         const file = fileInput.files[0];
+        
+        // 1. AGGIORNA IL NOME DEL VAULT ATTUALE
+        // Questo permetterà a setupBiometrics di usare il nome del file come ID
+        currentVaultName = file.name; 
+
         const content = await readFileAsText(file);
         
         // Caricamento dati (XML o Criptato)
@@ -755,16 +762,23 @@ async function loadVault() {
 
         // Se arriviamo qui, la password è corretta
         masterPassword = password;
-        openMainApplication(); // Questa funzione DEVE esistere nel tuo codice
+        openMainApplication(); 
         showNotification('✅ Vault aperto!');
 
-        // Setup biometria se supportata e non ancora attiva
+        // 2. LOGICA BIOMETRIA MIGLIORATA
         if (window.PublicKeyCredential) {
             const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            if (isAvailable && !localStorage.getItem("vault_biometric_key")) {
-                setTimeout(() => setupBiometrics(masterPassword), 1000);
+            
+            /* Invece di controllare un generico localStorage, 
+               lasciamo che setupBiometrics gestisca la proposta. 
+               Passiamo esplicitamente masterPassword e currentVaultName.
+            */
+            if (isAvailable) {
+                // Usiamo un timeout per non bloccare l'apertura della UI
+                setTimeout(() => setupBiometrics(masterPassword, currentVaultName), 1000);
             }
         }
+        
         passwordInput.value = ""; 
     } catch (error) {
         console.error(error);
@@ -784,32 +798,40 @@ window.onload = async () => {
     }
 };
 // 1. Registra l'impronta (da chiamare dopo un login riuscito)
-async function setupBiometrics(password) {
-    if (!confirm("Vuoi abilitare l'impronta digitale per i prossimi accessi?")) return;
+async function setupBiometrics(password, vaultName) { // <--- Aggiungi vaultName qui
+    if (!confirm(`Vuoi abilitare l'impronta digitale per il vault "${vaultName}"?`)) return;
+
+    // L'ID deve essere unico per questo vault, ma costante nel tempo.
+    // Possiamo usare un hash del nome del file per generare un ID fisso.
+    const encoder = new TextEncoder();
+    const userId = encoder.encode(vaultName); 
 
     const options = {
         publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
             rp: { name: "KeePass Web" },
-            user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "user", displayName: "User" },
+            user: { 
+                id: userId, 
+                name: vaultName,          // <--- Questo apparirà nel gestore passkey
+                displayName: vaultName    // <--- Questo apparirà nel pop-up dell'impronta
+            },
             pubKeyCredParams: [{ alg: -7, type: "public-key" }],
             authenticatorSelection: {
-    residentKey: "required", // Obbligatoria per trovare la passkey senza input
-    userVerification: "required" // Forza l'uso dell'impronta (biometria)
-},
+                residentKey: "required",
+                userVerification: "required",
+                authenticatorAttachment: "platform"
+            },
             timeout: 60000
         }
     };
 
     try {
         const credential = await navigator.credentials.create(options);
-        // Criptiamo la master password e la salviamo nel browser
-        // In un caso reale, useremmo la chiave della credenziale, qui simuliamo con un token sicuro
-        const encryptedPass = CryptoJS.AES.encrypt(password, "BIO-SESSION-KEY").toString();
-        localStorage.setItem("vault_biometric_key", encryptedPass);
-        showNotification("✅ Biometria configurata!");
-    } catch (e) {
-        console.error(e);
+        // Salva qui la chiave pubblica nel vault appena creato...
+        showNotification("✅ Biometria configurata per " + vaultName);
+    } catch (err) {
+        console.error(err);
+        showNotification("❌ Errore configurazione biometria", "error");
     }
 }
 
@@ -983,7 +1005,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // Carica vault esistente - FIX PRINCIPALE
-loadVault
         // Leggi file come testo
         function readFileAsText(file) {
             return new Promise((resolve, reject) => {
@@ -2174,3 +2195,4 @@ function decryptAES(encryptedPayload, password) {
     </script>
 </body>
 </html>
+
