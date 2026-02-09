@@ -1012,10 +1012,11 @@ const keys = {
                       state.d = Math.max(1, Math.floor((now - start) / 86400000) + 1);
                       renderPages(); 
                   }
-                  function exportData() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type:'application/json'})); a.download = `agenda_luxury_2026.json`; a.click(); }
+                  function exportData() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type:'application/json'})); a.download = `AGENDA_BACKUP.json`; a.click(); }
                   function importData(e) { const r = new FileReader(); r.onload = (ev) => { state = JSON.parse(ev.target.result); renderPages(); applyTheme(); }; r.readAsText(e.target.files[0]); }
                   function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
                
       </script>
    </body>
 </html>
+
