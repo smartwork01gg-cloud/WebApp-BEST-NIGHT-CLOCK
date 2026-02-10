@@ -1060,25 +1060,35 @@
 function autoRectify() {
     if (!sourceImage || points.length < 4) return;
 
-    // 1. Calcolo proporzioni e coordinate reali sulla foto originale
     const ratioX = sourceImage.width / sourceCanvas.width;
     const ratioY = sourceImage.height / sourceCanvas.height;
     const sorted = orderPointsClockwise(points);
+    
+    // Coordinate reali sulla foto originale
     const realSrc = sorted.map(p => ({ x: p.x * ratioX, y: p.y * ratioY }));
 
-    // 2. Calcolo dimensioni ottimali del rettangolo di output
-    const w = Math.round(Math.max(distance(realSrc[0], realSrc[1]), distance(realSrc[3], realSrc[2])));
-    const h = Math.round(Math.max(distance(realSrc[0], realSrc[3]), distance(realSrc[1], realSrc[2])));
+    // --- CALCOLO PROPORZIONI DINAMICHE (Aspect Ratio reale) ---
+    // Calcoliamo la larghezza media tra lato superiore e inferiore
+    const widthTop = distance(realSrc[0], realSrc[1]);
+    const widthBottom = distance(realSrc[3], realSrc[2]);
+    const avgW = (widthTop + widthBottom) / 2;
 
-    // 3. Preparazione Canvas di Risultato
+    // Calcoliamo l'altezza media tra lato sinistro e destro
+    const heightLeft = distance(realSrc[0], realSrc[3]);
+    const heightRight = distance(realSrc[1], realSrc[2]);
+    const avgH = (heightLeft + heightRight) / 2;
+
+    // Impostiamo le dimensioni del canvas di output mantenendo il rapporto reale
+    const w = Math.round(avgW);
+    const h = Math.round(avgH);
+
     resultCanvas.width = w;
     resultCanvas.height = h;
 
-    // 4. Calcolo Omografia e Inversa
+    // --- OMOGRAFIA ---
     const H = computeHomography(realSrc, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]);
     const Hinv = invertHomography(H);
 
-    // 5. Estrazione pixel dall'immagine sorgente
     const tCanvas = document.createElement('canvas');
     tCanvas.width = sourceImage.width;
     tCanvas.height = sourceImage.height;
@@ -1092,7 +1102,6 @@ function autoRectify() {
     const dPixels = dstData.data;
     const sw = srcData.width;
 
-    // 6. Ciclo di Trasformazione (Rettifica)
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             const den = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
@@ -1110,33 +1119,39 @@ function autoRectify() {
         }
     }
 
-    // 7. Salvataggio dati e applicazione filtri
     rectifiedImageData = dstData;
     applyFilters();
 
-    // 8. GESTIONE INTERFACCIA E VISIBILITÀ (Fix Mobile)
+    // --- FIX APERTURA TAB E VISIBILITÀ MOBILE ---
+    
+    // 1. Rimuovi placeholder e forza display
     const resPlaceholder = document.getElementById('resultPlaceholder');
     if (resPlaceholder) resPlaceholder.style.display = 'none';
-
-    // Forza la visibilità del contenitore se è in un sistema a Tab
-    const resultTab = document.getElementById('output') || document.getElementById('resultContainer');
-    if (resultTab) {
-        resultTab.style.display = 'block'; // Assicura che non sia hidden
-        resultTab.classList.add('active'); // Se usi Bootstrap
-    }
-
     resultCanvas.style.display = 'block';
 
-    // Sblocca i pulsanti di salvataggio
-    if (saveJpgBtn) saveJpgBtn.disabled = false;
-    if (savePdfBtn) savePdfBtn.disabled = false;
+    // 2. Forza l'attivazione del Tab specifico
+    // Cerchiamo l'elemento tab (es. 'nav-result-tab' o simile)
+    const resultTabBtn = document.querySelector('[data-bs-target="#nav-result"]') || 
+                         document.querySelector('button[aria-controls="nav-result"]') ||
+                         document.getElementById('result-tab');
 
-    // 9. SCROLL AUTOMATICO: Porta l'utente a vedere il risultato
+    if (resultTabBtn) {
+        // Usiamo l'API di Bootstrap se presente, altrimenti il click manuale
+        if (window.bootstrap && bootstrap.Tab) {
+            const tab = new bootstrap.Tab(resultTabBtn);
+            tab.show();
+        } else {
+            resultTabBtn.click();
+        }
+    }
+
+    // 3. Scroll morbido verso l'immagine prodotta
     setTimeout(() => {
-        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
+        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
 
-    if (typeof showStatus === 'function') showStatus('Immagine rettificata!');
+    saveJpgBtn.disabled = savePdfBtn.disabled = false;
+    showStatus('Documento rettificato con successo');
 }
 
     // 7. LISTENER
