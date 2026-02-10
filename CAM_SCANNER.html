@@ -3,58 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Documenti - Rettificazione Prospettica</title>
+    <title>COMBAT SCANNER - HUD Interface</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-#resultContainer {
-    min-height: 300px;
-    position: relative;
-    z-index: 10;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
+        :root {
+            --cyber-blue: #00d9ff;
+            --deep-amber: #ff9500;
+            --glass-bg: rgba(10, 15, 30, 0.85);
+            --glass-border: rgba(0, 217, 255, 0.4);
+            --neon-glow: 0 0 20px var(--cyber-blue);
+            --widget-width: 320px;
+        }
 
-#resultCanvas {
-    max-width: 100%; /* Impedisce al canvas di uscire dallo schermo */
-    height: auto !important;
-    border: 2px solid #3b82f6;
-    display: none; /* Verrà mostrato via JS */
-}    
-/* Applica questo a Canvas e punti per bloccare ogni movimento della pagina */
-#sourceCanvas {
-    /* Disabilita TUTTI i gesti del browser (scroll, zoom, menu contestuale) */
-    touch-action: none !important; 
-    user-select: none !important;
-    -webkit-user-select: none;
-    /* Evita che il tocco venga intercettato da elementi sovrapposti */
-    pointer-events: auto !important;
-}
-
-.point {
-    /* Rende i punti "trasparenti" ai Pointer Events così il canvas legge sempre il tocco */
-    pointer-events: none !important; 
-}
-  
-#zoomHelper {
-    position: fixed; /* FONDAMENTALE: resta agganciato allo schermo, non alla pagina */
-    z-index: 10000;  /* Sopra a tutto */
-    pointer-events: none; /* Il tocco deve passare "attraverso" lo zoom */
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    display: none;
-}    
-    /* Impedisce al browser di gestire il tocco (niente scroll o zoom nativo) */
-/* Evita che il tocco sul canvas di origine causi lo scroll della pagina (fondamentale per il drag) */
-#sourceCanvas {
-    touch-action: none; 
-    user-select: none;
-    -webkit-user-drag: none;
-}
-/* Assicurati che il contenitore non tagli gli elementi */
-.workspace {
-    overflow: visible !important;
-    position: relative;
-}
         * {
             margin: 0;
             padding: 0;
@@ -63,1225 +23,1261 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #0a0e17;
+            font-family: 'Rajdhani', 'Orbitron', -apple-system, sans-serif;
+            background: #000;
             min-height: 100vh;
-            overflow-x: hidden;
-            color: #e2e8f0;
-        }
-
-        .container {
-            max-width: 100%;
-            min-height: 100vh;
-            background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
-            color: white;
-            padding: 16px;
-            text-align: center;
-            flex-shrink: 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            color: #fff;
             position: relative;
+        }
+
+        /* CANVAS CONTAINER WITH RIGHT MARGIN FOR WIDGETS */
+        #fullscreenContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: calc(100vw - var(--widget-width) - 40px);
+            height: 100vh;
+            z-index: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #sourceCanvas, #resultCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        #sourceCanvas.active, #resultCanvas.active {
+            display: block;
+        }
+
+        .placeholder {
+            color: rgba(0, 217, 255, 0.4);
+            text-align: center;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        /* FROSTED GLASS WIDGET BASE */
+        .widget {
+            position: fixed;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 2px solid var(--glass-border);
+            border-radius: 0;
+            clip-path: polygon(
+                0 12px, 12px 0, 
+                calc(100% - 12px) 0, 100% 12px,
+                100% calc(100% - 12px), calc(100% - 12px) 100%,
+                12px 100%, 0 calc(100% - 12px)
+            );
+            box-shadow: 
+                var(--neon-glow),
+                inset 0 0 30px rgba(0, 217, 255, 0.1);
+            z-index: 1000;
+            transition: opacity 0.3s;
+            width: 300px;
+        }
+
+        .widget.minimized {
+            width: 60px !important;
+            height: 60px !important;
             overflow: hidden;
         }
 
-        .header::before {
+        .widget.minimized .widget-content {
+            display: none;
+        }
+
+        .widget.minimized .widget-title {
+            display: none;
+        }
+
+        /* WIDGET HEADER */
+        .widget-header {
+            padding: 10px 12px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(255, 149, 0, 0.15));
+            border-bottom: 1px solid var(--cyber-blue);
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .widget-header::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
-            pointer-events: none;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyber-blue), transparent);
+            animation: scan 3s linear infinite;
         }
 
-        h1 {
-            font-size: 1.25em;
-            margin-bottom: 4px;
-            position: relative;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
-        .subtitle {
-            opacity: 0.9;
+        .widget-title {
             font-size: 0.75em;
-            position: relative;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--cyber-blue);
+            text-shadow: 0 0 10px var(--cyber-blue);
         }
 
-        .controls {
-            padding: 12px;
-            background: #1a1f2e;
-            border-bottom: 1px solid #2d3748;
+        .widget-controls {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            gap: 6px;
         }
 
-        .btn {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
+        .widget-btn {
+            width: 22px;
+            height: 22px;
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
             cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            white-space: nowrap;
-            flex: 1 1 auto;
-            min-width: 140px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-size: 0.7em;
+            transition: all 0.2s;
+            clip-path: polygon(20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%, 0 20%);
+        }
+
+        .widget-btn:hover {
+            background: var(--cyber-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--cyber-blue);
+        }
+
+        .widget-content {
+            padding: 12px;
+        }
+
+        /* WIDGETS POSITIONED ON RIGHT SIDE */
+        #controlsWidget {
+            top: 20px;
+            right: 20px;
+        }
+
+        #filtersWidget {
+            top: auto;
+            right: 20px;
+            bottom: 20px;
+        }
+
+        #actionsWidget {
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 300px;
+        }
+
+        /* CYBER BUTTONS */
+        .cyber-btn {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 217, 255, 0.1));
+            border: 2px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            width: 100%;
+            margin-bottom: 8px;
         }
 
-        .btn::before {
+        .cyber-btn::before {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             width: 0;
             height: 0;
+            background: var(--cyber-blue);
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
             transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s;
+            transition: width 0.5s, height 0.5s;
         }
 
-        .btn:active::before {
+        .cyber-btn:hover::before {
             width: 300px;
             height: 300px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
+        .cyber-btn:hover {
+            color: #000;
+            border-color: var(--cyber-blue);
+            box-shadow: 0 0 25px var(--cyber-blue);
         }
 
-        .btn-primary:active {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            transform: scale(0.98);
+        .cyber-btn span {
+            position: relative;
+            z-index: 1;
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+        .cyber-btn.amber {
+            border-color: var(--deep-amber);
+            color: var(--deep-amber);
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 149, 0, 0.1));
         }
 
-        .btn-success:active {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            transform: scale(0.98);
+        .cyber-btn.amber::before {
+            background: var(--deep-amber);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-            color: white;
+        .cyber-btn.amber:hover {
+            box-shadow: 0 0 25px var(--deep-amber);
         }
 
-        .btn-secondary:active {
-            background: linear-gradient(135deg, #475569 0%, #334155 100%);
-            transform: scale(0.98);
-        }
-
-        .btn:disabled {
-            opacity: 0.4;
+        .cyber-btn:disabled {
+            opacity: 0.3;
             cursor: not-allowed;
+            pointer-events: none;
         }
 
         input[type="file"] {
             display: none;
         }
 
-        .filter-controls {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #0f1419;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid #2d3748;
+        /* FILTER CONTROLS */
+        .filter-item {
+            margin-bottom: 12px;
         }
 
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .filter-group label {
-            font-weight: 600;
-            font-size: 13px;
-            color: #cbd5e0;
+        .filter-label {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--cyber-blue);
         }
 
-        .filter-group select {
-            width: 100%;
-            padding: 8px 12px;
-            background: #0a0e17;
-            border: 1px solid #3b82f6;
-            border-radius: 6px;
-            color: #cbd5e0;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .filter-group select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .filter-group select option {
-            background: #1a1f2e;
-            color: #cbd5e0;
-            padding: 8px;
-        }
-
-        .filter-group input[type="range"] {
-            width: 100%;
-            height: 6px;
-            cursor: pointer;
-            -webkit-appearance: none;
-            appearance: none;
-            background: linear-gradient(to right, #2d3748 0%, #4a5568 100%);
-            border-radius: 5px;
-            outline: none;
-        }
-
-        .filter-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
-            transition: transform 0.2s;
-        }
-
-        .filter-group input[type="range"]::-webkit-slider-thumb:active {
-            transform: scale(1.2);
-        }
-
-        .filter-group input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
-        }
-
-        .filter-group .value {
-            font-size: 13px;
-            color: #3b82f6;
+        .filter-value {
+            color: var(--deep-amber);
             font-weight: 700;
-            min-width: 50px;
-            text-align: right;
         }
 
-        .workspace {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
+        select, input[type="range"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+            padding: 6px 8px;
+            font-size: 0.75em;
+            outline: none;
         }
 
-        .canvas-container {
-            position: relative;
-            background: #0a0e17;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            min-height: 40vh;
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(0, 217, 255, 0.3), rgba(255, 149, 0, 0.3));
+            padding: 0;
         }
 
-        .canvas-container h3 {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: rgba(26, 31, 46, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #cbd5e0;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            border: 1px solid #2d3748;
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--cyber-blue);
+            border: 2px solid #000;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--cyber-blue);
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
         }
 
-        canvas {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            border-radius: 4px;
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--cyber-blue);
+            border: 2px solid #000;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--cyber-blue);
         }
 
-        .placeholder {
-            color: #64748b;
-            text-align: center;
-            padding: 40px 20px;
-            font-size: 15px;
+        select {
+            cursor: pointer;
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
         }
 
+        select option {
+            background: #0a0f1e;
+        }
+
+        /* POINTS OVERLAY */
         .point {
             position: absolute;
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border: 4px solid #0f172a;
+            width: 44px;
+            height: 44px;
+            background: radial-gradient(circle, var(--deep-amber), transparent);
+            border: 3px solid var(--deep-amber);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: move;
-            box-shadow: 0 0 0 2px #3b82f6, 0 4px 16px rgba(59, 130, 246, 0.6);
-            z-index: 1000;
-            touch-action: none;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .point:active {
-            transform: translate(-50%, -50%) scale(1.15);
-            box-shadow: 0 0 0 2px #2563eb, 0 6px 20px rgba(37, 99, 235, 0.8);
-        }
-
-        .point-label {
-            position: absolute;
-            top: -32px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            white-space: nowrap;
-            pointer-events: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-            transition: background 0.15s;
-        }
-
-        .zoom-helper {
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            border: 3px solid #3b82f6;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 0 2px #0f172a;
-            pointer-events: none;
+            box-shadow: 
+                0 0 20px var(--deep-amber),
+                inset 0 0 10px rgba(255, 149, 0, 0.5);
             z-index: 2000;
-            background: #0a0e17;
-            overflow: hidden;
-            display: none;
+            touch-action: none;
+            transition: all 0.15s;
+            pointer-events: none;
         }
 
-        .zoom-helper canvas {
+        .point::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #fff;
+        }
+
+        .point.selected {
+            border-color: var(--cyber-blue);
+            background: radial-gradient(circle, var(--cyber-blue), transparent);
+            box-shadow: 
+                0 0 30px var(--cyber-blue),
+                inset 0 0 15px rgba(0, 217, 255, 0.5);
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        /* ZOOM HELPER */
+        #zoomHelper {
+            position: fixed;
+            width: 180px;
+            height: 180px;
+            border: 3px solid var(--cyber-blue);
+            box-shadow: 
+                0 0 30px var(--cyber-blue),
+                inset 0 0 20px rgba(0, 217, 255, 0.3);
+            pointer-events: none;
+            z-index: 3000;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        #zoomCanvas {
             width: 100%;
             height: 100%;
-            image-rendering: pixelated;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .zoom-helper::before {
+        #zoomHelper::before {
             content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: var(--cyber-blue);
+            transform: translate(-50%, -50%);
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        #zoomHelper::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: var(--cyber-blue);
+            transform: translate(-50%, -50%);
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .zoom-crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             width: 20px;
             height: 20px;
-            border: 2px solid #3b82f6;
+            border: 2px solid var(--cyber-blue);
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            z-index: 10;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+            z-index: 11;
+            box-shadow: 0 0 15px var(--cyber-blue);
         }
 
-        .zoom-helper::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #3b82f6;
-            z-index: 9;
-        }
-
-        .zoom-helper .crosshair-v {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 50%;
-            width: 1px;
-            background: #3b82f6;
-            z-index: 9;
-        }
-
-        .instructions {
-            background: #1a1f2e;
-            padding: 12px 16px;
-            border-top: 2px solid #3b82f6;
-            flex-shrink: 0;
-        }
-
-        .instructions h4 {
-            color: #cbd5e0;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .instructions ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .instructions li {
-            padding: 3px 0;
-            color: #94a3b8;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-        .instructions li:before {
-            content: "✓ ";
-            color: #10b981;
-            font-weight: bold;
-            margin-right: 6px;
-        }
-
+        /* STATUS HUD */
         .status {
             position: fixed;
-            bottom: 16px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #3b82f6;
-            color: #cbd5e0;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 13px;
+            transform: translate(-50%, -50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+            padding: 20px 40px;
+            font-size: 1.1em;
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 10000;
-            max-width: calc(100% - 32px);
             text-align: center;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            box-shadow: 0 0 40px var(--cyber-blue);
         }
 
         .status.show {
             opacity: 1;
         }
 
-        .view-toggle {
-            display: flex;
-            gap: 4px;
-            background: #0f1419;
-            padding: 4px;
-            border-radius: 8px;
+        /* CORNER DECORATIONS */
+        .corner-decor {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .corner-decor::before,
+        .corner-decor::after {
+            content: '';
+            position: absolute;
+            background: var(--cyber-blue);
+            box-shadow: 0 0 10px var(--cyber-blue);
+        }
+
+        .corner-decor::before {
             width: 100%;
-            border: 1px solid #2d3748;
+            height: 2px;
         }
 
-        .view-toggle button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .view-toggle button.active {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            color: #e0e7ff;
-            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.4);
-        }
-
-        .canvas-wrapper {
-            display: none;
-            width: 100%;
+        .corner-decor::after {
+            width: 2px;
             height: 100%;
         }
 
-        .canvas-wrapper.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .corner-decor.tl { top: 0; left: 0; }
+        .corner-decor.tl::before { top: 0; left: 0; }
+        .corner-decor.tl::after { top: 0; left: 0; }
 
-        /* Desktop */
-/* --- AGGIUNTA PER MOBILE --- */
-@media (max-width: 1023px) {
-    .controls {
-        padding: 8px;
-        gap: 6px;
-    }
-    .btn {
-        padding: 10px 4px;
-        font-size: 11px; /* Font leggermente più piccolo per far stare tutto */
-        min-width: 0;
-        flex: 1 1 30%; /* Forza 3 bottoni per riga */
-    }
-/* Stile per i punti di controllo più grandi su mobile */
-.point {
-    width: 24px !important;
-    height: 24px !important;
-    margin-left: -12px;
-    margin-top: -12px;
-    border: 3px solid white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    border-radius: 50%;
-    z-index: 1000;
-}
-    .filter-group {
-        padding: 8px;
-    }
-}
-        
-        @media (min-width: 1024px) {
-            body {
-                padding: 20px;
+        .corner-decor.tr { top: 0; right: 0; }
+        .corner-decor.tr::before { top: 0; right: 0; }
+        .corner-decor.tr::after { top: 0; right: 0; }
+
+        .corner-decor.bl { bottom: 0; left: 0; }
+        .corner-decor.bl::before { bottom: 0; left: 0; }
+        .corner-decor.bl::after { bottom: 0; left: 0; }
+
+        .corner-decor.br { bottom: 0; right: 0; }
+        .corner-decor.br::before { bottom: 0; right: 0; }
+        .corner-decor.br::after { bottom: 0; right: 0; }
+
+        /* MOBILE ADJUSTMENTS */
+        @media (max-width: 768px) {
+            :root {
+                --widget-width: 0px;
             }
 
-            .container {
-                border-radius: 20px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-                max-width: 1400px;
-                margin: 0 auto;
-                border: 1px solid #2d3748;
+            #fullscreenContainer {
+                width: 100vw;
             }
 
-            h1 {
-                font-size: 2em;
+            .widget {
+                width: 280px !important;
+                max-width: calc(100vw - 20px);
             }
 
-            .subtitle {
-                font-size: 0.95em;
+            #controlsWidget {
+                right: 10px;
+                top: 10px;
             }
 
-            .header {
-                padding: 30px;
-                border-radius: 20px 20px 0 0;
+            #filtersWidget {
+                right: 10px;
+                bottom: 10px;
             }
 
-            .controls {
-                padding: 20px;
-                gap: 12px;
-            }
-
-            .btn {
-                min-width: auto;
-                flex: 0 0 auto;
-            }
-
-            .filter-controls {
-                width: auto;
-                flex-direction: row;
-                gap: 15px;
-                padding: 0;
-                background: transparent;
-                border: none;
-            }
-
-            .filter-group {
-                min-width: 200px;
-                background: #0f1419;
-                padding: 12px 16px;
-                border-radius: 8px;
-                border: 1px solid #2d3748;
-            }
-
-            .workspace {
-                flex-direction: row;
-                min-height: 600px;
-            }
-
-            .canvas-container {
-                flex: 1;
-                min-height: 500px;
-            }
-
-            .canvas-wrapper {
-                display: flex !important;
-            }
-
-            .view-toggle {
-                display: none;
+            #actionsWidget {
+                right: 10px;
             }
 
             .point {
-                width: 20px;
-                height: 20px;
+                width: 54px;
+                height: 54px;
             }
+        }
 
-            .point:hover {
-                transform: translate(-50%, -50%) scale(1.2);
-            }
+        /* SCAN LINE EFFECT */
+        @keyframes scanline {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyber-blue), transparent);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📄 Scanner Documenti Avanzato</h1>
-            <p class="subtitle">Rettificazione prospettica e ottimizzazione immagini</p>
-        </div>
+    <!-- CORNER DECORATIONS -->
+    <div class="corner-decor tl"></div>
+    <div class="corner-decor tr"></div>
+    <div class="corner-decor bl"></div>
+    <div class="corner-decor br"></div>
 
-        <div class="controls">
-            <label class="btn btn-primary">
-                📁 Carica File
+    <!-- SCAN LINE -->
+    <div class="scanline"></div>
+
+    <!-- FULLSCREEN CANVAS CONTAINER -->
+    <div id="fullscreenContainer">
+        <canvas id="sourceCanvas"></canvas>
+        <canvas id="resultCanvas"></canvas>
+        <div class="placeholder" id="placeholder">
+            [ AWAITING INPUT STREAM ]<br>
+            <small style="font-size: 0.6em; opacity: 0.5;">LOAD IMAGE OR ACTIVATE CAMERA</small>
+        </div>
+    </div>
+
+    <!-- CONTROLS WIDGET -->
+    <div class="widget" id="controlsWidget">
+        <div class="widget-header" data-widget="controlsWidget">
+            <div class="widget-title">⚡ CONTROLS</div>
+            <div class="widget-controls">
+                <div class="widget-btn" onclick="toggleMinimize('controlsWidget')">−</div>
+            </div>
+        </div>
+        <div class="widget-content">
+            <label class="cyber-btn">
+                <span>📁 LOAD FILE</span>
                 <input type="file" id="fileInput" accept="image/*">
             </label>
             
-            <button class="btn btn-primary" id="cameraBtn">
-                📷 Fotocamera
+            <button class="cyber-btn" id="cameraBtn">
+                <span>📷 CAMERA</span>
             </button>
 
-            <button class="btn btn-success" id="rectifyBtn" disabled>
-                ✨ Rettifica
+            <button class="cyber-btn amber" id="rectifyBtn" disabled>
+                <span>✨ RECTIFY</span>
             </button>
 
-            <button class="btn btn-secondary" id="resetBtn">
-                🔄 Reset
+            <button class="cyber-btn" id="resetBtn">
+                <span>🔄 RESET</span>
             </button>
 
-            <button class="btn btn-success" id="saveJpgBtn" disabled>
-                💾 JPG
+            <button class="cyber-btn" id="toggleViewBtn">
+                <span id="viewBtnText">👁 RESULT</span>
             </button>
+        </div>
+    </div>
 
-            <button class="btn btn-success" id="savePdfBtn" disabled>
-                📑 PDF
-            </button>
-
-            <div class="filter-controls">
-                <div class="filter-group">
-                    <label>
-                        Modalità Colore
-                    </label>
-                    <select id="colorModeSelect">
-                        <option value="color">Colore</option>
-                        <option value="grayscale">Scala di Grigi</option>
-                        <option value="bw">Bianco e Nero</option>
-                    </select>
-                </div>
-
-                <div class="filter-group" id="bwThresholdGroup" style="display: none;">
-                    <label>
-                        Soglia B/N
-                        <span class="value" id="thresholdValue">128</span>
-                    </label>
-                    <input type="range" id="thresholdSlider" min="0" max="255" value="128">
-                </div>
-
-                <div class="filter-group">
-                    <label>
-                        Contrasto
-                        <span class="value" id="contrastValue">100%</span>
-                    </label>
-                    <input type="range" id="contrastSlider" min="50" max="300" value="100">
-                </div>
-
-                <div class="filter-group">
-                    <label>
-                        Luminosità
-                        <span class="value" id="brightnessValue">100%</span>
-                    </label>
-                    <input type="range" id="brightnessSlider" min="50" max="250" value="100">
-                </div>
-
-                <div class="filter-group">
-                    <label>
-                        Nitidezza
-                        <span class="value" id="sharpnessValue">0</span>
-                    </label>
-                    <input type="range" id="sharpnessSlider" min="0" max="150" value="0">
-                </div>
+    <!-- ACTIONS WIDGET -->
+    <div class="widget" id="actionsWidget">
+        <div class="widget-header" data-widget="actionsWidget">
+            <div class="widget-title">💾 EXPORT</div>
+            <div class="widget-controls">
+                <div class="widget-btn" onclick="toggleMinimize('actionsWidget')">−</div>
             </div>
         </div>
-
-        <div class="instructions">
-            <h4>📋 Istruzioni:</h4>
-            <ul>
-                <li>Carica immagine o scatta foto</li>
-                <li>Trascina i 4 punti sugli angoli del documento</li>
-                <li>Premi "Rettifica" per correggere la prospettiva</li>
-                <li>Regola filtri e salva JPG/PDF</li>
-            </ul>
+        <div class="widget-content">
+            <button class="cyber-btn amber" id="saveJpgBtn" disabled>
+                <span>💾 SAVE JPG</span>
+            </button>
+            <button class="cyber-btn amber" id="savePdfBtn" disabled>
+                <span>📑 SAVE PDF</span>
+            </button>
         </div>
+    </div>
 
-        <div class="view-toggle">
-            <button class="active" data-view="source">📷 Originale</button>
-            <button data-view="result">✨ Risultato</button>
+    <!-- FILTERS WIDGET -->
+    <div class="widget" id="filtersWidget">
+        <div class="widget-header" data-widget="filtersWidget">
+            <div class="widget-title">🎨 FILTERS</div>
+            <div class="widget-controls">
+                <div class="widget-btn" onclick="toggleMinimize('filtersWidget')">−</div>
+            </div>
         </div>
-
-        <div class="workspace">
-            <div class="canvas-wrapper active" id="sourceWrapper">
-                <div class="canvas-container" id="sourceContainer">
-                    <h3>Immagine Originale</h3>
-                    <canvas id="sourceCanvas"></canvas>
-                    <div class="placeholder" id="sourcePlaceholder">
-                        Carica un'immagine o usa la fotocamera
-                    </div>
-                    <div class="zoom-helper" id="zoomHelper">
-                        <canvas id="zoomCanvas"></canvas>
-                        <div class="crosshair-v"></div>
-                    </div>
+        <div class="widget-content">
+            <div class="filter-item">
+                <div class="filter-label">
+                    <span>COLOR MODE</span>
                 </div>
+                <select id="colorModeSelect">
+                    <option value="color">COLOR</option>
+                    <option value="grayscale">GRAYSCALE</option>
+                    <option value="bw">BLACK & WHITE</option>
+                </select>
             </div>
 
-            <div class="canvas-wrapper" id="resultWrapper">
-                <div class="canvas-container" id="resultContainer">
-                    <h3>Risultato Rettificato</h3>
-                    <canvas id="resultCanvas"></canvas>
-                    <div class="placeholder" id="resultPlaceholder">
-                        Il risultato apparirà qui dopo la rettificazione
-                    </div>
+            <div class="filter-item" id="bwThresholdGroup" style="display: none;">
+                <div class="filter-label">
+                    <span>THRESHOLD</span>
+                    <span class="filter-value" id="thresholdValue">128</span>
                 </div>
+                <input type="range" id="thresholdSlider" min="0" max="255" value="128">
+            </div>
+
+            <div class="filter-item">
+                <div class="filter-label">
+                    <span>CONTRAST</span>
+                    <span class="filter-value" id="contrastValue">100%</span>
+                </div>
+                <input type="range" id="contrastSlider" min="50" max="300" value="100">
+            </div>
+
+            <div class="filter-item">
+                <div class="filter-label">
+                    <span>BRIGHTNESS</span>
+                    <span class="filter-value" id="brightnessValue">100%</span>
+                </div>
+                <input type="range" id="brightnessSlider" min="50" max="250" value="100">
+            </div>
+
+            <div class="filter-item">
+                <div class="filter-label">
+                    <span>SHARPNESS</span>
+                    <span class="filter-value" id="sharpnessValue">0</span>
+                </div>
+                <input type="range" id="sharpnessSlider" min="0" max="150" value="0">
             </div>
         </div>
     </div>
 
+    <!-- ZOOM HELPER -->
+    <div id="zoomHelper">
+        <canvas id="zoomCanvas"></canvas>
+        <div class="zoom-crosshair"></div>
+    </div>
+
+    <!-- STATUS -->
     <div class="status" id="status"></div>
 
-<script>
-    // 1. ELEMENTI DOM E VARIABILI
-    const fileInput = document.getElementById('fileInput');
-    const cameraBtn = document.getElementById('cameraBtn');
-    const sourceCanvas = document.getElementById('sourceCanvas');
-    const resultCanvas = document.getElementById('resultCanvas');
-    const sourceCtx = sourceCanvas.getContext('2d');
-    const resultCtx = resultCanvas.getContext('2d');
-    const sourceContainer = document.getElementById('sourceContainer');
-    const rectifyBtn = document.getElementById('rectifyBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const saveJpgBtn = document.getElementById('saveJpgBtn');
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    const contrastSlider = document.getElementById('contrastSlider');
-    const brightnessSlider = document.getElementById('brightnessSlider');
-    const sharpnessSlider = document.getElementById('sharpnessSlider');
-    const colorModeSelect = document.getElementById('colorModeSelect');
-    const thresholdSlider = document.getElementById('thresholdSlider');
-    const bwThresholdGroup = document.getElementById('bwThresholdGroup');
-    const status = document.getElementById('status');
+    <script>
+        // DRAG FUNCTIONALITY FOR WIDGETS - FIXED VERSION
+        let activeWidget = null;
+        let dragOffset = { x: 0, y: 0 };
 
-    let sourceImage = null;
-    let points = [];
-    let pointElements = [];
-    let selectedPoint = null;
-    let rectifiedImageData = null;
+        document.querySelectorAll('.widget-header').forEach(header => {
+            header.addEventListener('mousedown', startDrag);
+            header.addEventListener('touchstart', startDrag);
+        });
 
-    const zoomHelper = document.getElementById('zoomHelper');
-    const zoomCanvas = document.getElementById('zoomCanvas');
-    const zoomCtx = zoomCanvas.getContext('2d');
-
-    // 2. GESTIONE INPUT
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => loadImage(event.target.result);
-            reader.readAsDataURL(file);
-        }
-    });
-
-    cameraBtn.addEventListener('click', async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 2160 } } 
-            });
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            await video.play();
-            const track = stream.getVideoTracks()[0];
-            const modal = document.createElement('div');
-            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:10000;display:flex;flex-direction:column;';
-            video.style.cssText = 'width:100%;flex-grow:1;object-fit:contain;';
-            modal.appendChild(video);
-            const controls = document.createElement('div');
-            controls.style.cssText = 'padding:20px;display:flex;justify-content:space-around;background:#111;';
-            const captureBtn = document.createElement('button');
-            captureBtn.innerHTML = '📸 SCATTA';
-            captureBtn.className = 'btn btn-primary btn-lg';
-            captureBtn.onclick = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                stream.getTracks().forEach(t => t.stop());
-                document.body.removeChild(modal);
-                loadImage(canvas.toDataURL('image/jpeg', 1.0));
-            };
-            controls.appendChild(captureBtn);
-            modal.appendChild(controls);
-            document.body.appendChild(modal);
-        } catch (err) { showStatus('Errore: ' + err.message); }
-    });
-
-    function loadImage(src) {
-        const img = new Image();
-        img.onload = () => {
-            sourceImage = img;
-            const maxWidth = window.innerWidth > 600 ? 600 : window.innerWidth - 40;
-            let width = img.width;
-            let height = img.height;
-            const ratio = Math.min(maxWidth / width, 600 / height);
-            width *= ratio; height *= ratio;
+        function startDrag(e) {
+            if (e.target.classList.contains('widget-btn')) return;
             
-            sourceCanvas.width = width;
-            sourceCanvas.height = height;
-            sourceCtx.drawImage(img, 0, 0, width, height);
-            document.getElementById('sourcePlaceholder').style.display = 'none';
-            sourceCanvas.style.display = 'block';
-
-            const m = 40;
-            points = [{x:m, y:m}, {x:width-m, y:m}, {x:width-m, y:height-m}, {x:m, y:height-m}];
-            renderPoints();
-            rectifyBtn.disabled = false;
-            autoRectify();
-        };
-        img.src = src;
-    }
-
-    // 3. TRASCINAMENTO
-    function getCanvasCoords(e) {
-        const rect = sourceCanvas.getBoundingClientRect();
-        return {
-            x: (e.clientX - rect.left) * (sourceCanvas.width / rect.width),
-            y: (e.clientY - rect.top) * (sourceCanvas.height / rect.height)
-        };
-    }
-
-    sourceCanvas.addEventListener('pointerdown', (e) => {
-        sourceCanvas.setPointerCapture(e.pointerId);
-        const coords = getCanvasCoords(e);
-        let minDist = 50; 
-        selectedPoint = null;
-        points.forEach((p, index) => {
-            const dist = Math.hypot(p.x - coords.x, p.y - coords.y);
-            if (dist < minDist) { minDist = dist; selectedPoint = index; }
-        });
-        if (selectedPoint !== null) renderPoints();
-    });
-
-    sourceCanvas.addEventListener('pointermove', (e) => {
-        if (selectedPoint === null) return;
-        
-        const coords = getCanvasCoords(e);
-        
-        // Calcolo OFFSET: se il punto è nella metà superiore del canvas lo sposto sopra il dito,
-        // se è nella metà inferiore lo sposto sotto (o viceversa a seconda della comodità).
-        // Standard: sposta il punto SOPRA il dito di 50px per vederlo meglio.
-        const verticalOffset = -50; 
-        
-        // Applichiamo l'offset solo su mobile/touch (pointerType !== 'mouse')
-        const finalY = e.pointerType === 'mouse' ? coords.y : coords.y + verticalOffset;
-
-        points[selectedPoint] = {
-            x: Math.max(0, Math.min(sourceCanvas.width, coords.x)),
-            y: Math.max(0, Math.min(sourceCanvas.height, finalY))
-        };
-        
-        renderPoints();
-        updateZoomHelper(points[selectedPoint].x, points[selectedPoint].y, e.clientX, e.clientY);
-    });
-    sourceCanvas.addEventListener('pointerup', (e) => {
-        if (selectedPoint !== null) {
-            sourceCanvas.releasePointerCapture(e.pointerId);
-            selectedPoint = null;
-            zoomHelper.style.display = 'none';
-            renderPoints();
-            autoRectify();
+            const widgetId = e.currentTarget.dataset.widget;
+            activeWidget = document.getElementById(widgetId);
+            
+            const rect = activeWidget.getBoundingClientRect();
+            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            
+            dragOffset.x = clientX - rect.left;
+            dragOffset.y = clientY - rect.top;
+            
+            activeWidget.style.transition = 'none';
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+            
+            e.preventDefault();
         }
-    });
 
-    function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
-        zoomHelper.style.display = 'block';
-        const zw = 160, zh = 160; // Dimensione fissa del widget zoom
-        
-        // Posizionamento dello zoom (sopra o sotto il dito)
-        let left = screenX - zw / 2;
-        let top = screenY - zh - 80;
-        if (left < 10) left = 10;
-        if (top < 10) top = screenY + 60;
-        
-        zoomHelper.style.left = left + 'px';
-        zoomHelper.style.top = top + 'px';
+        function drag(e) {
+            if (!activeWidget) return;
+            
+            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            
+            let newLeft = clientX - dragOffset.x;
+            let newTop = clientY - dragOffset.y;
+            
+            // Limiti dello schermo
+            newLeft = Math.max(0, Math.min(window.innerWidth - activeWidget.offsetWidth, newLeft));
+            newTop = Math.max(0, Math.min(window.innerHeight - activeWidget.offsetHeight, newTop));
+            
+            activeWidget.style.left = newLeft + 'px';
+            activeWidget.style.top = newTop + 'px';
+            activeWidget.style.right = 'auto';
+            activeWidget.style.bottom = 'auto';
+            activeWidget.style.transform = 'none';
+            
+            e.preventDefault();
+        }
 
-        const scaleX = sourceImage.width / sourceCanvas.width;
-        const scaleY = sourceImage.height / sourceCanvas.height;
-        
-        zoomCanvas.width = zw; 
-        zoomCanvas.height = zh;
-        zoomCtx.imageSmoothingEnabled = true;
-
-        // --- CALCOLO AREA PROPORZIONALE (Ingrandimento 60%) ---
-        // Per avere un ingrandimento del 60%, l'area catturata deve essere 
-        // la dimensione del widget divisa per 1.6 (il fattore di zoom).
-        const zoomFactor = 1.8; 
-        const areaCatturataX = (zw / zoomFactor) * scaleX;
-        const areaCatturataY = (zh / zoomFactor) * scaleY;
-
-        zoomCtx.drawImage(
-            sourceImage, 
-            canvasX * scaleX - areaCatturataX / 2, 
-            canvasY * scaleY - areaCatturataY / 2, 
-            areaCatturataX, 
-            areaCatturataY, 
-            0, 0, zw, zh
-        );
-
-        // Disegno mirino di precisione
-        zoomCtx.strokeStyle = '#3b82f6'; 
-        zoomCtx.lineWidth = 2;
-        zoomCtx.beginPath(); 
-        // Croce
-        zoomCtx.moveTo(zw/2, 0); zoomCtx.lineTo(zw/2, zh); 
-        zoomCtx.moveTo(0, zh/2); zoomCtx.lineTo(zw, zh/2); 
-        zoomCtx.stroke();
-        // Cerchio centrale
-        zoomCtx.beginPath();
-        zoomCtx.arc(zw/2, zh/2, 8, 0, Math.PI * 2);
-        zoomCtx.stroke();
-    }
-    function renderPoints() {
-        pointElements.forEach(el => el.remove());
-        pointElements = [];
-        sourceCtx.drawImage(sourceImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
-        sourceCtx.strokeStyle = '#3b82f6'; sourceCtx.lineWidth = 2;
-        sourceCtx.beginPath();
-        sourceCtx.moveTo(points[0].x, points[0].y);
-        points.forEach(p => sourceCtx.lineTo(p.x, p.y));
-        sourceCtx.closePath(); sourceCtx.stroke();
-        points.forEach((p, i) => {
-            const el = document.createElement('div');
-            el.className = 'point';
-            el.style.cssText = `left:${p.x}px;top:${p.y}px;position:absolute;pointer-events:none;`;
-            if (selectedPoint === i) el.style.background = '#fbbf24';
-            sourceContainer.appendChild(el);
-            pointElements.push(el);
-        });
-    }
-
-    // 4. MATEMATICA SISTEMI (IMPORTANTE!)
-    function solveLinearSystem(A, b) {
-        const n = b.length;
-        for (let i = 0; i < n; i++) {
-            let max = i;
-            for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[max][i])) max = k;
-            [A[i], A[max]] = [A[max], A[i]]; [b[i], b[max]] = [b[max], b[i]];
-            for (let k = i + 1; k < n; k++) {
-                const f = A[k][i] / A[i][i];
-                b[k] -= f * b[i];
-                for (let j = i; j < n; j++) A[k][j] -= f * A[i][j];
+        function stopDrag() {
+            if (activeWidget) {
+                activeWidget.style.transition = '';
+                activeWidget = null;
             }
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
         }
-        const x = new Array(n);
-        for (let i = n - 1; i >= 0; i--) {
-            x[i] = b[i];
-            for (let j = i + 1; j < n; j++) x[i] -= A[i][j] * x[j];
-            x[i] /= A[i][i];
+
+        // MINIMIZE TOGGLE
+        function toggleMinimize(widgetId) {
+            const widget = document.getElementById(widgetId);
+            widget.classList.toggle('minimized');
         }
-        return x;
-    }
 
-    function distance(p1, p2) { return Math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2); }
-    function orderPointsClockwise(pts) {
-        const center = pts.reduce((acc, p) => ({x:acc.x+p.x/4, y:acc.y+p.y/4}), {x:0, y:0});
-        return [...pts].sort((a,b) => Math.atan2(a.y-center.y, a.x-center.x) - Math.atan2(b.y-center.y, b.x-center.x));
-    }
+        // ORIGINAL SCANNER LOGIC
+        const fileInput = document.getElementById('fileInput');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const sourceCanvas = document.getElementById('sourceCanvas');
+        const resultCanvas = document.getElementById('resultCanvas');
+        const sourceCtx = sourceCanvas.getContext('2d');
+        const resultCtx = resultCanvas.getContext('2d');
+        const sourceContainer = document.getElementById('fullscreenContainer');
+        const rectifyBtn = document.getElementById('rectifyBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const saveJpgBtn = document.getElementById('saveJpgBtn');
+        const savePdfBtn = document.getElementById('savePdfBtn');
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const sharpnessSlider = document.getElementById('sharpnessSlider');
+        const colorModeSelect = document.getElementById('colorModeSelect');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const bwThresholdGroup = document.getElementById('bwThresholdGroup');
+        const status = document.getElementById('status');
+        const placeholder = document.getElementById('placeholder');
 
-    function computeHomography(src, dst) {
-        const A = []; const b = [];
-        for (let i = 0; i < 4; i++) {
-            const {x: sx, y: sy} = src[i];
-            const {x: dx, y: dy} = dst[i];
-            A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx]); b.push(dx);
-            A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy]); b.push(dy);
+        let sourceImage = null;
+        let points = [];
+        let pointElements = [];
+        let selectedPoint = null;
+        let rectifiedImageData = null;
+        let showingResult = false;
+        let canvasOffset = { x: 0, y: 0 };
+        let canvasScale = 1;
+
+        const zoomHelper = document.getElementById('zoomHelper');
+        const zoomCanvas = document.getElementById('zoomCanvas');
+        const zoomCtx = zoomCanvas.getContext('2d');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => loadImage(event.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        cameraBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 2160 } } 
+                });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:10000;display:flex;flex-direction:column;';
+                video.style.cssText = 'width:100%;flex-grow:1;object-fit:contain;';
+                modal.appendChild(video);
+                
+                const controls = document.createElement('div');
+                controls.style.cssText = 'padding:20px;display:flex;justify-content:space-around;background:#111;';
+                
+                const captureBtn = document.createElement('button');
+                captureBtn.innerHTML = '<span>📸 CAPTURE</span>';
+                captureBtn.className = 'cyber-btn amber';
+                captureBtn.onclick = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    stream.getTracks().forEach(t => t.stop());
+                    document.body.removeChild(modal);
+                    loadImage(canvas.toDataURL('image/jpeg', 1.0));
+                };
+                
+                controls.appendChild(captureBtn);
+                modal.appendChild(controls);
+                document.body.appendChild(modal);
+            } catch (err) { 
+                showStatus('ERROR: ' + err.message); 
+            }
+        });
+
+        function loadImage(src) {
+            const img = new Image();
+            img.onload = () => {
+                sourceImage = img;
+                const containerRect = sourceContainer.getBoundingClientRect();
+                const containerWidth = containerRect.width;
+                const containerHeight = containerRect.height;
+                
+                // Calcola il ratio per fittare l'immagine nel container
+                const ratio = Math.min(containerWidth / img.width, containerHeight / img.height);
+                const displayWidth = img.width * ratio;
+                const displayHeight = img.height * ratio;
+                
+                // Salva scale e offset per conversioni coordinate
+                canvasScale = ratio;
+                canvasOffset.x = (containerWidth - displayWidth) / 2;
+                canvasOffset.y = (containerHeight - displayHeight) / 2;
+                
+                sourceCanvas.width = displayWidth;
+                sourceCanvas.height = displayHeight;
+                
+                sourceCtx.clearRect(0, 0, displayWidth, displayHeight);
+                sourceCtx.drawImage(img, 0, 0, displayWidth, displayHeight);
+                
+                placeholder.style.display = 'none';
+                sourceCanvas.classList.add('active');
+
+                const m = 40;
+                points = [
+                    {x: m, y: m}, 
+                    {x: displayWidth - m, y: m}, 
+                    {x: displayWidth - m, y: displayHeight - m}, 
+                    {x: m, y: displayHeight - m}
+                ];
+                renderPoints();
+                rectifyBtn.disabled = false;
+                autoRectify();
+            };
+            img.src = src;
         }
-        const h = solveLinearSystem(A, b);
-        return [[h[0], h[1], h[2]], [h[3], h[4], h[5]], [h[6], h[7], 1]];
-    }
 
-    function invertHomography(H) {
-        const [[a,b,c],[d,e,f],[g,h,i]] = H;
-        const det = a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);
-        const invDet = 1/det;
-        return [
-            [(e*i-f*h)*invDet, (c*h-b*i)*invDet, (b*f-c*e)*invDet],
-            [(f*g-d*i)*invDet, (a*i-c*g)*invDet, (c*d-a*f)*invDet],
-            [(d*h-e*g)*invDet, (b*g-a*h)*invDet, (a*e-b*d)*invDet]
-        ];
-    }
+        function getCanvasCoords(e) {
+            const rect = sourceCanvas.getBoundingClientRect();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
 
-    // 5. FILTRI
-    function applySharpen(imageData, amount) {
-        const w = imageData.width, h = imageData.height;
-        const output = new ImageData(new Uint8ClampedArray(imageData.data), w, h);
-        const k = [0, -amount, 0, -amount, 1 + 4 * amount, -amount, 0, -amount, 0];
-        for (let y = 1; y < h - 1; y++) {
-            for (let x = 1; x < w - 1; x++) {
-                const i = (y * w + x) * 4;
-                for (let c = 0; c < 3; c++) {
-                    let sum = 0;
-                    for (let ky = -1; ky <= 1; ky++) {
-                        for (let kx = -1; kx <= 1; kx++) {
-                            sum += imageData.data[((y + ky) * w + (x + kx)) * 4 + c] * k[(ky + 1) * 3 + (kx + 1)];
-                        }
-                    }
-                    output.data[i + c] = sum;
+        sourceCanvas.addEventListener('pointerdown', (e) => {
+            if (showingResult) return;
+            
+            const coords = getCanvasCoords(e);
+            let minDist = 60;
+            selectedPoint = null;
+            
+            points.forEach((p, index) => {
+                const dist = Math.hypot(p.x - coords.x, p.y - coords.y);
+                if (dist < minDist) { 
+                    minDist = dist; 
+                    selectedPoint = index; 
+                }
+            });
+            
+            if (selectedPoint !== null) {
+                renderPoints();
+                e.preventDefault();
+            }
+        });
+
+        sourceCanvas.addEventListener('pointermove', (e) => {
+            if (selectedPoint === null || showingResult) return;
+            
+            const coords = getCanvasCoords(e);
+            const rect = sourceCanvas.getBoundingClientRect();
+            
+            points[selectedPoint] = {
+                x: Math.max(0, Math.min(sourceCanvas.width, coords.x)),
+                y: Math.max(0, Math.min(sourceCanvas.height, coords.y))
+            };
+            
+            renderPoints();
+            
+            // Calcola posizione schermo per zoom
+            const screenX = rect.left + coords.x;
+            const screenY = rect.top + coords.y;
+            updateZoomHelper(coords.x, coords.y, screenX, screenY);
+            
+            e.preventDefault();
+        });
+
+        sourceCanvas.addEventListener('pointerup', (e) => {
+            if (selectedPoint !== null) {
+                selectedPoint = null;
+                zoomHelper.style.display = 'none';
+                renderPoints();
+                autoRectify();
+            }
+        });
+
+        function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
+            zoomHelper.style.display = 'block';
+            const zw = 180, zh = 180;
+            
+            let left = screenX - zw / 2;
+            let top = screenY - zh - 100;
+            if (left < 10) left = 10;
+            if (left + zw > window.innerWidth - 10) left = window.innerWidth - zw - 10;
+            if (top < 10) top = screenY + 60;
+            
+            zoomHelper.style.left = left + 'px';
+            zoomHelper.style.top = top + 'px';
+
+            // Coordinate sull'immagine originale
+            const origX = canvasX / canvasScale;
+            const origY = canvasY / canvasScale;
+            
+            zoomCanvas.width = zw; 
+            zoomCanvas.height = zh;
+            zoomCtx.imageSmoothingEnabled = true;
+
+            const zoomFactor = 1.8;
+            const areaCatturataX = zw / zoomFactor;
+            const areaCatturataY = zh / zoomFactor;
+
+            zoomCtx.drawImage(
+                sourceImage, 
+                origX - areaCatturataX / 2, 
+                origY - areaCatturataY / 2, 
+                areaCatturataX, 
+                areaCatturataY, 
+                0, 0, zw, zh
+            );
+        }
+
+        function renderPoints() {
+            pointElements.forEach(el => el.remove());
+            pointElements = [];
+            
+            if (!sourceImage) return;
+            
+            sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+            sourceCtx.drawImage(sourceImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
+            
+            sourceCtx.strokeStyle = 'rgba(0, 217, 255, 0.8)';
+            sourceCtx.lineWidth = 3;
+            sourceCtx.shadowBlur = 15;
+            sourceCtx.shadowColor = 'rgba(0, 217, 255, 0.8)';
+            sourceCtx.beginPath();
+            sourceCtx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => sourceCtx.lineTo(p.x, p.y));
+            sourceCtx.closePath();
+            sourceCtx.stroke();
+            sourceCtx.shadowBlur = 0;
+            
+            const canvasRect = sourceCanvas.getBoundingClientRect();
+            
+            points.forEach((p, i) => {
+                const el = document.createElement('div');
+                el.className = 'point';
+                if (selectedPoint === i) el.classList.add('selected');
+                
+                const screenX = canvasRect.left + p.x;
+                const screenY = canvasRect.top + p.y;
+                
+                el.style.left = screenX + 'px';
+                el.style.top = screenY + 'px';
+                el.style.position = 'fixed';
+                
+                document.body.appendChild(el);
+                pointElements.push(el);
+            });
+        }
+
+        function solveLinearSystem(A, b) {
+            const n = b.length;
+            for (let i = 0; i < n; i++) {
+                let max = i;
+                for (let k = i + 1; k < n; k++) 
+                    if (Math.abs(A[k][i]) > Math.abs(A[max][i])) max = k;
+                [A[i], A[max]] = [A[max], A[i]]; 
+                [b[i], b[max]] = [b[max], b[i]];
+                for (let k = i + 1; k < n; k++) {
+                    const f = A[k][i] / A[i][i];
+                    b[k] -= f * b[i];
+                    for (let j = i; j < n; j++) A[k][j] -= f * A[i][j];
                 }
             }
+            const x = new Array(n);
+            for (let i = n - 1; i >= 0; i--) {
+                x[i] = b[i];
+                for (let j = i + 1; j < n; j++) x[i] -= A[i][j] * x[j];
+                x[i] /= A[i][i];
+            }
+            return x;
         }
-        return output;
-    }
 
-    function applyFilters() {
-        if (!rectifiedImageData) return;
-        
-        // Leggiamo i valori una sola volta
-        const contrast = Math.pow(contrastSlider.value / 100, 2);
-        const brightness = brightnessSlider.value / 100;
-        const mode = colorModeSelect.value;
-        const thr = parseInt(thresholdSlider.value);
-        
-        // Creiamo una copia dei dati originali rettificati per non degradare l'immagine a ogni modifica
-        let img = new ImageData(
-            new Uint8ClampedArray(rectifiedImageData.data), 
-            rectifiedImageData.width, 
-            rectifiedImageData.height
-        );
-        
-        const d = img.data;
-        const len = d.length;
+        function distance(p1, p2) { 
+            return Math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2); 
+        }
 
-        // Ciclo ottimizzato
-        for (let i = 0; i < len; i += 4) {
-            let r = d[i], g = d[i+1], b = d[i+2];
+        function orderPointsClockwise(pts) {
+            const center = pts.reduce((acc, p) => ({x:acc.x+p.x/4, y:acc.y+p.y/4}), {x:0, y:0});
+            return [...pts].sort((a,b) => 
+                Math.atan2(a.y-center.y, a.x-center.x) - Math.atan2(b.y-center.y, b.x-center.x)
+            );
+        }
 
-            // Conversione colore / Grayscale
-            if (mode === 'grayscale' || mode === 'bw') {
-                const v = (r * 0.299 + g * 0.587 + b * 0.114);
-                r = g = b = v;
+        function computeHomography(src, dst) {
+            const A = [], b = [];
+            for (let i = 0; i < 4; i++) {
+                const {x: sx, y: sy} = src[i];
+                const {x: dx, y: dy} = dst[i];
+                A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx]); 
+                b.push(dx);
+                A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy]); 
+                b.push(dy);
+            }
+            const h = solveLinearSystem(A, b);
+            return [[h[0], h[1], h[2]], [h[3], h[4], h[5]], [h[6], h[7], 1]];
+        }
+
+        function invertHomography(H) {
+            const [[a,b,c],[d,e,f],[g,h,i]] = H;
+            const det = a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);
+            const invDet = 1/det;
+            return [
+                [(e*i-f*h)*invDet, (c*h-b*i)*invDet, (b*f-c*e)*invDet],
+                [(f*g-d*i)*invDet, (a*i-c*g)*invDet, (c*d-a*f)*invDet],
+                [(d*h-e*g)*invDet, (b*g-a*h)*invDet, (a*e-b*d)*invDet]
+            ];
+        }
+
+        function applyFilters() {
+            if (!rectifiedImageData) return;
+            
+            const contrast = Math.pow(contrastSlider.value / 100, 2);
+            const brightness = brightnessSlider.value / 100;
+            const mode = colorModeSelect.value;
+            const thr = parseInt(thresholdSlider.value);
+            
+            let img = new ImageData(
+                new Uint8ClampedArray(rectifiedImageData.data), 
+                rectifiedImageData.width, 
+                rectifiedImageData.height
+            );
+            
+            const d = img.data;
+            const len = d.length;
+
+            for (let i = 0; i < len; i += 4) {
+                let r = d[i], g = d[i+1], b = d[i+2];
+
+                if (mode === 'grayscale' || mode === 'bw') {
+                    const v = (r * 0.299 + g * 0.587 + b * 0.114);
+                    r = g = b = v;
+                }
+
+                r = ((r - 128) * contrast + 128) * brightness;
+                g = ((g - 128) * contrast + 128) * brightness;
+                b = ((b - 128) * contrast + 128) * brightness;
+
+                if (mode === 'bw') {
+                    const v = (r + g + b) / 3 > thr ? 255 : 0;
+                    r = g = b = v;
+                }
+
+                d[i] = r; d[i+1] = g; d[i+2] = b;
+            }
+            
+            resultCtx.putImageData(img, 0, 0);
+        }
+
+        function autoRectify() {
+            if (!sourceImage || points.length < 4) return;
+
+            const sorted = orderPointsClockwise(points);
+            
+            // Converti coordinate canvas in coordinate immagine originale
+            const realSrc = sorted.map(p => ({ 
+                x: p.x / canvasScale, 
+                y: p.y / canvasScale 
+            }));
+
+            const widthTop = distance(realSrc[0], realSrc[1]);
+            const widthBottom = distance(realSrc[3], realSrc[2]);
+            const avgW = (widthTop + widthBottom) / 2;
+
+            const heightLeft = distance(realSrc[0], realSrc[3]);
+            const heightRight = distance(realSrc[1], realSrc[2]);
+            const avgH = (heightLeft + heightRight) / 2;
+
+            const w = Math.round(avgW);
+            const h = Math.round(avgH);
+
+            resultCanvas.width = w;
+            resultCanvas.height = h;
+
+            const H = computeHomography(realSrc, [
+                { x: 0, y: 0 }, 
+                { x: w, y: 0 }, 
+                { x: w, y: h }, 
+                { x: 0, y: h }
+            ]);
+            const Hinv = invertHomography(H);
+
+            const tCanvas = document.createElement('canvas');
+            tCanvas.width = sourceImage.width;
+            tCanvas.height = sourceImage.height;
+            const tCtx = tCanvas.getContext('2d', { willReadFrequently: true });
+            tCtx.drawImage(sourceImage, 0, 0);
+            
+            const srcData = tCtx.getImageData(0, 0, tCanvas.width, tCanvas.height);
+            const dstData = resultCtx.createImageData(w, h);
+            
+            const sPixels = srcData.data;
+            const dPixels = dstData.data;
+            const sw = srcData.width;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const den = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
+                    const sx = Math.floor((Hinv[0][0] * x + Hinv[0][1] * y + Hinv[0][2]) / den);
+                    const sy = Math.floor((Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / den);
+
+                    if (sx >= 0 && sx < sw && sy >= 0 && sy < srcData.height) {
+                        const di = (y * w + x) * 4;
+                        const si = (sy * sw + sx) * 4;
+                        dPixels[di] = sPixels[si];
+                        dPixels[di + 1] = sPixels[si + 1];
+                        dPixels[di + 2] = sPixels[si + 2];
+                        dPixels[di + 3] = 255;
+                    }
+                }
             }
 
-            // Contrasto e Luminosità
-            r = ((r - 128) * contrast + 128) * brightness;
-            g = ((g - 128) * contrast + 128) * brightness;
-            b = ((b - 128) * contrast + 128) * brightness;
+            rectifiedImageData = dstData;
+            applyFilters();
 
-            // Bianco e Nero secco
-            if (mode === 'bw') {
-                const v = (r + g + b) / 3 > thr ? 255 : 0;
-                r = g = b = v;
-            }
-
-            d[i] = r; d[i+1] = g; d[i+2] = b;
+            saveJpgBtn.disabled = savePdfBtn.disabled = false;
+            showStatus('RECTIFIED');
         }
-        
-        resultCtx.putImageData(img, 0, 0);
-    }
 
-    // 6. RETTIFICA
-function autoRectify() {
-    if (!sourceImage || points.length < 4) return;
-
-    const ratioX = sourceImage.width / sourceCanvas.width;
-    const ratioY = sourceImage.height / sourceCanvas.height;
-    const sorted = orderPointsClockwise(points);
-    
-    // Coordinate reali sulla foto originale
-    const realSrc = sorted.map(p => ({ x: p.x * ratioX, y: p.y * ratioY }));
-
-    // --- CALCOLO PROPORZIONI DINAMICHE (Aspect Ratio reale) ---
-    // Calcoliamo la larghezza media tra lato superiore e inferiore
-    const widthTop = distance(realSrc[0], realSrc[1]);
-    const widthBottom = distance(realSrc[3], realSrc[2]);
-    const avgW = (widthTop + widthBottom) / 2;
-
-    // Calcoliamo l'altezza media tra lato sinistro e destro
-    const heightLeft = distance(realSrc[0], realSrc[3]);
-    const heightRight = distance(realSrc[1], realSrc[2]);
-    const avgH = (heightLeft + heightRight) / 2;
-
-    // Impostiamo le dimensioni del canvas di output mantenendo il rapporto reale
-    const w = Math.round(avgW);
-    const h = Math.round(avgH);
-
-    resultCanvas.width = w;
-    resultCanvas.height = h;
-
-    // --- OMOGRAFIA ---
-    const H = computeHomography(realSrc, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]);
-    const Hinv = invertHomography(H);
-
-    const tCanvas = document.createElement('canvas');
-    tCanvas.width = sourceImage.width;
-    tCanvas.height = sourceImage.height;
-    const tCtx = tCanvas.getContext('2d', { willReadFrequently: true });
-    tCtx.drawImage(sourceImage, 0, 0);
-    
-    const srcData = tCtx.getImageData(0, 0, tCanvas.width, tCanvas.height);
-    const dstData = resultCtx.createImageData(w, h);
-    
-    const sPixels = srcData.data;
-    const dPixels = dstData.data;
-    const sw = srcData.width;
-
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            const den = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
-            const sx = Math.floor((Hinv[0][0] * x + Hinv[0][1] * y + Hinv[0][2]) / den);
-            const sy = Math.floor((Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / den);
-
-            if (sx >= 0 && sx < sw && sy >= 0 && sy < srcData.height) {
-                const di = (y * w + x) * 4;
-                const si = (sy * sw + sx) * 4;
-                dPixels[di] = sPixels[si];
-                dPixels[di + 1] = sPixels[si + 1];
-                dPixels[di + 2] = sPixels[si + 2];
-                dPixels[di + 3] = 255;
-            }
-        }
-    }
-
-    rectifiedImageData = dstData;
-    applyFilters();
-
-    // --- FIX APERTURA TAB E VISIBILITÀ MOBILE ---
-    
-    // 1. Rimuovi placeholder e forza display
-    const resPlaceholder = document.getElementById('resultPlaceholder');
-    if (resPlaceholder) resPlaceholder.style.display = 'none';
-    resultCanvas.style.display = 'block';
-
-    // 2. Forza l'attivazione del Tab specifico
-    // Cerchiamo l'elemento tab (es. 'nav-result-tab' o simile)
-    const resultTabBtn = document.querySelector('[data-bs-target="#nav-result"]') || 
-                         document.querySelector('button[aria-controls="nav-result"]') ||
-                         document.getElementById('result-tab');
-
-    if (resultTabBtn) {
-        // Usiamo l'API di Bootstrap se presente, altrimenti il click manuale
-        if (window.bootstrap && bootstrap.Tab) {
-            const tab = new bootstrap.Tab(resultTabBtn);
-            tab.show();
-        } else {
-            resultTabBtn.click();
-        }
-    }
-
-    // 3. Scroll morbido verso l'immagine prodotta
-    setTimeout(() => {
-        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 200);
-
-    saveJpgBtn.disabled = savePdfBtn.disabled = false;
-    showStatus('Documento rettificato con successo');
-}
-
-    // 7. LISTENER
-    resetBtn.addEventListener('click', () => {
-        if (!sourceImage) return;
-        const m = 40;
-        points = [{x:m, y:m}, {x:sourceCanvas.width-m, y:m}, {x:sourceCanvas.width-m, y:sourceCanvas.height-m}, {x:m, y:sourceCanvas.height-m}];
-        renderPoints(); autoRectify();
-    });
-
- // Gestione dei filtri ottimizzata per evitare freeze
-    [contrastSlider, brightnessSlider, thresholdSlider, sharpnessSlider].forEach(slider => {
-        // Aggiorna il valore numerico a video DURANTE lo spostamento (veloce)
-        slider.addEventListener('input', () => {
-            const valSpan = document.getElementById(slider.id.replace('Slider', 'Value'));
-            if (valSpan) {
-                const suffix = slider.id.includes('threshold') ? '' : '%';
-                valSpan.textContent = slider.value + suffix;
-            }
+        resetBtn.addEventListener('click', () => {
+            if (!sourceImage) return;
+            
+            const m = 40;
+            points = [
+                {x: m, y: m}, 
+                {x: sourceCanvas.width - m, y: m}, 
+                {x: sourceCanvas.width - m, y: sourceCanvas.height - m}, 
+                {x: m, y: sourceCanvas.height - m}
+            ];
+            renderPoints(); 
+            autoRectify();
         });
 
-        // Applica il filtro pesante SOLO al rilascio (evento 'change')
-        slider.addEventListener('change', () => {
-            showStatus('Applicazione filtri...');
-            // Usiamo setTimeout per permettere alla UI di aggiornarsi prima del calcolo pesante
-            setTimeout(() => {
-                applyFilters();
-                showStatus('Filtri applicati');
-            }, 10);
+        [contrastSlider, brightnessSlider, thresholdSlider, sharpnessSlider].forEach(slider => {
+            slider.addEventListener('input', () => {
+                const valSpan = document.getElementById(slider.id.replace('Slider', 'Value'));
+                if (valSpan) {
+                    const suffix = slider.id.includes('threshold') ? '' : '%';
+                    valSpan.textContent = slider.value + suffix;
+                }
+            });
+
+            slider.addEventListener('change', () => {
+                showStatus('APPLYING...');
+                setTimeout(() => {
+                    applyFilters();
+                    showStatus('APPLIED');
+                }, 10);
+            });
         });
-    });
 
-    // La modalità colore può restare su 'change'
-    colorModeSelect.addEventListener('change', () => {
-        bwThresholdGroup.style.display = colorModeSelect.value === 'bw' ? 'flex' : 'none';
-        applyFilters();
-    });
-
-    saveJpgBtn.addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = `scan_${Date.now()}.jpg`;
-        link.href = resultCanvas.toDataURL('image/jpeg', 0.95);
-        link.click();
-    });
-
-    savePdfBtn.addEventListener('click', () => {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-            orientation: resultCanvas.width > resultCanvas.height ? 'l' : 'p',
-            unit: 'px',
-            format: [resultCanvas.width, resultCanvas.height]
+        colorModeSelect.addEventListener('change', () => {
+            bwThresholdGroup.style.display = colorModeSelect.value === 'bw' ? 'block' : 'none';
+            applyFilters();
         });
-        pdf.addImage(resultCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, resultCanvas.width, resultCanvas.height);
-        pdf.save(`scan_${Date.now()}.pdf`);
-    });
 
-    function showStatus(msg) { status.textContent = msg; status.classList.add('show'); setTimeout(()=>status.classList.remove('show'), 2000); }
-    
- // Gestione dei Tab su Mobile
-    document.querySelectorAll('.view-toggle button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Rimuove classe active dai bottoni
-            document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        saveJpgBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `scan_${Date.now()}.jpg`;
+            link.href = resultCanvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+            showStatus('JPG SAVED');
+        });
 
-            // Mostra/Nasconde i wrapper
-            const view = btn.getAttribute('data-view');
-            if (view === 'source') {
-                document.getElementById('sourceWrapper').classList.add('active');
-                document.getElementById('resultWrapper').classList.remove('active');
+        savePdfBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: resultCanvas.width > resultCanvas.height ? 'l' : 'p',
+                unit: 'px',
+                format: [resultCanvas.width, resultCanvas.height]
+            });
+            pdf.addImage(resultCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, resultCanvas.width, resultCanvas.height);
+            pdf.save(`scan_${Date.now()}.pdf`);
+            showStatus('PDF SAVED');
+        });
+
+        toggleViewBtn.addEventListener('click', () => {
+            showingResult = !showingResult;
+            if (showingResult) {
+                sourceCanvas.classList.remove('active');
+                resultCanvas.classList.add('active');
+                document.getElementById('viewBtnText').textContent = '👁 SOURCE';
+                pointElements.forEach(el => el.style.display = 'none');
             } else {
-                document.getElementById('sourceWrapper').classList.remove('active');
-                document.getElementById('resultWrapper').classList.add('active');
+                resultCanvas.classList.remove('active');
+                sourceCanvas.classList.add('active');
+                document.getElementById('viewBtnText').textContent = '👁 RESULT';
+                pointElements.forEach(el => el.style.display = 'block');
             }
         });
-    });
- 
-</script>
+
+        function showStatus(msg) { 
+            status.textContent = msg; 
+            status.classList.add('show'); 
+            setTimeout(() => status.classList.remove('show'), 2000); 
+        }
+
+        // Aggiorna posizione punti al resize
+        window.addEventListener('resize', () => {
+            if (sourceImage && !showingResult) {
+                renderPoints();
+            }
+        });
+    </script>
 </body>
 </html>
