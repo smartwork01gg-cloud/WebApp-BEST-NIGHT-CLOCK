@@ -15,41 +15,60 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #1a202c;
+            background: #0a0e17;
             min-height: 100vh;
             overflow-x: hidden;
+            color: #e2e8f0;
         }
 
         .container {
             max-width: 100%;
             min-height: 100vh;
-            background: white;
+            background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
             display: flex;
             flex-direction: column;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
             color: white;
             padding: 16px;
             text-align: center;
             flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+            pointer-events: none;
         }
 
         h1 {
             font-size: 1.25em;
             margin-bottom: 4px;
+            position: relative;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
             opacity: 0.9;
             font-size: 0.75em;
+            position: relative;
         }
 
         .controls {
             padding: 12px;
-            background: #f7fafc;
-            border-bottom: 2px solid #e2e8f0;
+            background: #1a1f2e;
+            border-bottom: 1px solid #2d3748;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -61,7 +80,7 @@
         .btn {
             padding: 12px 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -73,41 +92,61 @@
             white-space: nowrap;
             flex: 1 1 auto;
             min-width: 140px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
         }
 
         .btn-primary {
-            background: #667eea;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
         }
 
         .btn-primary:active {
-            background: #5568d3;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             transform: scale(0.98);
         }
 
         .btn-success {
-            background: #48bb78;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
         }
 
         .btn-success:active {
-            background: #38a169;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
             transform: scale(0.98);
         }
 
         .btn-secondary {
-            background: #718096;
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
             color: white;
         }
 
         .btn-secondary:active {
-            background: #4a5568;
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
             transform: scale(0.98);
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
@@ -120,9 +159,10 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            background: white;
+            background: #0f1419;
             padding: 12px;
             border-radius: 10px;
+            border: 1px solid #2d3748;
         }
 
         .filter-group {
@@ -134,7 +174,7 @@
         .filter-group label {
             font-weight: 600;
             font-size: 13px;
-            color: #2d3748;
+            color: #cbd5e0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -142,11 +182,11 @@
 
         .filter-group input[type="range"] {
             width: 100%;
-            height: 8px;
+            height: 6px;
             cursor: pointer;
             -webkit-appearance: none;
             appearance: none;
-            background: #e2e8f0;
+            background: linear-gradient(to right, #2d3748 0%, #4a5568 100%);
             border-radius: 5px;
             outline: none;
         }
@@ -154,27 +194,32 @@
         .filter-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 24px;
-            height: 24px;
-            background: #667eea;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .filter-group input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
         }
 
         .filter-group input[type="range"]::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            background: #667eea;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             border-radius: 50%;
             cursor: pointer;
             border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
         }
 
         .filter-group .value {
             font-size: 13px;
-            color: #667eea;
+            color: #3b82f6;
             font-weight: 700;
             min-width: 50px;
             text-align: right;
@@ -190,7 +235,7 @@
 
         .canvas-container {
             position: relative;
-            background: #1a202c;
+            background: #0a0e17;
             flex: 1;
             display: flex;
             align-items: center;
@@ -203,13 +248,15 @@
             position: absolute;
             top: 12px;
             left: 12px;
-            background: rgba(255,255,255,0.95);
+            background: rgba(26, 31, 46, 0.95);
+            backdrop-filter: blur(10px);
             padding: 8px 14px;
             border-radius: 8px;
             font-size: 13px;
-            color: #2d3748;
+            color: #cbd5e0;
             z-index: 10;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 1px solid #2d3748;
         }
 
         canvas {
@@ -217,10 +264,11 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            border-radius: 4px;
         }
 
         .placeholder {
-            color: #a0aec0;
+            color: #64748b;
             text-align: center;
             padding: 40px 20px;
             font-size: 15px;
@@ -230,21 +278,20 @@
             position: absolute;
             width: 36px;
             height: 36px;
-            background: #667eea;
-            border: 4px solid white;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: 4px solid #0f172a;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: move;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 0 0 2px #3b82f6, 0 4px 16px rgba(59, 130, 246, 0.6);
             z-index: 1000;
             touch-action: none;
-            transition: transform 0.1s;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .point:active {
-            background: #5568d3;
-            transform: translate(-50%, -50%) scale(1.2);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%) scale(1.15);
+            box-shadow: 0 0 0 2px #2563eb, 0 6px 20px rgba(37, 99, 235, 0.8);
         }
 
         .point-label {
@@ -252,7 +299,7 @@
             top: -32px;
             left: 50%;
             transform: translateX(-50%);
-            background: #667eea;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
             color: white;
             padding: 4px 10px;
             border-radius: 6px;
@@ -260,20 +307,77 @@
             font-weight: 700;
             white-space: nowrap;
             pointer-events: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            transition: background 0.15s;
+        }
+
+        .zoom-helper {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border: 3px solid #3b82f6;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 0 2px #0f172a;
+            pointer-events: none;
+            z-index: 2000;
+            background: #0a0e17;
+            overflow: hidden;
+            display: none;
+        }
+
+        .zoom-helper canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        .zoom-helper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #3b82f6;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+        }
+
+        .zoom-helper::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #3b82f6;
+            z-index: 9;
+        }
+
+        .zoom-helper .crosshair-v {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 1px;
+            background: #3b82f6;
+            z-index: 9;
         }
 
         .instructions {
-            background: #edf2f7;
+            background: #1a1f2e;
             padding: 12px 16px;
-            border-top: 3px solid #667eea;
+            border-top: 2px solid #3b82f6;
             flex-shrink: 0;
         }
 
         .instructions h4 {
-            color: #2d3748;
+            color: #cbd5e0;
             margin-bottom: 8px;
             font-size: 13px;
+            font-weight: 700;
         }
 
         .instructions ul {
@@ -283,14 +387,14 @@
 
         .instructions li {
             padding: 3px 0;
-            color: #4a5568;
+            color: #94a3b8;
             font-size: 12px;
             line-height: 1.4;
         }
 
         .instructions li:before {
             content: "✓ ";
-            color: #48bb78;
+            color: #10b981;
             font-weight: bold;
             margin-right: 6px;
         }
@@ -300,8 +404,9 @@
             bottom: 16px;
             left: 50%;
             transform: translateX(-50%);
-            background: #2d3748;
-            color: white;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #3b82f6;
+            color: #cbd5e0;
             padding: 12px 20px;
             border-radius: 10px;
             font-size: 13px;
@@ -310,7 +415,7 @@
             z-index: 10000;
             max-width: calc(100% - 32px);
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         }
 
         .status.show {
@@ -320,10 +425,11 @@
         .view-toggle {
             display: flex;
             gap: 4px;
-            background: #e2e8f0;
+            background: #0f1419;
             padding: 4px;
             border-radius: 8px;
             width: 100%;
+            border: 1px solid #2d3748;
         }
 
         .view-toggle button {
@@ -334,15 +440,15 @@
             border-radius: 6px;
             font-size: 13px;
             font-weight: 600;
-            color: #4a5568;
+            color: #64748b;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .view-toggle button.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: #e0e7ff;
+            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.4);
         }
 
         .canvas-wrapper {
@@ -361,14 +467,14 @@
         @media (min-width: 1024px) {
             body {
                 padding: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             }
 
             .container {
                 border-radius: 20px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
                 max-width: 1400px;
                 margin: 0 auto;
+                border: 1px solid #2d3748;
             }
 
             h1 {
@@ -381,6 +487,7 @@
 
             .header {
                 padding: 30px;
+                border-radius: 20px 20px 0 0;
             }
 
             .controls {
@@ -399,14 +506,15 @@
                 gap: 15px;
                 padding: 0;
                 background: transparent;
+                border: none;
             }
 
             .filter-group {
                 min-width: 200px;
-                background: #f7fafc;
+                background: #0f1419;
                 padding: 12px 16px;
                 border-radius: 8px;
-                border: 2px solid #e2e8f0;
+                border: 1px solid #2d3748;
             }
 
             .workspace {
@@ -521,6 +629,10 @@
                     <div class="placeholder" id="sourcePlaceholder">
                         Carica un'immagine o usa la fotocamera
                     </div>
+                    <div class="zoom-helper" id="zoomHelper">
+                        <canvas id="zoomCanvas"></canvas>
+                        <div class="crosshair-v"></div>
+                    </div>
                 </div>
             </div>
 
@@ -564,6 +676,12 @@
         let pointElements = [];
         let selectedPoint = null;
         let rectifiedImageData = null;
+
+        // Elementi zoom helper
+        const zoomHelper = document.getElementById('zoomHelper');
+        const zoomCanvas = document.getElementById('zoomCanvas');
+        const zoomCtx = zoomCanvas.getContext('2d');
+        const ZOOM_LEVEL = 5; // Fattore di ingrandimento
 
         // View toggle per mobile
         const viewToggle = document.querySelectorAll('.view-toggle button');
@@ -837,15 +955,28 @@
                 pointEl.style.left = point.x + 'px';
                 pointEl.style.top = point.y + 'px';
                 pointEl.style.position = 'absolute';
+                
+                // Cambia colore se è il punto selezionato
+                if (selectedPoint === index) {
+                    pointEl.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+                    pointEl.style.boxShadow = '0 0 0 2px #fbbf24, 0 4px 16px rgba(251, 191, 36, 0.8)';
+                }
 
                 const label = document.createElement('div');
                 label.className = 'point-label';
                 label.textContent = `P${index + 1}`;
+                
+                // Cambia colore label se selezionato
+                if (selectedPoint === index) {
+                    label.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                }
+                
                 pointEl.appendChild(label);
 
                 // Mouse events
                 pointEl.addEventListener('mousedown', (e) => {
                     selectedPoint = index;
+                    renderPoints(); // Re-render per aggiornare i colori
                     e.preventDefault();
                     e.stopPropagation();
                 });
@@ -853,6 +984,7 @@
                 // Touch events per mobile
                 pointEl.addEventListener('touchstart', (e) => {
                     selectedPoint = index;
+                    renderPoints(); // Re-render per aggiornare i colori
                     e.preventDefault();
                     e.stopPropagation();
                 }, { passive: false });
@@ -862,22 +994,74 @@
             });
         }
 
-        // Disegna linee tra i punti
+        // Disegna linee tra i punti con stile elegante
         function drawLines() {
             if (!sourceImage) return;
             
+            // Ridisegna l'immagine pulita
             sourceCtx.drawImage(sourceImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
             
-            sourceCtx.strokeStyle = '#667eea';
-            sourceCtx.lineWidth = 3;
-            sourceCtx.setLineDash([5, 5]);
-            
-            sourceCtx.beginPath();
-            sourceCtx.moveTo(points[0].x, points[0].y);
-            points.forEach(point => sourceCtx.lineTo(point.x, point.y));
-            sourceCtx.closePath();
-            sourceCtx.stroke();
-            sourceCtx.setLineDash([]);
+            // Disegna il poligono solo se ci sono almeno 2 punti
+            if (points.length >= 2) {
+                // Bordo esterno (glow)
+                sourceCtx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+                sourceCtx.lineWidth = 6;
+                sourceCtx.setLineDash([]);
+                sourceCtx.lineJoin = 'round';
+                sourceCtx.lineCap = 'round';
+                
+                sourceCtx.beginPath();
+                sourceCtx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    sourceCtx.lineTo(points[i].x, points[i].y);
+                }
+                if (points.length === 4) {
+                    sourceCtx.closePath();
+                }
+                sourceCtx.stroke();
+                
+                // Linea principale
+                sourceCtx.strokeStyle = '#3b82f6';
+                sourceCtx.lineWidth = 2;
+                sourceCtx.setLineDash([8, 4]);
+                
+                sourceCtx.beginPath();
+                sourceCtx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    sourceCtx.lineTo(points[i].x, points[i].y);
+                }
+                if (points.length === 4) {
+                    sourceCtx.closePath();
+                }
+                sourceCtx.stroke();
+                
+                sourceCtx.setLineDash([]);
+                
+                // Disegna piccoli punti sui vertici del poligono
+                points.forEach((point, index) => {
+                    // Punto base
+                    sourceCtx.fillStyle = '#0f172a';
+                    sourceCtx.beginPath();
+                    sourceCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                    sourceCtx.fill();
+                    
+                    // Punto colorato interno
+                    const isSelected = selectedPoint === index;
+                    sourceCtx.fillStyle = isSelected ? '#fbbf24' : '#3b82f6';
+                    sourceCtx.beginPath();
+                    sourceCtx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                    sourceCtx.fill();
+                    
+                    // Glow per il punto selezionato
+                    if (isSelected) {
+                        sourceCtx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+                        sourceCtx.lineWidth = 2;
+                        sourceCtx.beginPath();
+                        sourceCtx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+                        sourceCtx.stroke();
+                    }
+                });
+            }
         }
 
         // Click per aggiungere punti
@@ -907,9 +1091,21 @@
 
             points[selectedPoint] = { x, y };
             renderPoints();
+            
+            // Mostra zoom helper
+            updateZoomHelper(x, y, e.clientX, e.clientY);
         });
 
         document.addEventListener('mouseup', () => {
+            if (selectedPoint !== null) {
+                // Nascondi zoom helper
+                zoomHelper.style.display = 'none';
+                
+                // Auto-ricalcola rettificazione se ci sono 4 punti
+                if (points.length === 4 && sourceImage) {
+                    autoRectify();
+                }
+            }
             selectedPoint = null;
         });
 
@@ -924,12 +1120,101 @@
 
             points[selectedPoint] = { x, y };
             renderPoints();
+            
+            // Mostra zoom helper
+            updateZoomHelper(x, y, touch.clientX, touch.clientY);
+            
             e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchend', () => {
+            if (selectedPoint !== null) {
+                // Nascondi zoom helper
+                zoomHelper.style.display = 'none';
+                
+                // Auto-ricalcola rettificazione se ci sono 4 punti
+                if (points.length === 4 && sourceImage) {
+                    autoRectify();
+                }
+            }
             selectedPoint = null;
         });
+
+        // Aggiorna zoom helper
+        function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
+            if (!sourceImage) return;
+            
+            zoomHelper.style.display = 'block';
+            
+            // Posiziona lo zoom helper vicino al cursore
+            const offsetX = 80;
+            const offsetY = -80;
+            zoomHelper.style.left = (screenX + offsetX) + 'px';
+            zoomHelper.style.top = (screenY + offsetY) + 'px';
+            
+            // Dimensioni area da zoomare (30x30 pixel attorno al punto)
+            const zoomSize = 30;
+            const halfSize = zoomSize / 2;
+            
+            // Calcola le coordinate sorgente nell'immagine originale
+            const scaleX = sourceImage.width / sourceCanvas.width;
+            const scaleY = sourceImage.height / sourceCanvas.height;
+            const srcX = canvasX * scaleX;
+            const srcY = canvasY * scaleY;
+            
+            // Estrai la regione dall'immagine originale
+            const srcCanvas = document.createElement('canvas');
+            srcCanvas.width = zoomSize;
+            srcCanvas.height = zoomSize;
+            const srcCtx = srcCanvas.getContext('2d');
+            
+            srcCtx.drawImage(
+                sourceImage,
+                srcX - halfSize, srcY - halfSize, zoomSize, zoomSize,
+                0, 0, zoomSize, zoomSize
+            );
+            
+            // Disegna ingrandito sul canvas zoom
+            zoomCanvas.width = 150;
+            zoomCanvas.height = 150;
+            zoomCtx.imageSmoothingEnabled = false;
+            zoomCtx.drawImage(srcCanvas, 0, 0, zoomSize, zoomSize, 0, 0, 150, 150);
+        }
+
+        // Auto-rettifica (chiamata quando si rilascia un punto)
+        function autoRectify() {
+            if (points.length !== 4 || !sourceImage) return;
+            
+            // Usa la stessa logica del bottone rettifica
+            const sorted = orderPointsClockwise(points);
+            
+            const widthTop = distance(sorted[0], sorted[1]);
+            const widthBottom = distance(sorted[3], sorted[2]);
+            const heightLeft = distance(sorted[0], sorted[3]);
+            const heightRight = distance(sorted[1], sorted[2]);
+            
+            const outputWidth = Math.round(Math.max(widthTop, widthBottom));
+            const outputHeight = Math.round(Math.max(heightLeft, heightRight));
+            
+            resultCanvas.width = outputWidth;
+            resultCanvas.height = outputHeight;
+            
+            const dstPoints = [
+                { x: 0, y: 0 },
+                { x: outputWidth, y: 0 },
+                { x: outputWidth, y: outputHeight },
+                { x: 0, y: outputHeight }
+            ];
+            
+            const H = computeHomography(sorted, dstPoints);
+            applyPerspectiveTransform(sourceCanvas, resultCanvas, H, outputWidth, outputHeight);
+            
+            document.getElementById('resultPlaceholder').style.display = 'none';
+            resultCanvas.style.display = 'block';
+            
+            saveJpgBtn.disabled = false;
+            savePdfBtn.disabled = false;
+        }
 
         // Reset punti
         resetBtn.addEventListener('click', () => {
