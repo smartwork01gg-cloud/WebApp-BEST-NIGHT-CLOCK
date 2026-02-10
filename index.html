@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GI-FORGE | TACTICAL HUD RESPONSIVE</title>
+    <title>GI-FORGE | HUD CONTROL CENTER</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -11,7 +11,7 @@
         :root {
             --cyber-blue: #00f2ff;
             --deep-amber: #ffaa00;
-            --hud-bg: rgba(10, 20, 30, 0.85);
+            --hud-bg: rgba(10, 20, 30, 0.9);
             --neon-border: rgba(0, 242, 255, 0.4);
             --scan-line: rgba(0, 242, 255, 0.05);
         }
@@ -32,71 +32,41 @@
             text-transform: uppercase;
         }
 
-        /* Scanline Animata */
-        body::after {
-            content: " ";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: rgba(0, 242, 255, 0.1);
-            opacity: 0.2;
-            z-index: 1000;
-            pointer-events: none;
-            animation: scanline 8s linear infinite;
-        }
-
-        @keyframes scanline {
-            0% { top: -5%; }
-            100% { top: 100%; }
-        }
-
         header {
             padding: 15px;
-            border-bottom: 1px solid var(--cyber-blue);
+            border-bottom: 2px solid var(--cyber-blue);
             background: rgba(0, 242, 255, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
-            text-align: center;
             gap: 5px;
             clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
             margin: 0;
-            font-size: 1.2rem;
-            letter-spacing: 3px;
+            font-size: 1.3rem;
+            letter-spacing: 4px;
             text-shadow: 0 0 10px var(--cyber-blue);
         }
 
-        .status-bar {
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            display: flex;
-            gap: 15px;
-            opacity: 0.8;
-        }
-
-        /* Container per i Widget */
         .hud-container {
             position: relative;
             width: 100%;
-            height: calc(100vh - 100px);
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* Widget Modulare */
         .widget {
-            position: absolute;
-            width: 280px;
             background: var(--hud-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--neon-border);
-            cursor: move;
             clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-            margin-bottom: 20px;
-            z-index: 10;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         .widget-header {
@@ -106,15 +76,16 @@
             justify-content: space-between;
             align-items: center;
             font-weight: 700;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             border-bottom: 1px solid var(--neon-border);
+            cursor: move;
         }
 
         .widget-content {
-            padding: 12px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         .hud-button {
@@ -122,137 +93,108 @@
             color: var(--cyber-blue);
             background: rgba(0, 242, 255, 0.05);
             border: 1px solid rgba(0, 242, 255, 0.2);
-            padding: 12px;
+            padding: 14px;
             display: flex;
             align-items: center;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
             transition: 0.3s;
-            position: relative;
         }
 
-        .hud-button:hover, .hud-button:active {
+        .hud-button:hover {
             background: rgba(0, 242, 255, 0.2);
             border-color: var(--cyber-blue);
-            box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.2);
+            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
         }
 
         .hud-button i {
-            margin-right: 12px;
+            margin-right: 15px;
             color: var(--deep-amber);
-            width: 20px;
-            text-align: center;
+            font-size: 1.1rem;
+            filter: drop-shadow(0 0 5px var(--deep-amber));
         }
 
-        .minimized { height: 40px !important; overflow: hidden; opacity: 0.7; }
-        .iconize-btn { cursor: pointer; padding: 5px; color: var(--deep-amber); }
+        .minimized .widget-content { display: none; }
 
-        /* --- RESPONSIVE MOBILE --- */
-        @media (max-width: 768px) {
-            body { overflow-y: auto; }
-            .hud-container {
-                display: flex;
-                flex-direction: column;
-                height: auto;
-                padding: 10px;
-                gap: 20px;
-            }
-            .widget {
-                position: relative !important; /* Disabilita posizionamento assoluto */
-                top: auto !important; left: auto !important;
-                width: 100%; /* Larghezza piena su mobile */
-                cursor: default;
-            }
-            .widget-header { cursor: default; }
-            h1 { font-size: 1rem; }
-        }
-
-        /* Posizioni Desktop Iniziali */
         @media (min-width: 769px) {
-            #w-prod { top: 20px; left: 50px; }
-            #w-util { top: 20px; left: 380px; }
-            #w-game { top: 380px; left: 50px; }
+            .hud-container { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+            .widget { position: absolute; width: 320px; }
+            #w-prod { top: 0; left: 20px; }
+            #w-util { top: 0; left: 360px; }
+            #w-game { top: 0; left: 700px; }
+        }
+
+        @media (max-width: 768px) {
+            .widget { width: 100%; position: relative !important; top: auto !important; left: auto !important; }
         }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>GI-FORGE :: TACTICAL_INTERFACE</h1>
-    <div class="status-bar">
-        <span><i class="fas fa-satellite-dish"></i> LINK: STABLE</span>
-        <span><i class="fas fa-battery-three-quarters"></i> PWR: 87%</span>
-        <span><i class="fas fa-shield-alt"></i> SEC: HIGH</span>
+    <h1>SYSTEM OPERATIVE CENTER</h1>
+    <div style="font-size: 0.7rem; color: var(--deep-amber);">
+        <i class="fas fa-satellite"></i> DATA_LINK: ESTABLISHED | V. 2.6
     </div>
 </header>
 
 <div class="hud-container">
     <div class="widget" id="w-prod">
         <div class="widget-header">
-            <span><i class="fas fa-terminal"></i> CTRL.STRATEGY</span>
-            <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
+            <span><i class="fas fa-tasks"></i> GESTIONE E PROGETTI</span>
+            <i class="fas fa-minus" style="cursor:pointer" onclick="this.closest('.widget').classList.toggle('minimized')"></i>
         </div>
         <div class="widget-content">
-            <a href="LUXURY_AGENDA.html" class="hud-button"><i class="fas fa-calendar-alt"></i> AGENDA_3D</a>
-            <a href="WORK_GANTT_PROJECT.html" class="hud-button"><i class="fas fa-project-diagram"></i> GANTT_PRO</a>
-            <a href="PASSWOR_MANAGER.html" class="hud-button"><i class="fas fa-lock"></i> VAULT_CORE</a>
+            <a href="LUXURY_AGENDA.html" class="hud-button"><i class="fas fa-calendar-check"></i> AGENDA PERSONALE</a>
+            <a href="WORK_GANTT_PROJECT.html" class="hud-button"><i class="fas fa-project-diagram"></i> PIANIFICAZIONE GANTT</a>
+            <a href="PASSWOR_MANAGER.html" class="hud-button"><i class="fas fa-key"></i> ARCHIVIO PASSWORD</a>
         </div>
     </div>
 
     <div class="widget" id="w-util">
         <div class="widget-header">
-            <span><i class="fas fa-braille"></i> SENSOR.TOOLS</span>
-            <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
+            <span><i class="fas fa-tools"></i> STRUMENTI UTILI</span>
+            <i class="fas fa-minus" style="cursor:pointer" onclick="this.closest('.widget').classList.toggle('minimized')"></i>
         </div>
         <div class="widget-content">
-            <a href="CLOCK_NIGHT_DAY.html" class="hud-button"><i class="fas fa-hourglass-half"></i> CHRONO</a>
-            <a href="CAM_SCANNER.html" class="hud-button"><i class="fas fa-camera"></i> SCANNER</a>
-            <a href="IMG_TO_TEXT.html" class="hud-button"><i class="fas fa-file-code"></i> OCR_UNIT</a>
-            <a href="STOCK_CARD.html" class="hud-button"><i class="fas fa-wallet"></i> ASSET_ID</a>
+            <a href="CLOCK_NIGHT_DAY.html" class="hud-button"><i class="fas fa-clock"></i> OROLOGIO METEO</a>
+            <a href="CAM_SCANNER.html" class="hud-button"><i class="fas fa-print"></i> SCANNER DOCUMENTI</a>
+            <a href="IMG_TO_TEXT.html" class="hud-button"><i class="fas fa-file-alt"></i> ESTRAZIONE TESTO (OCR)</a>
+            <a href="STOCK_CARD.html" class="hud-button"><i class="fas fa-credit-card"></i> CARTE E FEDELTÀ</a>
         </div>
     </div>
 
     <div class="widget" id="w-game">
         <div class="widget-header">
-            <span><i class="fas fa-headset"></i> SIM.RECREATION</span>
-            <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
+            <span><i class="fas fa-gamepad"></i> AREA INTRATTENIMENTO</span>
+            <i class="fas fa-minus" style="cursor:pointer" onclick="this.closest('.widget').classList.toggle('minimized')"></i>
         </div>
         <div class="widget-content">
-            <a href="GAME_TETRIS.html" class="hud-button"><i class="fas fa-cubes"></i> TETRIS_CORE</a>
-            <a href="GAME_SPACE_INVADERS.html" class="hud-button"><i class="fas fa-fighter-jet"></i> INVADERS</a>
+            <a href="GAME_TETRIS.html" class="hud-button"><i class="fas fa-th"></i> TETRIS CLASSIC</a>
+            <a href="GAME_SPACE_INVADERS.html" class="hud-button"><i class="fas fa-shuttle-space"></i> SPACE INVADERS</a>
         </div>
     </div>
 </div>
 
 <script>
-    // Drag & Drop (attivo solo su Desktop)
+    // Drag & Drop Desktop
     if (window.innerWidth > 768) {
         document.querySelectorAll('.widget').forEach(widget => {
-            let isDragging = false;
-            let offsetX, offsetY;
-
-            widget.querySelector('.widget-header').addEventListener('mousedown', (e) => {
+            let isDragging = false, ox, oy;
+            widget.querySelector('.widget-header').onmousedown = e => {
                 isDragging = true;
-                offsetX = e.clientX - widget.offsetLeft;
-                offsetY = e.clientY - widget.offsetTop;
+                ox = e.clientX - widget.offsetLeft;
+                oy = e.clientY - widget.offsetTop;
                 widget.style.zIndex = 1000;
-            });
-
-            document.addEventListener('mousemove', (e) => {
+            };
+            document.onmousemove = e => {
                 if (isDragging) {
-                    widget.style.left = (e.clientX - offsetX) + 'px';
-                    widget.style.top = (e.clientY - offsetY) + 'px';
+                    widget.style.left = (e.clientX - ox) + 'px';
+                    widget.style.top = (e.clientY - oy) + 'px';
                 }
-            });
-
-            document.addEventListener('mouseup', () => isDragging = false);
+            };
+            document.onmouseup = () => isDragging = false;
         });
-    }
-
-    function toggleMin(btn) {
-        const widget = btn.closest('.widget');
-        widget.classList.toggle('minimized');
-        btn.classList.toggle('fa-minus');
-        btn.classList.toggle('fa-plus');
     }
 </script>
 
