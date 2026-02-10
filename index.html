@@ -91,8 +91,8 @@
         .hud-button {
             text-decoration: none;
             color: var(--cyber-blue);
-            background: rgba(0, 242, 255, 0.05);
-            border: 1px solid rgba(0, 242, 255, 0.2);
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.25);
             padding: 14px;
             display: flex;
             align-items: center;
@@ -102,16 +102,16 @@
         }
 
         .hud-button:hover {
-            background: rgba(0, 242, 255, 0.2);
+            background: rgba(0, 242, 255, 0.25);
             border-color: var(--cyber-blue);
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
+            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.3);
         }
 
         .hud-button i {
             margin-right: 15px;
+            font-size: 1.2rem;
             color: var(--deep-amber);
-            font-size: 1.1rem;
-            filter: drop-shadow(0 0 5px var(--deep-amber));
+            filter: drop-shadow(0 0 6px var(--deep-amber));
         }
 
         .minimized .widget-content { display: none; }
@@ -139,6 +139,8 @@
 </header>
 
 <div class="hud-container">
+
+    <!-- GESTIONE E PROGETTI -->
     <div class="widget" id="w-prod">
         <div class="widget-header">
             <span><i class="fas fa-tasks"></i> GESTIONE E PROGETTI</span>
@@ -146,11 +148,12 @@
         </div>
         <div class="widget-content">
             <a href="LUXURY_AGENDA.html" class="hud-button"><i class="fas fa-calendar-check"></i> AGENDA PERSONALE</a>
-            <a href="WORK_GANTT_PROJECT.html" class="hud-button"><i class="fas fa-project-diagram"></i> PIANIFICAZIONE GANTT</a>
-            <a href="PASSWOR_MANAGER.html" class="hud-button"><i class="fas fa-key"></i> ARCHIVIO PASSWORD</a>
+            <a href="WORK_GANTT_PROJECT.html" class="hud-button"><i class="fas fa-diagram-project"></i> PIANIFICAZIONE GANTT</a>
+            <a href="PASSWOR_MANAGER.html" class="hud-button"><i class="fas fa-vault"></i> ARCHIVIO PASSWORD</a>
         </div>
     </div>
 
+    <!-- STRUMENTI UTILI -->
     <div class="widget" id="w-util">
         <div class="widget-header">
             <span><i class="fas fa-tools"></i> STRUMENTI UTILI</span>
@@ -159,11 +162,13 @@
         <div class="widget-content">
             <a href="CLOCK_NIGHT_DAY.html" class="hud-button"><i class="fas fa-clock"></i> OROLOGIO METEO</a>
             <a href="CAM_SCANNER.html" class="hud-button"><i class="fas fa-print"></i> SCANNER DOCUMENTI</a>
-            <a href="IMG_TO_TEXT.html" class="hud-button"><i class="fas fa-file-alt"></i> ESTRAZIONE TESTO (OCR)</a>
-            <a href="STOCK_CARD.html" class="hud-button"><i class="fas fa-credit-card"></i> CARTE E FEDELTÀ</a>
+            <a href="IMG_TO_TEXT.html" class="hud-button"><i class="fas fa-file-lines"></i> ESTRAZIONE TESTO (OCR)</a>
+            <a href="STOCK_CARD.html" class="hud-button"><i class="fas fa-id-card"></i> CARTE E FEDELTÀ</a>
+            <a href="EBOOK_READER.html" class="hud-button"><i class="fas fa-book-open"></i> EBOOK READER</a>
         </div>
     </div>
 
+    <!-- AREA INTRATTENIMENTO -->
     <div class="widget" id="w-game">
         <div class="widget-header">
             <span><i class="fas fa-gamepad"></i> AREA INTRATTENIMENTO</span>
@@ -171,9 +176,10 @@
         </div>
         <div class="widget-content">
             <a href="GAME_TETRIS.html" class="hud-button"><i class="fas fa-th"></i> TETRIS CLASSIC</a>
-            <a href="GAME_SPACE_INVADERS.html" class="hud-button"><i class="fas fa-shuttle-space"></i> SPACE INVADERS</a>
+            <a href="GAME_SPACE_INVADERS.html" class="hud-button"><i class="fas fa-rocket"></i> SPACE INVADERS</a>
         </div>
     </div>
+
 </div>
 
 <script>
