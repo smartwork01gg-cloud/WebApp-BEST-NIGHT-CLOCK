@@ -3,177 +3,247 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GI-FORGE | Minimal Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>GI-FORGE | TACTICAL HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
-            --bg: #0b0f1a;
-            --card: #161e2e;
-            --accent: #38bdf8;
-            --text: #f1f5f9;
+            --cyber-blue: #00f2ff;
+            --deep-amber: #ffaa00;
+            --hud-bg: rgba(10, 20, 30, 0.7);
+            --neon-border: rgba(0, 242, 255, 0.3);
+            --scan-line: rgba(0, 242, 255, 0.1);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            background-color: #050a0f;
+            background-image: 
+                linear-gradient(var(--scan-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--scan-line) 1px, transparent 1px);
+            background-size: 50px 50px;
+            color: var(--cyber-blue);
+            font-family: 'Rajdhani', sans-serif;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
+            height: 100vh;
+            overflow: hidden;
+            text-transform: uppercase;
         }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
+        /* Effetto Scanline Animato */
+        body::before {
+            content: " ";
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
         }
 
         header {
-            text-align: center;
-            margin-bottom: 50px;
+            padding: 20px;
+            border-bottom: 2px solid var(--cyber-blue);
+            background: rgba(0, 242, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            clip-path: polygon(0 0, 100% 0, 98% 100%, 2% 100%);
         }
 
         h1 {
-            font-weight: 800;
-            font-size: 2.2rem;
-            letter-spacing: -1px;
-            background: linear-gradient(to right, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: 'Orbitron', sans-serif;
             margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px var(--cyber-blue);
         }
 
-        .category-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #64748b;
-            margin: 30px 0 15px 10px;
+        /* Widget Modulari */
+        .widget {
+            position: absolute;
+            width: 280px;
+            background: var(--hud-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--neon-border);
+            padding: 2px;
+            cursor: move;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            transition: opacity 0.3s;
+        }
+
+        .widget-header {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 8px 12px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--neon-border);
         }
 
-        .category-label::after {
-            content: "";
-            height: 1px;
-            background: #1e293b;
-            flex-grow: 1;
-            margin-left: 15px;
-        }
-
-        .grid {
+        .widget-content {
+            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
+            gap: 10px;
         }
 
-        .app-item {
+        .hud-button {
             text-decoration: none;
-            color: inherit;
-            background: var(--card);
-            padding: 16px;
-            border-radius: 12px;
+            color: var(--cyber-blue);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            padding: 10px;
             display: flex;
             align-items: center;
-            border: 1px solid #1e293b;
-            transition: all 0.2s ease;
-        }
-
-        .app-item:hover {
-            border-color: var(--accent);
-            background: #1e293b;
-            transform: translateY(-2px);
-        }
-
-        .icon-box {
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            font-size: 1.1rem;
-        }
-
-        .app-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            white-space: nowrap;
+            font-size: 0.9rem;
+            position: relative;
             overflow: hidden;
-            text-overflow: ellipsis;
+            transition: 0.2s;
         }
 
-        /* Colors */
-        .c-blue { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
-        .c-gold { background: rgba(200, 169, 106, 0.1); color: #c8a96a; }
-        .c-red { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-        .c-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .c-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+        .hud-button::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.4), transparent);
+            transition: 0.5s;
+        }
 
-        @media (max-width: 480px) {
-            .grid { grid-template-columns: 1fr 1fr; }
+        .hud-button:hover::before { left: 100%; }
+
+        .hud-button:hover {
+            background: rgba(0, 242, 255, 0.1);
+            border-color: var(--cyber-blue);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .hud-button i {
+            margin-right: 15px;
+            color: var(--deep-amber);
+            filter: drop-shadow(0 0 5px var(--deep-amber));
+        }
+
+        /* Posizioni iniziali Widget */
+        #w-prod { top: 100px; left: 50px; }
+        #w-util { top: 100px; left: 380px; }
+        #w-game { top: 400px; left: 50px; }
+
+        .status-tag {
+            font-size: 0.6rem;
+            color: var(--deep-amber);
+            border: 1px solid var(--deep-amber);
+            padding: 2px 5px;
+            margin-left: auto;
+        }
+
+        .iconize-btn {
+            cursor: pointer;
+            color: var(--deep-amber);
+        }
+
+        .minimized {
+            height: 35px;
+            overflow: hidden;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>GI-FORGE</h1>
-    </header>
+<header>
+    <div><i class="fas fa-crosshairs"></i> SYSTEM STATUS: OPTIMAL</div>
+    <h1>GI-FORGE HUB V.2.6</h1>
+    <div>SECURE CONNECTION [OFFLINE-READY]</div>
+</header>
 
-    <div class="category-label">Productivity</div>
-    <div class="grid">
-        <a href="LUXURY_AGENDA.html" class="app-item">
-            <div class="icon-box c-gold"><i class="fas fa-calendar-day"></i></div>
-            <span class="app-name">Agenda</span>
-        </a>
-        <a href="WORK_GANTT_PROJECT.html" class="app-item">
-            <div class="icon-box c-purple"><i class="fas fa-chart-bar"></i></div>
-            <span class="app-name">Gantt</span>
-        </a>
-        <a href="PASSWOR_MANAGER.html" class="app-item">
-            <div class="icon-box c-red"><i class="fas fa-shield-halved"></i></div>
-            <span class="app-name">Vault</span>
-        </a>
+<div class="widget" id="w-prod">
+    <div class="widget-header">
+        <span><i class="fas fa-microchip"></i> STRATEGIC_MGMT</span>
+        <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
     </div>
-
-    <div class="category-label">Utilities</div>
-    <div class="grid">
-        <a href="CLOCK_NIGHT_DAY.html" class="app-item">
-            <div class="icon-box c-blue"><i class="fas fa-clock"></i></div>
-            <span class="app-name">Clock</span>
+    <div class="widget-content">
+        <a href="LUXURY_AGENDA.html" class="hud-button">
+            <i class="fas fa-calendar-alt"></i> AGENDA_3D <span class="status-tag">ACTIVE</span>
         </a>
-        <a href="CAM_SCANNER.html" class="app-item">
-            <div class="icon-box c-blue"><i class="fas fa-camera"></i></div>
-            <span class="app-name">Scanner</span>
+        <a href="WORK_GANTT_PROJECT.html" class="hud-button">
+            <i class="fas fa-project-diagram"></i> GANTT_ENGINE
         </a>
-        <a href="IMG_TO_TEXT.html" class="app-item">
-            <div class="icon-box c-blue"><i class="fas fa-file-lines"></i></div>
-            <span class="app-name">OCR</span>
-        </a>
-        <a href="STOCK_CARD.html" class="app-item">
-            <div class="icon-box c-green"><i class="fas fa-wallet"></i></div>
-            <span class="app-name">Cards</span>
-        </a>
-    </div>
-
-    <div class="category-label">Games</div>
-    <div class="grid">
-        <a href="GAME_TETRIS.html" class="app-item">
-            <div class="icon-box c-red"><i class="fas fa-shapes"></i></div>
-            <span class="app-name">Tetris</span>
-        </a>
-        <a href="GAME_SPACE_INVADERS.html" class="app-item">
-            <div class="icon-box c-purple"><i class="fas fa-rocket"></i></div>
-            <span class="app-name">Space</span>
+        <a href="PASSWOR_MANAGER.html" class="hud-button">
+            <i class="fas fa-user-shield"></i> VAULT_CORE <span class="status-tag">ENCRYPTED</span>
         </a>
     </div>
 </div>
+
+<div class="widget" id="w-util">
+    <div class="widget-header">
+        <span><i class="fas fa-satellite"></i> SENSOR_ARRAY</span>
+        <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
+    </div>
+    <div class="widget-content">
+        <a href="CLOCK_NIGHT_DAY.html" class="hud-button">
+            <i class="fas fa-atom"></i> CHRONO_UNIT
+        </a>
+        <a href="CAM_SCANNER.html" class="hud-button">
+            <i class="fas fa-eye"></i> OPTIC_SCAN
+        </a>
+        <a href="IMG_TO_TEXT.html" class="hud-button">
+            <i class="fas fa-file-import"></i> OCR_PARSER
+        </a>
+        <a href="STOCK_CARD.html" class="hud-button">
+            <i class="fas fa-database"></i> ASSET_ARCHIVE
+        </a>
+    </div>
+</div>
+
+<div class="widget" id="w-game">
+    <div class="widget-header">
+        <span><i class="fas fa-gamepad"></i> SIM_RECREATION</span>
+        <i class="fas fa-minus iconize-btn" onclick="toggleMin(this)"></i>
+    </div>
+    <div class="widget-content">
+        <a href="GAME_TETRIS.html" class="hud-button">
+            <i class="fas fa-th-large"></i> TETRIS_SIM
+        </a>
+        <a href="GAME_SPACE_INVADERS.html" class="hud-button">
+            <i class="fas fa-fighter-jet"></i> COMBAT_SPACE
+        </a>
+    </div>
+</div>
+
+<script>
+    // Logica Drag and Drop per i Widget
+    document.querySelectorAll('.widget').forEach(widget => {
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        widget.querySelector('.widget-header').addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - widget.offsetLeft;
+            offsetY = e.clientY - widget.offsetTop;
+            widget.style.zIndex = 1000;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                widget.style.left = (e.clientX - offsetX) + 'px';
+                widget.style.top = (e.clientY - offsetY) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    });
+
+    function toggleMin(btn) {
+        btn.closest('.widget').classList.toggle('minimized');
+        btn.classList.toggle('fa-minus');
+        btn.classList.toggle('fa-plus');
+    }
+</script>
 
 </body>
 </html>
