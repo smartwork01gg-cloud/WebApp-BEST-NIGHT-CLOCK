@@ -7,10 +7,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
 #resultContainer {
-    display: block !important; /* Forza la visibilità */
-    width: 100%;
-    overflow: hidden;
-    margin-top: 20px;
+    min-height: 300px;
+    position: relative;
+    z-index: 10;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 #resultCanvas {
@@ -43,13 +44,12 @@
     display: none;
 }    
     /* Impedisce al browser di gestire il tocco (niente scroll o zoom nativo) */
-#sourceContainer, #sourceCanvas {
-    touch-action: none !important;
-    -webkit-user-select: none;
+/* Evita che il tocco sul canvas di origine causi lo scroll della pagina (fondamentale per il drag) */
+#sourceCanvas {
+    touch-action: none; 
     user-select: none;
-    overscroll-behavior: contain;
+    -webkit-user-drag: none;
 }
-
 /* Assicurati che il contenitore non tagli gli elementi */
 .workspace {
     overflow: visible !important;
@@ -550,10 +550,17 @@
         min-width: 0;
         flex: 1 1 30%; /* Forza 3 bottoni per riga */
     }
-    .point {
-        width: 44px; /* Area di tocco più grande */
-        height: 44px;
-    }
+/* Stile per i punti di controllo più grandi su mobile */
+.point {
+    width: 24px !important;
+    height: 24px !important;
+    margin-left: -12px;
+    margin-top: -12px;
+    border: 3px solid white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    border-radius: 50%;
+    z-index: 1000;
+}
     .filter-group {
         padding: 8px;
     }
@@ -886,15 +893,25 @@
 
     sourceCanvas.addEventListener('pointermove', (e) => {
         if (selectedPoint === null) return;
+        
         const coords = getCanvasCoords(e);
+        
+        // Calcolo OFFSET: se il punto è nella metà superiore del canvas lo sposto sopra il dito,
+        // se è nella metà inferiore lo sposto sotto (o viceversa a seconda della comodità).
+        // Standard: sposta il punto SOPRA il dito di 50px per vederlo meglio.
+        const verticalOffset = -50; 
+        
+        // Applichiamo l'offset solo su mobile/touch (pointerType !== 'mouse')
+        const finalY = e.pointerType === 'mouse' ? coords.y : coords.y + verticalOffset;
+
         points[selectedPoint] = {
             x: Math.max(0, Math.min(sourceCanvas.width, coords.x)),
-            y: Math.max(0, Math.min(sourceCanvas.height, coords.y))
+            y: Math.max(0, Math.min(sourceCanvas.height, finalY))
         };
+        
         renderPoints();
         updateZoomHelper(points[selectedPoint].x, points[selectedPoint].y, e.clientX, e.clientY);
     });
-
     sourceCanvas.addEventListener('pointerup', (e) => {
         if (selectedPoint !== null) {
             sourceCanvas.releasePointerCapture(e.pointerId);
@@ -1040,63 +1057,87 @@
     }
 
     // 6. RETTIFICA
-    function autoRectify() {
-        if (!sourceImage || points.length < 4) return;
-        const ratioX = sourceImage.width / sourceCanvas.width;
-        const ratioY = sourceImage.height / sourceCanvas.height;
-        const sorted = orderPointsClockwise(points);
-        const realSrc = sorted.map(p => ({x: p.x*ratioX, y: p.y*ratioY}));
-        const w = Math.round(Math.max(distance(realSrc[0], realSrc[1]), distance(realSrc[3], realSrc[2])));
-        const h = Math.round(Math.max(distance(realSrc[0], realSrc[3]), distance(realSrc[1], realSrc[2])));
-        
-        resultCanvas.width = w; resultCanvas.height = h;
-        const H = computeHomography(realSrc, [{x:0,y:0}, {x:w,y:0}, {x:w,y:h}, {x:0,y:h}]);
-        const Hinv = invertHomography(H);
+function autoRectify() {
+    if (!sourceImage || points.length < 4) return;
 
-        const tCanvas = document.createElement('canvas');
-        tCanvas.width = sourceImage.width; tCanvas.height = sourceImage.height;
-        const tCtx = tCanvas.getContext('2d');
-        tCtx.drawImage(sourceImage, 0, 0);
-        const srcData = tCtx.getImageData(0, 0, tCanvas.width, tCanvas.height);
-        const dstData = resultCtx.createImageData(w, h);
+    // 1. Calcolo proporzioni e coordinate reali sulla foto originale
+    const ratioX = sourceImage.width / sourceCanvas.width;
+    const ratioY = sourceImage.height / sourceCanvas.height;
+    const sorted = orderPointsClockwise(points);
+    const realSrc = sorted.map(p => ({ x: p.x * ratioX, y: p.y * ratioY }));
 
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                const den = Hinv[2][0]*x + Hinv[2][1]*y + Hinv[2][2];
-                const sx = Math.floor((Hinv[0][0]*x + Hinv[0][1]*y + Hinv[0][2]) / den);
-                const sy = Math.floor((Hinv[1][0]*x + Hinv[1][1]*y + Hinv[1][2]) / den);
-                if (sx >= 0 && sx < srcData.width && sy >= 0 && sy < srcData.height) {
-                    const di = (y * w + x) * 4;
-                    const si = (sy * srcData.width + sx) * 4;
-                    dstData.data[di] = srcData.data[si];
-                    dstData.data[di+1] = srcData.data[si+1];
-                    dstData.data[di+2] = srcData.data[si+2];
-                    dstData.data[di+3] = 255;
-                }
+    // 2. Calcolo dimensioni ottimali del rettangolo di output
+    const w = Math.round(Math.max(distance(realSrc[0], realSrc[1]), distance(realSrc[3], realSrc[2])));
+    const h = Math.round(Math.max(distance(realSrc[0], realSrc[3]), distance(realSrc[1], realSrc[2])));
+
+    // 3. Preparazione Canvas di Risultato
+    resultCanvas.width = w;
+    resultCanvas.height = h;
+
+    // 4. Calcolo Omografia e Inversa
+    const H = computeHomography(realSrc, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]);
+    const Hinv = invertHomography(H);
+
+    // 5. Estrazione pixel dall'immagine sorgente
+    const tCanvas = document.createElement('canvas');
+    tCanvas.width = sourceImage.width;
+    tCanvas.height = sourceImage.height;
+    const tCtx = tCanvas.getContext('2d', { willReadFrequently: true });
+    tCtx.drawImage(sourceImage, 0, 0);
+    
+    const srcData = tCtx.getImageData(0, 0, tCanvas.width, tCanvas.height);
+    const dstData = resultCtx.createImageData(w, h);
+    
+    const sPixels = srcData.data;
+    const dPixels = dstData.data;
+    const sw = srcData.width;
+
+    // 6. Ciclo di Trasformazione (Rettifica)
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const den = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
+            const sx = Math.floor((Hinv[0][0] * x + Hinv[0][1] * y + Hinv[0][2]) / den);
+            const sy = Math.floor((Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / den);
+
+            if (sx >= 0 && sx < sw && sy >= 0 && sy < srcData.height) {
+                const di = (y * w + x) * 4;
+                const si = (sy * sw + sx) * 4;
+                dPixels[di] = sPixels[si];
+                dPixels[di + 1] = sPixels[si + 1];
+                dPixels[di + 2] = sPixels[si + 2];
+                dPixels[di + 3] = 255;
             }
         }
-        rectifiedImageData = dstData;
-        applyFilters();
-        document.getElementById('resultPlaceholder').style.display = 'none';
-        resultCanvas.style.display = 'block';
-        saveJpgBtn.disabled = savePdfBtn.disabled = false;
-     // ... dentro la funzione autoRectify, alla fine:
-
-        rectifiedImageData = dstData;
-        applyFilters();
-        
-        // Nascondi il placeholder e mostra il canvas
-        const resPlaceholder = document.getElementById('resultPlaceholder');
-        if (resPlaceholder) resPlaceholder.style.display = 'none';
-        
-        resultCanvas.style.display = 'block';
-        
-        // SCROLL AUTOMATICO: Fondamentale per il mobile
-        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
-        saveJpgBtn.disabled = savePdfBtn.disabled = false;
-        showStatus('Immagine rettificata!');
     }
+
+    // 7. Salvataggio dati e applicazione filtri
+    rectifiedImageData = dstData;
+    applyFilters();
+
+    // 8. GESTIONE INTERFACCIA E VISIBILITÀ (Fix Mobile)
+    const resPlaceholder = document.getElementById('resultPlaceholder');
+    if (resPlaceholder) resPlaceholder.style.display = 'none';
+
+    // Forza la visibilità del contenitore se è in un sistema a Tab
+    const resultTab = document.getElementById('output') || document.getElementById('resultContainer');
+    if (resultTab) {
+        resultTab.style.display = 'block'; // Assicura che non sia hidden
+        resultTab.classList.add('active'); // Se usi Bootstrap
+    }
+
+    resultCanvas.style.display = 'block';
+
+    // Sblocca i pulsanti di salvataggio
+    if (saveJpgBtn) saveJpgBtn.disabled = false;
+    if (savePdfBtn) savePdfBtn.disabled = false;
+
+    // 9. SCROLL AUTOMATICO: Porta l'utente a vedere il risultato
+    setTimeout(() => {
+        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+
+    if (typeof showStatus === 'function') showStatus('Immagine rettificata!');
+}
 
     // 7. LISTENER
     resetBtn.addEventListener('click', () => {
