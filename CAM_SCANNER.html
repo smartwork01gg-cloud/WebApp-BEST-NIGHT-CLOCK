@@ -1065,25 +1065,47 @@
 
     function applyFilters() {
         if (!rectifiedImageData) return;
+        
+        // Leggiamo i valori una sola volta
         const contrast = Math.pow(contrastSlider.value / 100, 2);
         const brightness = brightnessSlider.value / 100;
         const mode = colorModeSelect.value;
         const thr = parseInt(thresholdSlider.value);
-        let img = new ImageData(new Uint8ClampedArray(rectifiedImageData.data), rectifiedImageData.width, rectifiedImageData.height);
+        
+        // Creiamo una copia dei dati originali rettificati per non degradare l'immagine a ogni modifica
+        let img = new ImageData(
+            new Uint8ClampedArray(rectifiedImageData.data), 
+            rectifiedImageData.width, 
+            rectifiedImageData.height
+        );
+        
         const d = img.data;
-        for (let i = 0; i < d.length; i += 4) {
+        const len = d.length;
+
+        // Ciclo ottimizzato
+        for (let i = 0; i < len; i += 4) {
             let r = d[i], g = d[i+1], b = d[i+2];
-            if (mode === 'grayscale' || mode === 'bw') r = g = b = (r * 0.299 + g * 0.587 + b * 0.114);
+
+            // Conversione colore / Grayscale
+            if (mode === 'grayscale' || mode === 'bw') {
+                const v = (r * 0.299 + g * 0.587 + b * 0.114);
+                r = g = b = v;
+            }
+
+            // Contrasto e Luminosità
             r = ((r - 128) * contrast + 128) * brightness;
             g = ((g - 128) * contrast + 128) * brightness;
             b = ((b - 128) * contrast + 128) * brightness;
+
+            // Bianco e Nero secco
             if (mode === 'bw') {
                 const v = (r + g + b) / 3 > thr ? 255 : 0;
                 r = g = b = v;
             }
+
             d[i] = r; d[i+1] = g; d[i+2] = b;
         }
-        if (sharpnessSlider.value > 0) img = applySharpen(img, sharpnessSlider.value / 100);
+        
         resultCtx.putImageData(img, 0, 0);
     }
 
@@ -1193,12 +1215,29 @@ function autoRectify() {
         renderPoints(); autoRectify();
     });
 
-    [contrastSlider, brightnessSlider, sharpnessSlider, thresholdSlider].forEach(s => s.addEventListener('input', () => {
-        const val = document.getElementById(s.id.replace('Slider', 'Value'));
-        if (val) val.textContent = s.value + (s.id.includes('sharpness') ? '' : '%');
-        applyFilters();
-    }));
+ // Gestione dei filtri ottimizzata per evitare freeze
+    [contrastSlider, brightnessSlider, thresholdSlider, sharpnessSlider].forEach(slider => {
+        // Aggiorna il valore numerico a video DURANTE lo spostamento (veloce)
+        slider.addEventListener('input', () => {
+            const valSpan = document.getElementById(slider.id.replace('Slider', 'Value'));
+            if (valSpan) {
+                const suffix = slider.id.includes('threshold') ? '' : '%';
+                valSpan.textContent = slider.value + suffix;
+            }
+        });
 
+        // Applica il filtro pesante SOLO al rilascio (evento 'change')
+        slider.addEventListener('change', () => {
+            showStatus('Applicazione filtri...');
+            // Usiamo setTimeout per permettere alla UI di aggiornarsi prima del calcolo pesante
+            setTimeout(() => {
+                applyFilters();
+                showStatus('Filtri applicati');
+            }, 10);
+        });
+    });
+
+    // La modalità colore può restare su 'change'
     colorModeSelect.addEventListener('change', () => {
         bwThresholdGroup.style.display = colorModeSelect.value === 'bw' ? 'flex' : 'none';
         applyFilters();
