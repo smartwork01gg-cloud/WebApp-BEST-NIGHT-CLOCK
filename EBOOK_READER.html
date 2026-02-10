@@ -286,6 +286,15 @@ async function loadBook(id) {
                 mobileScrollSupport: true
             });
             
+         // Questo evento scatta OGNI VOLTA che una pagina finisce di girare
+            pageFlip.on('flip', (e) => {
+                console.log("Evento Flip rilevato. Nuova pagina:", e.data);
+                if (isReading) {
+                    // Un piccolo delay per lasciare che il DOM si assesti
+                    setTimeout(startReadingCurrentPage, 300);
+                }
+            });
+         
             pageFlip.loadFromHTML(container.querySelectorAll('.page'));
             
             document.getElementById('total-pages').innerText = pageFlip.getPageCount();
@@ -411,35 +420,109 @@ async function loadBook(id) {
             isReading = false; 
             document.getElementById('tts-btn').innerText = "🔊 Leggi";
         } else {
-            if (!currentBook) return;
+            if (!currentBook || !pageFlip) return;
             
             isReading = true;
             document.getElementById('tts-btn').innerText = "⏹️ Stop";
-
-            // Recuperiamo il testo della pagina attuale
-            const text = currentBook.text[pageFlip.getCurrentPageIndex()];
-            if (!text) {
-                isReading = false;
-                return;
-            }
-
-            const msg = new SpeechSynthesisUtterance(text);
-            
-            // Impostiamo la Voce selezionata
-            msg.voice = synth.getVoices().find(v => v.name === document.getElementById('voice-select').value);
-            
-            // --- NUOVO: Impostiamo la Velocità ---
-            const speed = document.getElementById('speed-select').value;
-            msg.rate = parseFloat(speed); 
-
-            msg.onend = () => {
-                isReading = false;
-                document.getElementById('tts-btn').innerText = "🔊 Leggi";
-            };
-
-            synth.speak(msg);
+            startReadingCurrentPage();
         }
     }
+
+    // Funzione isolata per gestire la lettura e il passaggio pagina
+function startReadingCurrentPage() {
+    // 1. Pulizia totale preventiva
+    window.speechSynthesis.cancel();
+    
+    if (!isReading || !pageFlip || !currentBook) return;
+
+    // 2. Recupero indice e testo
+    const currentIndex = pageFlip.getCurrentPageIndex();
+    let text = currentBook.text[currentIndex];
+
+    console.log("Tentativo lettura pagina:", currentIndex);
+
+    if (!text || text.trim().length === 0) {
+        console.log("Pagina vuota, salto alla prossima...");
+        setTimeout(moveToNextPage, 500);
+        return;
+    }
+
+    // 3. Creazione dell'istanza di lettura
+    const msg = new SpeechSynthesisUtterance(text);
+    
+    // Configurazione voce e velocità
+    const selectedVoice = synth.getVoices().find(v => v.name === document.getElementById('voice-select').value);
+    if (selectedVoice) msg.voice = selectedVoice;
+    
+    msg.rate = parseFloat(document.getElementById('speed-select').value) || 1;
+    msg.lang = 'it-IT';
+
+    // 4. Gestione eventi
+    msg.onstart = () => {
+        console.log("Voce effettivamente partita per pagina:", currentIndex);
+    };
+
+    msg.onend = () => {
+        if (isReading) {
+            console.log("Pagina " + currentIndex + " finita. Volto pagina...");
+            // Usiamo un piccolo delay prima di voltare per non troncare l'ultima parola
+            setTimeout(moveToNextPage, 300);
+        }
+    };
+
+    msg.onerror = (event) => {
+        console.error("Errore Sintesi Vocale:", event);
+        // Se c'è un errore, proviamo a resettare e ripartire
+        if (isReading) {
+            window.speechSynthesis.cancel();
+            setTimeout(startReadingCurrentPage, 500);
+        }
+    };
+
+    // 5. Avvio forzato
+    // Alcuni browser richiedono un piccolo delay dopo il cancel() per "digerire" il nuovo comando
+    setTimeout(() => {
+        window.speechSynthesis.speak(msg);
+    }, 100);
+}
+
+
+function stopTTS() {
+    synth.cancel();
+    isReading = false;
+    document.getElementById('tts-btn').innerText = "🔊 Leggi";
+}
+    
+function moveToNextPage() {
+    if (!isReading || !pageFlip) return;
+
+    const currentIndex = pageFlip.getCurrentPageIndex();
+    const totalPages = pageFlip.getPageCount();
+
+    if (currentIndex < totalPages - 1) {
+        console.log("Eseguo flipNext...");
+        pageFlip.flipNext();
+        
+        // Invece di controllare solo l'animazione, aspettiamo un tempo certo 
+        // e poi forziamo la lettura
+        let checkCount = 0;
+        const waitInterval = setInterval(() => {
+            const state = pageFlip.getAnimationState();
+            checkCount++;
+            
+            // Se l'animazione è finita ('read') o se è passato troppo tempo (sicurezza)
+            if (state === 'read' || checkCount > 20) { 
+                clearInterval(waitInterval);
+                console.log("Sistema pronto per nuova pagina. Avvio voce.");
+                startReadingCurrentPage();
+            }
+        }, 200);
+    } else {
+        isReading = false;
+        document.getElementById('tts-btn').innerText = "🔊 Leggi";
+        console.log("Libro finito.");
+    }
+}
 
     window.addEventListener('resize', resize);
     document.getElementById('file-input').addEventListener('change', e => processFile(e.target.files[0]));
