@@ -8,13 +8,20 @@
     <style>
     
 /* Applica questo a Canvas e punti per bloccare ogni movimento della pagina */
-#sourceCanvas, .point, #sourceContainer {
-    touch-action: none !important; 
-    -ms-touch-action: none !important;
-    user-select: none !important;
-    -webkit-user-drag: none !important;
-}    
-    
+#sourceCanvas, .point {
+    touch-action: none !important;
+    /* Assicurati che non ci siano sovrapposizioni invisibili */
+    pointer-events: auto !important; 
+    cursor: move;
+}
+/* Rendi i punti visivamente più grandi ma non bloccare il tocco sotto di essi */
+.point {
+    z-index: 1000;
+    /* Area di contatto virtuale */
+    padding: 20px; 
+    margin: -20px; 
+}
+  
 #zoomHelper {
     position: fixed; /* FONDAMENTALE: resta agganciato allo schermo, non alla pagina */
     z-index: 10000;  /* Sopra a tutto */
@@ -1245,20 +1252,31 @@ cameraBtn.addEventListener('click', async () => {
                 // Touch events per mobile
 // 1. Quando tocchi il punto
 sourceCanvas.addEventListener('touchstart', (e) => {
+    // Impedisce al browser di ignorare il tocco
+    if (e.cancelable) e.preventDefault(); 
+
     const touch = e.touches[0];
     const rect = sourceCanvas.getBoundingClientRect();
+    
+    // Calcoliamo dove si trova il tocco rispetto al Canvas
     const touchX = (touch.clientX - rect.left) * (sourceCanvas.width / rect.width);
     const touchY = (touch.clientY - rect.top) * (sourceCanvas.height / rect.height);
 
-    // Cerca se hai toccato un punto (tolleranza 44px per dita grandi)
+    // AREA DI CATTURA: Aumentata a 60 per smartphone
+    let minDist = 60; 
+    selectedPoint = null;
+
     points.forEach((p, index) => {
         const dist = Math.hypot(p.x - touchX, p.y - touchY);
-        if (dist < 44) { 
+        if (dist < minDist) {
+            minDist = dist;
             selectedPoint = index;
-            // BLOCCA lo scroll immediatamente al contatto
-            if (e.cancelable) e.preventDefault(); 
         }
     });
+
+    if (selectedPoint !== null) {
+        handleMove(touch.clientX, touch.clientY, true);
+    }
 }, { passive: false });
 
                 sourceContainer.appendChild(pointEl);
