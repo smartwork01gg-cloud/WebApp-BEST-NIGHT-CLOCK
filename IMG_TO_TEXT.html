@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEURAL SCAN PRO // AUTO-GEOMETRY</title>
+    <title>NEURAL SCAN // RAW RESOLUTION</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady()"></script>
@@ -27,11 +27,10 @@
             flex: 1; background: var(--neon-blue); color: #000; border: none;
             padding: 14px; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%);
-            font-family: var(--font);
+            font-family: var(--font); clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%);
         }
 
-        /* Overlay e Geometria */
+        /* UI Overlays */
         #crop-overlay { position: fixed; inset: 0; z-index: 10; display: none; }
         .corner { 
             position: absolute; width: 44px; height: 44px; border: 2px solid var(--neon-blue); 
@@ -39,10 +38,9 @@
             background: rgba(0, 243, 255, 0.4); z-index: 30; touch-action: none;
         }
 
-        /* Handle per i lati potenziati */
         .edge-handle {
             position: absolute; z-index: 20; touch-action: none;
-            width: 50px; height: 30px; background: rgba(0, 243, 255, 0.2);
+            width: 60px; height: 34px; background: rgba(0, 243, 255, 0.2);
             border: 1px solid var(--neon-blue); border-radius: 4px;
             display: flex; align-items: center; justify-content: center;
             transform: translate(-50%, -50%); color: var(--neon-blue);
@@ -52,7 +50,6 @@
         textarea { width: 100%; flex-grow: 1; background: #000; border: 1px solid var(--neon-amber); color: #fff; padding: 15px; font-family: var(--font); margin: 15px 0; }
         
         #file-input { display: none; }
-        .btn-icon { background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,10 +58,10 @@
     <canvas id="display-canvas"></canvas>
     
     <div id="crop-overlay">
-        <div id="eh-0" class="edge-handle"><i data-lucide="grip-horizontal" size="16"></i></div>
-        <div id="eh-1" class="edge-handle" style="transform: translate(-50%, -50%) rotate(90deg);"><i data-lucide="grip-horizontal" size="16"></i></div>
-        <div id="eh-2" class="edge-handle"><i data-lucide="grip-horizontal" size="16"></i></div>
-        <div id="eh-3" class="edge-handle" style="transform: translate(-50%, -50%) rotate(90deg);"><i data-lucide="grip-horizontal" size="16"></i></div>
+        <div id="eh-0" class="edge-handle"><i data-lucide="grip-horizontal" size="18"></i></div>
+        <div id="eh-1" class="edge-handle" style="transform: translate(-50%, -50%) rotate(90deg);"><i data-lucide="grip-horizontal" size="18"></i></div>
+        <div id="eh-2" class="edge-handle"><i data-lucide="grip-horizontal" size="18"></i></div>
+        <div id="eh-3" class="edge-handle" style="transform: translate(-50%, -50%) rotate(90deg);"><i data-lucide="grip-horizontal" size="18"></i></div>
         
         <div id="c0" class="corner"></div><div id="c1" class="corner"></div>
         <div id="c2" class="corner"></div><div id="c3" class="corner"></div>
@@ -73,23 +70,21 @@
     <div id="drawer" class="results-drawer">
         <textarea id="output-text"></textarea>
         <div style="display:flex; gap:10px;">
-            <button class="btn-main" onclick="copyText()">COPY</button>
+            <button class="btn-main" onclick="navigator.clipboard.writeText(document.getElementById('output-text').value)">COPY</button>
             <button class="btn-main" onclick="location.reload()">NEW_SCAN</button>
         </div>
     </div>
 
     <div class="control-panel">
-        <div id="status" style="font-size: 0.7rem; color: var(--neon-blue)">AI_SYSTEM_READY</div>
-        
+        <div id="status" style="font-size: 0.7rem; color: var(--neon-blue)">HQ_IMAGE_ENGINE_ACTIVE</div>
         <div id="ui-init" style="display: flex; gap: 10px;">
-            <label for="file-input" class="btn-icon"><i data-lucide="file-plus"></i></label>
+            <label for="file-input" style="padding: 12px; border: 1px solid var(--neon-blue); cursor: pointer;"><i data-lucide="file-up"></i></label>
             <input type="file" id="file-input" accept="image/*">
-            <button class="btn-main" onclick="captureLive()">CAPTURE_LIVE</button>
+            <button class="btn-main" onclick="captureHQ()">CAPTURE_NATIVE_RES</button>
         </div>
-
-        <div id="ui-edit" style="display: none; gap: 10px;">
-            <button class="btn-icon" onclick="resetArea()" title="Reset Area"><i data-lucide="refresh-cw"></i></button>
-            <button class="btn-main" style="background:var(--neon-amber)" onclick="processFinal()">EXTRACT_TEXT</button>
+        <div id="ui-edit" style="display: none; gap: 10px; width:100%">
+            <button onclick="resetArea()" style="background:none; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px;"><i data-lucide="refresh-cw"></i></button>
+            <button class="btn-main" style="background:var(--neon-amber)" onclick="processFinal()">PROCESS_RAW_DATA</button>
         </div>
     </div>
 
@@ -99,61 +94,93 @@
     const canvas = document.getElementById('display-canvas');
     const ctx = canvas.getContext('2d');
     const status = document.getElementById('status');
-    let stream, originalImg = null;
+    let stream, rawImageBuffer = null;
     let corners = [];
 
     function onOpenCvReady() { startCamera(); }
 
     async function startCamera() {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
+        try {
+            // Chiediamo esplicitamente la massima risoluzione del sensore
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "environment",
+                    width: { ideal: 4096 },
+                    height: { ideal: 2160 }
+                } 
+            });
+            video.srcObject = stream;
+            const settings = stream.getVideoTracks()[0].getSettings();
+            status.innerText = `HQ_MODE: ${settings.width}x${settings.height}`;
+        } catch (e) { status.innerText = "CAMERA_ERROR"; }
     }
 
-    function captureLive() {
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0); initEditMode();
+    function captureHQ() {
+        // Impostiamo il canvas alla risoluzione REALE del video, non a quella del CSS
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        
+        // Conserviamo i dati ad alta risoluzione in un buffer separato
+        rawImageBuffer = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        initEditMode();
     }
 
     document.getElementById('file-input').onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.onload = () => { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); initEditMode(); };
-            img.src = ev.target.result;
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            rawImageBuffer = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            initEditMode();
         };
-        reader.readAsDataURL(e.target.files[0]);
+        img.src = URL.createObjectURL(e.target.files[0]);
     };
 
     function initEditMode() {
-        originalImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        resetArea(); // Calcolo iniziale automatico
-        
+        resetArea();
         video.style.display = 'none';
         canvas.style.display = 'block';
         document.getElementById('crop-overlay').style.display = 'block';
         document.getElementById('ui-init').style.display = 'none';
         document.getElementById('ui-edit').style.display = 'flex';
-        status.innerText = "CALIBRATE_AREA";
     }
 
-    // FUNZIONE DI RESET / AUTOCALCOLO
     function resetArea() {
         const w = window.innerWidth, h = window.innerHeight;
-        const marginX = w * 0.05;
-        const marginY = h * 0.1;
-        
-        // Definisce un quadrilatero perfetto ai bordi del viewport
-        corners = [
-            {x: marginX, y: marginY},           // Top-Left
-            {x: w - marginX, y: marginY},       // Top-Right
-            {x: w - marginX, y: h - 160},       // Bottom-Right (lascia spazio per la UI)
-            {x: marginX, y: h - 160}            // Bottom-Left
-        ];
+        const m = 30;
+        corners = [{x:m, y:m}, {x:w-m, y:m}, {x:w-m, y:h-160}, {x:m, y:h-160}];
         updateUI();
-        status.innerText = "AREA_RESET_COMPLETE";
     }
 
-    // LOGICA VERTICI
+    // --- LOGICA DI TRASCINAMENTO (COERENTE E VETTORIALE) ---
+    function updateUI() {
+        ctx.putImageData(rawImageBuffer, 0, 0);
+        ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = Math.max(2, canvas.width/400); // Linea proporzionale alla risoluzione
+        
+        // Ratio per mappare le coordinate dello schermo (CSS) sul Canvas (Nativo)
+        const sX = canvas.width / window.innerWidth;
+        const sY = canvas.height / window.innerHeight;
+
+        ctx.beginPath();
+        ctx.moveTo(corners[0].x * sX, corners[0].y * sY);
+        corners.forEach((c, i) => {
+            const next = corners[(i + 1) % 4];
+            ctx.lineTo(next.x * sX, next.y * sY);
+            
+            const cEl = document.getElementById(`c${i}`);
+            cEl.style.left = c.x + 'px'; cEl.style.top = c.y + 'px';
+            
+            const hEl = document.getElementById(`eh-${i}`);
+            hEl.style.left = (c.x + next.x) / 2 + 'px';
+            hEl.style.top = (c.y + next.y) / 2 + 'px';
+        });
+        ctx.closePath(); ctx.stroke();
+    }
+
+    // Gestione Drag & Drop (Vertici e Lati)
+    // [Stessa logica vettoriale del precedente...]
     document.querySelectorAll('.corner').forEach((el, i) => {
         const move = (e) => {
             e.preventDefault(); const t = e.touches ? e.touches[0] : e;
@@ -166,68 +193,54 @@
         };
     });
 
-    // LOGICA LATI COERENTE (Vettoriale)
-    const edgePairs = [[0, 1], [1, 2], [2, 3], [3, 0]];
-    edgePairs.forEach((pair, i) => {
+    [[0,1],[1,2],[2,3],[3,0]].forEach((pair, i) => {
         const el = document.getElementById(`eh-${i}`);
-        let lastX, lastY;
+        let lx, ly;
         const move = (e) => {
             e.preventDefault(); const t = e.touches ? e.touches[0] : e;
-            const dx = t.clientX - lastX; const dy = t.clientY - lastY;
-            corners[pair[0]].x += dx; corners[pair[0]].y += dy;
-            corners[pair[1]].x += dx; corners[pair[1]].y += dy;
-            lastX = t.clientX; lastY = t.clientY;
-            updateUI();
+            corners[pair[0]].x += (t.clientX - lx); corners[pair[0]].y += (t.clientY - ly);
+            corners[pair[1]].x += (t.clientX - lx); corners[pair[1]].y += (t.clientY - ly);
+            lx = t.clientX; ly = t.clientY; updateUI();
         };
         el.ontouchstart = el.onmousedown = (e) => {
             const t = e.touches ? e.touches[0] : e;
-            lastX = t.clientX; lastY = t.clientY;
+            lx = t.clientX; ly = t.clientY;
             window.onmousemove = window.ontouchmove = move;
             window.onmouseup = window.ontouchend = () => window.onmousemove = window.ontouchmove = null;
         };
     });
 
-    function updateUI() {
-        ctx.putImageData(originalImg, 0, 0);
-        ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 4;
-        const sX = canvas.width/window.innerWidth, sY = canvas.height/window.innerHeight;
-        
-        ctx.beginPath();
-        ctx.moveTo(corners[0].x * sX, corners[0].y * sY);
-        corners.forEach((c, i) => {
-            const next = corners[(i + 1) % 4];
-            ctx.lineTo(next.x * sX, next.y * sY);
-            
-            document.getElementById(`c${i}`).style.left = c.x + 'px';
-            document.getElementById(`c${i}`).style.top = c.y + 'px';
-            
-            const hEl = document.getElementById(`eh-${i}`);
-            hEl.style.left = (c.x + next.x) / 2 + 'px';
-            hEl.style.top = (c.y + next.y) / 2 + 'px';
-        });
-        ctx.closePath(); ctx.stroke();
-    }
-
     async function processFinal() {
-        status.innerText = "OPTIMIZING_WARP...";
-        const sX = canvas.width/window.innerWidth, sY = canvas.height/window.innerHeight;
-        let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [corners[0].x*sX, corners[0].y*sY, corners[1].x*sX, corners[1].y*sY, corners[2].x*sX, corners[2].y*sY, corners[3].x*sX, corners[3].y*sY]);
-        const outW = 1000, outH = 1400;
-        let dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, outW, 0, outW, outH, 0, outH]);
+        status.innerText = "PROCESSING_RAW_PIXELS...";
+        const sX = canvas.width / window.innerWidth;
+        const sY = canvas.height / window.innerHeight;
+        
+        // Calcolo delle coordinate sorgente sulla risoluzione nativa
+        let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            corners[0].x*sX, corners[0].y*sY, corners[1].x*sX, corners[1].y*sY,
+            corners[2].x*sX, corners[2].y*sY, corners[3].x*sX, corners[3].y*sY
+        ]);
+
+        // Output ad altissima densità per l'OCR (circa 300 DPI equivalenti)
+        const outW = 1600, outH = 2200; 
+        let dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [0,0, outW,0, outW,outH, 0,outH]);
         let M = cv.getPerspectiveTransform(srcPts, dstPts);
-        let src = cv.matFromImageData(originalImg);
+        let src = cv.matFromImageData(rawImageBuffer);
         let dst = new cv.Mat();
+        
         cv.warpPerspective(src, dst, M, new cv.Size(outW, outH));
         cv.imshow(canvas, dst);
+
+        status.innerText = "NEURAL_OCR_RUNNING...";
+        // Passiamo l'immagine rettificata ad alta risoluzione a Tesseract
+        const { data: { text } } = await Tesseract.recognize(canvas.toDataURL('image/jpeg', 0.95));
         
-        status.innerText = "NEURAL_OCR_ACTIVE...";
-        const { data: { text } } = await Tesseract.recognize(canvas.toDataURL());
         document.getElementById('output-text').value = text;
         document.getElementById('drawer').style.display = 'flex';
+        status.innerText = "SCAN_COMPLETE";
+        
         src.delete(); dst.delete(); M.delete(); srcPts.delete(); dstPts.delete();
     }
-    
-    function copyText() { navigator.clipboard.writeText(document.getElementById('output-text').value); status.innerText = "COPIED"; }
 </script>
 </body>
 </html>
