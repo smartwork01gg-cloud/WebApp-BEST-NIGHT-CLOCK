@@ -6,7 +6,19 @@
     <title>Scanner Documenti - Rettificazione Prospettica</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-    
+#resultContainer {
+    display: block !important; /* Forza la visibilità */
+    width: 100%;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#resultCanvas {
+    max-width: 100%; /* Impedisce al canvas di uscire dallo schermo */
+    height: auto !important;
+    border: 2px solid #3b82f6;
+    display: none; /* Verrà mostrato via JS */
+}    
 /* Applica questo a Canvas e punti per bloccare ogni movimento della pagina */
 #sourceCanvas {
     /* Disabilita TUTTI i gesti del browser (scroll, zoom, menu contestuale) */
@@ -1068,6 +1080,22 @@
         document.getElementById('resultPlaceholder').style.display = 'none';
         resultCanvas.style.display = 'block';
         saveJpgBtn.disabled = savePdfBtn.disabled = false;
+     // ... dentro la funzione autoRectify, alla fine:
+
+        rectifiedImageData = dstData;
+        applyFilters();
+        
+        // Nascondi il placeholder e mostra il canvas
+        const resPlaceholder = document.getElementById('resultPlaceholder');
+        if (resPlaceholder) resPlaceholder.style.display = 'none';
+        
+        resultCanvas.style.display = 'block';
+        
+        // SCROLL AUTOMATICO: Fondamentale per il mobile
+        resultCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        saveJpgBtn.disabled = savePdfBtn.disabled = false;
+        showStatus('Immagine rettificata!');
     }
 
     // 7. LISTENER
