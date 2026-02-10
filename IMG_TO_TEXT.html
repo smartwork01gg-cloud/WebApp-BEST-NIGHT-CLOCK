@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER-SCAN // OCR HUD</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --cyber-blue: #00f3ff;
+            --deep-amber: #ffaa00;
+            --glass-bg: rgba(10, 15, 25, 0.7);
+            --border-glow: rgba(0, 243, 255, 0.4);
+            --font-main: 'Share Tech Mono', monospace;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #000; overflow: hidden;
+            font-family: var(--font-main); color: var(--cyber-blue);
+        }
+
+        /* Video Streaming Protagonista */
+        #video-bg {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: 1;
+        }
+
+        /* Overlay di scansione neon */
+        .scan-line {
+            position: fixed; width: 100%; height: 2px;
+            background: var(--cyber-blue); opacity: 0.3;
+            box-shadow: 0 0 15px var(--cyber-blue);
+            z-index: 2; top: 0; pointer-events: none;
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; } 100% { top: 100%; }
+        }
+
+        /* Widget Stile Combat-HUD */
+        .hud-widget {
+            position: absolute; z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px) saturate(150%);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-left: 4px solid var(--cyber-blue);
+            clip-path: polygon(0% 0%, 95% 0%, 100% 5%, 100% 100%, 5% 100%, 0% 95%);
+            padding: 10px; min-width: 250px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .widget-header {
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: move; padding-bottom: 8px; border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 2px;
+            color: var(--deep-amber);
+        }
+
+        .iconize-btn { cursor: pointer; color: var(--cyber-blue); }
+        
+        .widget-content { transition: max-height 0.3s ease; overflow: hidden; }
+        .minimized .widget-content { max-height: 0; padding: 0; opacity: 0; }
+
+        /* Controlli Cyber-Tech */
+        .btn-hud {
+            background: transparent; border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue); padding: 10px; width: 100%;
+            font-family: var(--font-main); text-transform: uppercase;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .btn-hud:hover {
+            background: rgba(0, 243, 255, 0.1);
+            box-shadow: inset 0 0 10px var(--cyber-blue);
+        }
+
+        .btn-hud:disabled { opacity: 0.4; filter: grayscale(1); }
+
+        textarea {
+            width: 100%; height: 150px; background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0, 243, 255, 0.2); color: #fff;
+            font-family: var(--font-main); padding: 8px; box-sizing: border-box;
+            resize: none; font-size: 0.9rem;
+        }
+
+        /* Posizioni Widget Default */
+        #scanner-widget { top: 20px; left: 20px; }
+        #output-widget { bottom: 20px; right: 20px; width: 350px; }
+
+        /* Progress Bar */
+        .progress-container { margin: 10px 0; height: 4px; background: rgba(255,255,255,0.1); }
+        #progress-bar { height: 100%; width: 0%; background: var(--deep-amber); box-shadow: 0 0 10px var(--deep-amber); }
+
+        #capture-canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <video id="video-bg" autoplay playsinline muted></video>
+    <div class="scan-line"></div>
+
+    <div id="scanner-widget" class="hud-widget">
+        <div class="widget-header">
+            <span>[ SYSTEM_SCANNER_v4.2 ]</span>
+            <i data-lucide="minus" class="iconize-btn" onclick="toggleWidget('scanner-widget')"></i>
+        </div>
+        <div class="widget-content">
+            <button class="btn-hud" onclick="captureAndOCR()">
+                <i data-lucide="crosshair" style="vertical-align: middle; margin-right: 5px;"></i> 
+                Esegui Scansione
+            </button>
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="status" style="font-size: 0.7rem; color: var(--deep-amber);">READY_TO_ACQUIRE</div>
+        </div>
+    </div>
+
+    <div id="output-widget" class="hud-widget">
+        <div class="widget-header">
+            <span>[ DATA_EXTRACTED ]</span>
+            <i data-lucide="minus" class="iconize-btn" onclick="toggleWidget('output-widget')"></i>
+        </div>
+        <div class="widget-content">
+            <textarea id="result-text" readonly placeholder="// IN ATTESA DI DATI..."></textarea>
+            <div style="display: flex; gap: 5px; margin-top: 10px;">
+                <button class="btn-hud" style="font-size: 0.7rem;" onclick="copyResult()">Copy_to_Buffer</button>
+                <button class="btn-hud" style="font-size: 0.7rem; border-color: var(--deep-amber); color: var(--deep-amber);" onclick="location.reload()">Reset_System</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas"></canvas>
+
+<script>
+    lucide.createIcons();
+    const video = document.getElementById('video-bg');
+    const canvas = document.getElementById('capture-canvas');
+    const resultText = document.getElementById('result-text');
+    const progressBar = document.getElementById('progress-bar');
+    const status = document.getElementById('status');
+
+    // Inizializza Fotocamera a tutto schermo
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" }, 
+                audio: false 
+            });
+            video.srcObject = stream;
+        } catch (err) {
+            status.innerText = "ERROR: ACCESS_DENIED";
+            console.error(err);
+        }
+    }
+
+    // Cattura frame e OCR
+    async function captureAndOCR() {
+        status.innerText = "CAPTURING_FRAME...";
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        const imageData = canvas.toDataURL('image/jpeg');
+        
+        status.innerText = "INITIALIZING_AI_ENGINE...";
+        try {
+            const { data: { text } } = await Tesseract.recognize(
+                imageData,
+                'ita+eng',
+                {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const p = Math.round(m.progress * 100);
+                            progressBar.style.width = p + "%";
+                            status.innerText = `RECOGNIZING: ${p}%`;
+                        }
+                    }
+                }
+            );
+            resultText.value = text;
+            status.innerText = "SCAN_COMPLETE";
+        } catch (e) {
+            status.innerText = "SCAN_FAILED_RETRY";
+        }
+    }
+
+    // Toggle Iconizzazione
+    function toggleWidget(id) {
+        document.getElementById(id).classList.toggle('minimized');
+    }
+
+    // Copia
+    function copyResult() {
+        navigator.clipboard.writeText(resultText.value);
+        status.innerText = "DATA_COPIED_TO_CLIPBOARD";
+    }
+
+    // Drag & Drop dei Widget (Semplificato)
+    function makeDraggable(el) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        const header = el.querySelector(".widget-header");
+        header.onmousedown = dragMouseDown;
+        header.ontouchstart = dragMouseDown;
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            pos3 = e.clientX || e.touches[0].clientX;
+            pos4 = e.clientY || e.touches[0].clientY;
+            document.onmouseup = closeDragElement;
+            document.ontouchend = closeDragElement;
+            document.onmousemove = elementDrag;
+            document.ontouchmove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            let cx = e.clientX || e.touches[0].clientX;
+            let cy = e.clientY || e.touches[0].clientY;
+            pos1 = pos3 - cx;
+            pos2 = pos4 - cy;
+            pos3 = cx;
+            pos4 = cy;
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+            document.ontouchend = null;
+            document.ontouchmove = null;
+        }
+    }
+
+    document.querySelectorAll('.hud-widget').forEach(makeDraggable);
+    initCamera();
+</script>
+
+</body>
+</html>
