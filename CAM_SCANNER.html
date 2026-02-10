@@ -924,14 +924,13 @@
 
     function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
         zoomHelper.style.display = 'block';
-        const zw = 160, zh = 160; // Dimensione del cerchio zoom a schermo
+        const zw = 160, zh = 160; // Dimensione fissa del widget zoom
         
-        // Posizionamento intelligente dello zoom per non coprirlo con la mano
-        let left = screenX - zw/2;
-        let top = screenY - zh - 80; // Aumentato un po' per distanziarlo dal dito
-        
+        // Posizionamento dello zoom (sopra o sotto il dito)
+        let left = screenX - zw / 2;
+        let top = screenY - zh - 80;
         if (left < 10) left = 10;
-        if (top < 10) top = screenY + 60; // Se troppo in alto, lo sposta sotto il dito
+        if (top < 10) top = screenY + 60;
         
         zoomHelper.style.left = left + 'px';
         zoomHelper.style.top = top + 'px';
@@ -941,41 +940,35 @@
         
         zoomCanvas.width = zw; 
         zoomCanvas.height = zh;
-        
-        // Attiviamo lo smoothing per una visione più chiara dato che lo zoom è minore
         zoomCtx.imageSmoothingEnabled = true;
-        zoomCtx.imageSmoothingQuality = 'high';
 
-        // --- LOGICA DI ZOOM RIDOTTO ---
-        // Aumentando l'area di cattura (es. 80 invece di 40), mostriamo più contesto 
-        // e l'ingrandimento percepito diminuisce.
-        const areaCatturata = 80; 
-        const offset = areaCatturata / 2;
+        // --- CALCOLO AREA PROPORZIONALE (Ingrandimento 60%) ---
+        // Per avere un ingrandimento del 60%, l'area catturata deve essere 
+        // la dimensione del widget divisa per 1.6 (il fattore di zoom).
+        const zoomFactor = 1.8; 
+        const areaCatturataX = (zw / zoomFactor) * scaleX;
+        const areaCatturataY = (zh / zoomFactor) * scaleY;
 
         zoomCtx.drawImage(
             sourceImage, 
-            canvasX * scaleX - offset, 
-            canvasY * scaleY - offset, 
-            areaCatturata, 
-            areaCatturata, 
+            canvasX * scaleX - areaCatturataX / 2, 
+            canvasY * scaleY - areaCatturataY / 2, 
+            areaCatturataX, 
+            areaCatturataY, 
             0, 0, zw, zh
         );
 
-        // Disegno del mirino centrale (Crosshair)
+        // Disegno mirino di precisione
         zoomCtx.strokeStyle = '#3b82f6'; 
         zoomCtx.lineWidth = 2;
         zoomCtx.beginPath(); 
-        // Linea Verticale
-        zoomCtx.moveTo(zw/2, 0); 
-        zoomCtx.lineTo(zw/2, zh); 
-        // Linea Orizzontale
-        zoomCtx.moveTo(0, zh/2); 
-        zoomCtx.lineTo(zw, zh/2); 
+        // Croce
+        zoomCtx.moveTo(zw/2, 0); zoomCtx.lineTo(zw/2, zh); 
+        zoomCtx.moveTo(0, zh/2); zoomCtx.lineTo(zw, zh/2); 
         zoomCtx.stroke();
-
-        // Aggiunta di un cerchietto centrale per ulteriore precisione
+        // Cerchio centrale
         zoomCtx.beginPath();
-        zoomCtx.arc(zw/2, zh/2, 5, 0, Math.PI * 2);
+        zoomCtx.arc(zw/2, zh/2, 8, 0, Math.PI * 2);
         zoomCtx.stroke();
     }
     function renderPoints() {
