@@ -1348,10 +1348,17 @@
 
         // Applica trasformazione prospettica inversa
         function applyPerspectiveTransform(srcCanvas, dstCanvas, H, width, height) {
-            const srcCtx = srcCanvas.getContext('2d');
-            const dstCtx = dstCanvas.getContext('2d');
+            // Crea un canvas temporaneo con l'immagine PULITA (senza poligono)
+            const cleanCanvas = document.createElement('canvas');
+            cleanCanvas.width = srcCanvas.width;
+            cleanCanvas.height = srcCanvas.height;
+            const cleanCtx = cleanCanvas.getContext('2d');
             
-            const srcData = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
+            // Disegna solo l'immagine originale senza poligono né punti
+            cleanCtx.drawImage(sourceImage, 0, 0, cleanCanvas.width, cleanCanvas.height);
+            
+            const srcData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
+            const dstCtx = dstCanvas.getContext('2d');
             const dstData = dstCtx.createImageData(width, height);
 
             // Inverti la matrice di omografia per mappare dst -> src
@@ -1366,8 +1373,8 @@
                     const srcY = (Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / denom;
 
                     // Interpolazione bilineare per qualità migliore
-                    if (srcX >= 0 && srcX < srcCanvas.width - 1 && 
-                        srcY >= 0 && srcY < srcCanvas.height - 1) {
+                    if (srcX >= 0 && srcX < cleanCanvas.width - 1 && 
+                        srcY >= 0 && srcY < cleanCanvas.height - 1) {
                         
                         const x0 = Math.floor(srcX);
                         const y0 = Math.floor(srcY);
@@ -1380,10 +1387,10 @@
 
                         // Interpola ogni canale colore
                         for (let c = 0; c < 3; c++) {
-                            const v00 = srcData.data[(y0 * srcCanvas.width + x0) * 4 + c];
-                            const v10 = srcData.data[(y0 * srcCanvas.width + x1) * 4 + c];
-                            const v01 = srcData.data[(y1 * srcCanvas.width + x0) * 4 + c];
-                            const v11 = srcData.data[(y1 * srcCanvas.width + x1) * 4 + c];
+                            const v00 = srcData.data[(y0 * cleanCanvas.width + x0) * 4 + c];
+                            const v10 = srcData.data[(y0 * cleanCanvas.width + x1) * 4 + c];
+                            const v01 = srcData.data[(y1 * cleanCanvas.width + x0) * 4 + c];
+                            const v11 = srcData.data[(y1 * cleanCanvas.width + x1) * 4 + c];
 
                             const v0 = v00 * (1 - dx) + v10 * dx;
                             const v1 = v01 * (1 - dx) + v11 * dx;
