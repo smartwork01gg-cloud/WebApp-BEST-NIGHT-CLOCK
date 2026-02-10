@@ -1351,39 +1351,42 @@ cameraBtn.addEventListener('click', async () => {
 
 
         // Auto-rettifica (chiamata quando si rilascia un punto)
-        function autoRectify() {
-            if (points.length !== 4 || !sourceImage) return;
-            
-            // Usa la stessa logica del bottone rettifica
-            const sorted = orderPointsClockwise(points);
-            
-            const widthTop = distance(sorted[0], sorted[1]);
-            const widthBottom = distance(sorted[3], sorted[2]);
-            const heightLeft = distance(sorted[0], sorted[3]);
-            const heightRight = distance(sorted[1], sorted[2]);
-            
-            const outputWidth = Math.round(Math.max(widthTop, widthBottom));
-            const outputHeight = Math.round(Math.max(heightLeft, heightRight));
-            
-            resultCanvas.width = outputWidth;
-            resultCanvas.height = outputHeight;
-            
-            const dstPoints = [
-                { x: 0, y: 0 },
-                { x: outputWidth, y: 0 },
-                { x: outputWidth, y: outputHeight },
-                { x: 0, y: outputHeight }
-            ];
-            
-            const H = computeHomography(sorted, dstPoints);
-            applyPerspectiveTransform(sourceCanvas, resultCanvas, H, outputWidth, outputHeight);
-            
-            document.getElementById('resultPlaceholder').style.display = 'none';
-            resultCanvas.style.display = 'block';
-            
-            saveJpgBtn.disabled = false;
-            savePdfBtn.disabled = false;
-        }
+function autoRectify() {
+    if (points.length !== 4 || !sourceImage) return;
+    
+    // 1. Ordina i punti dell'anteprima
+    const sorted = orderPointsClockwise(points);
+    
+    // 2. Calcola il rapporto di scala tra immagine reale e anteprima
+    const ratioX = sourceImage.width / sourceCanvas.width;
+    const ratioY = sourceImage.height / sourceCanvas.height;
+    
+    // 3. Scala i punti sulle coordinate reali per calcolare la dimensione finale corretta
+    const p0_real = { x: sorted[0].x * ratioX, y: sorted[0].y * ratioY };
+    const p1_real = { x: sorted[1].x * ratioX, y: sorted[1].y * ratioY };
+    const p2_real = { x: sorted[2].x * ratioX, y: sorted[2].y * ratioY };
+    const p3_real = { x: sorted[3].x * ratioX, y: sorted[3].y * ratioY };
+    
+    const widthTop = distance(p0_real, p1_real);
+    const widthBottom = distance(p3_real, p2_real);
+    const heightLeft = distance(p0_real, p3_real);
+    const heightRight = distance(p1_real, p2_real);
+    
+    // Dimensioni di output reali (alta risoluzione)
+    const realWidth = Math.round(Math.max(widthTop, widthBottom));
+    const realHeight = Math.round(Math.max(heightLeft, heightRight));
+    
+    // 4. Esegui la trasformazione (la funzione internamente userà questi parametri)
+    // Passiamo null per H perché la nuova applyPerspectiveTransform la ricalcola internamente
+    applyPerspectiveTransform(sourceCanvas, resultCanvas, null, realWidth, realHeight);
+    
+    // 5. Aggiorna interfaccia
+    document.getElementById('resultPlaceholder').style.display = 'none';
+    resultCanvas.style.display = 'block';
+    
+    saveJpgBtn.disabled = false;
+    savePdfBtn.disabled = false;
+}
 
         // Reset punti
         resetBtn.addEventListener('click', () => {
@@ -1517,40 +1520,56 @@ cameraBtn.addEventListener('click', async () => {
 
         // Applica trasformazione prospettica inversa
 function applyPerspectiveTransform(srcCanvas, dstCanvas, H, width, height) {
-    // 1. Creiamo un canvas temporaneo alla risoluzione ORIGINALE della foto
-    const fullResCanvas = document.createElement('canvas');
-    fullResCanvas.width = sourceImage.width;
-    fullResCanvas.height = sourceImage.height;
-    const fullResCtx = fullResCanvas.getContext('2d');
-    fullResCtx.drawImage(sourceImage, 0, 0);
-    
-    // 2. Ricalcoliamo l'omografia usando i punti scalati sulla foto reale
+    if (!sourceImage) return;
+
+    // 1. Calcola il fattore di scala tra anteprima e foto originale
     const ratioX = sourceImage.width / srcCanvas.width;
     const ratioY = sourceImage.height / srcCanvas.height;
-    
+
+    // 2. Scala i punti selezionati alle coordinate REALI della foto
     const scaledSrcPoints = orderPointsClockwise(points).map(p => ({
         x: p.x * ratioX,
         y: p.y * ratioY
     }));
 
+    // 3. Calcola le dimensioni di output REALI (non quelle del canvas piccolo)
+    const realWidthTop = distance(scaledSrcPoints[0], scaledSrcPoints[1]);
+    const realWidthBottom = distance(scaledSrcPoints[3], scaledSrcPoints[2]);
+    const realHeightLeft = distance(scaledSrcPoints[0], scaledSrcPoints[3]);
+    const realHeightRight = distance(scaledSrcPoints[1], scaledSrcPoints[2]);
+
+    const realOutWidth = Math.round(Math.max(realWidthTop, realWidthBottom));
+    const realOutHeight = Math.round(Math.max(realHeightLeft, realHeightRight));
+
+    // Aggiorna il canvas di destinazione alla risoluzione originale
+    dstCanvas.width = realOutWidth;
+    dstCanvas.height = realOutHeight;
+
+    // 4. Crea canvas temporaneo per estrarre i pixel originali
+    const fullResCanvas = document.createElement('canvas');
+    fullResCanvas.width = sourceImage.width;
+    fullResCanvas.height = sourceImage.height;
+    const fullResCtx = fullResCanvas.getContext('2d', { willReadFrequently: true });
+    fullResCtx.drawImage(sourceImage, 0, 0);
+
     const dstPoints = [
         { x: 0, y: 0 },
-        { x: width, y: 0 },
-        { x: width, y: height },
-        { x: 0, y: height }
+        { x: realOutWidth, y: 0 },
+        { x: realOutWidth, y: realOutHeight },
+        { x: 0, y: realOutHeight }
     ];
 
+    // 5. Ricalcola l'omografia per l'alta risoluzione
     const realH = computeHomography(scaledSrcPoints, dstPoints);
     const Hinv = invertHomography(realH);
 
-    // 3. Estraiamo i dati dell'immagine originale
     const srcData = fullResCtx.getImageData(0, 0, fullResCanvas.width, fullResCanvas.height);
     const dstCtx = dstCanvas.getContext('2d');
-    const dstData = dstCtx.createImageData(width, height);
+    const dstData = dstCtx.createImageData(realOutWidth, realOutHeight);
 
-    // 4. Algoritmo di trasformazione con Interpolazione Bilineare
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
+    // 6. Ciclo di trasformazione con Interpolazione Bilineare (Alta Qualità)
+    for (let y = 0; y < realOutHeight; y++) {
+        for (let x = 0; x < realOutWidth; x++) {
             const denom = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
             const srcX = (Hinv[0][0] * x + Hinv[0][1] * y + Hinv[0][2]) / denom;
             const srcY = (Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / denom;
@@ -1561,15 +1580,20 @@ function applyPerspectiveTransform(srcCanvas, dstCanvas, H, width, height) {
                 const dx = srcX - x0;
                 const dy = srcY - y0;
 
-                const dstIdx = (y * width + x) * 4;
+                const dstIdx = (y * realOutWidth + x) * 4;
+                const rowSize = fullResCanvas.width * 4;
 
                 for (let c = 0; c < 3; c++) {
-                    const v00 = srcData.data[(y0 * fullResCanvas.width + x0) * 4 + c];
-                    const v10 = srcData.data[(y0 * fullResCanvas.width + (x0 + 1)) * 4 + c];
-                    const v01 = srcData.data[((y0 + 1) * fullResCanvas.width + x0) * 4 + c];
-                    const v11 = srcData.data[((y0 + 1) * fullResCanvas.width + (x0 + 1)) * 4 + c];
+                    const i00 = (y0 * rowSize) + (x0 * 4) + c;
+                    const i10 = i00 + 4;
+                    const i01 = i00 + rowSize;
+                    const i11 = i01 + 4;
 
-                    const v = v00 * (1 - dx) * (1 - dy) + v10 * dx * (1 - dy) + v01 * (1 - dx) * dy + v11 * dx * dy;
+                    const v = srcData.data[i00] * (1 - dx) * (1 - dy) +
+                              srcData.data[i10] * dx * (1 - dy) +
+                              srcData.data[i01] * (1 - dx) * dy +
+                              srcData.data[i11] * dx * dy;
+                    
                     dstData.data[dstIdx + c] = v;
                 }
                 dstData.data[dstIdx + 3] = 255;
@@ -1578,7 +1602,12 @@ function applyPerspectiveTransform(srcCanvas, dstCanvas, H, width, height) {
     }
 
     dstCtx.putImageData(dstData, 0, 0);
-    rectifiedImageData = dstData;
+    rectifiedImageData = dstData; // Salva per i filtri
+    
+    // Libera memoria
+    fullResCanvas.width = 0; 
+    fullResCanvas.height = 0;
+
     applyFilters();
 }
 
