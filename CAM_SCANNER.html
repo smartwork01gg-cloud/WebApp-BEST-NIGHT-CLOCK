@@ -752,1138 +752,373 @@
 
     <div class="status" id="status"></div>
 
-    <script>
-        // Elementi DOM
-        const fileInput = document.getElementById('fileInput');
-        const cameraBtn = document.getElementById('cameraBtn');
-        const sourceCanvas = document.getElementById('sourceCanvas');
-        const resultCanvas = document.getElementById('resultCanvas');
-        const sourceCtx = sourceCanvas.getContext('2d');
-        const resultCtx = resultCanvas.getContext('2d');
-        const sourceContainer = document.getElementById('sourceContainer');
-        const rectifyBtn = document.getElementById('rectifyBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const saveJpgBtn = document.getElementById('saveJpgBtn');
-        const savePdfBtn = document.getElementById('savePdfBtn');
-        const contrastSlider = document.getElementById('contrastSlider');
-        const brightnessSlider = document.getElementById('brightnessSlider');
-        const sharpnessSlider = document.getElementById('sharpnessSlider');
-        const colorModeSelect = document.getElementById('colorModeSelect');
-        const thresholdSlider = document.getElementById('thresholdSlider');
-        const bwThresholdGroup = document.getElementById('bwThresholdGroup');
-        const contrastValue = document.getElementById('contrastValue');
-        const brightnessValue = document.getElementById('brightnessValue');
-        const sharpnessValue = document.getElementById('sharpnessValue');
-        const thresholdValue = document.getElementById('thresholdValue');
-        const status = document.getElementById('status');
+<script>
+    // 1. ELEMENTI DOM E VARIABILI
+    const fileInput = document.getElementById('fileInput');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const sourceCanvas = document.getElementById('sourceCanvas');
+    const resultCanvas = document.getElementById('resultCanvas');
+    const sourceCtx = sourceCanvas.getContext('2d');
+    const resultCtx = resultCanvas.getContext('2d');
+    const sourceContainer = document.getElementById('sourceContainer');
+    const rectifyBtn = document.getElementById('rectifyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const saveJpgBtn = document.getElementById('saveJpgBtn');
+    const savePdfBtn = document.getElementById('savePdfBtn');
+    const contrastSlider = document.getElementById('contrastSlider');
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    const sharpnessSlider = document.getElementById('sharpnessSlider');
+    const colorModeSelect = document.getElementById('colorModeSelect');
+    const thresholdSlider = document.getElementById('thresholdSlider');
+    const bwThresholdGroup = document.getElementById('bwThresholdGroup');
+    const status = document.getElementById('status');
 
-        let sourceImage = null;
-        let points = [];
-        let pointElements = [];
-        let selectedPoint = null;
-        let rectifiedImageData = null;
+    let sourceImage = null;
+    let points = [];
+    let pointElements = [];
+    let selectedPoint = null;
+    let rectifiedImageData = null;
 
-        // Elementi zoom helper
-        const zoomHelper = document.getElementById('zoomHelper');
-        const zoomCanvas = document.getElementById('zoomCanvas');
-        const zoomCtx = zoomCanvas.getContext('2d');
-        const ZOOM_LEVEL = 5; // Fattore di ingrandimento
+    const zoomHelper = document.getElementById('zoomHelper');
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    const zoomCtx = zoomCanvas.getContext('2d');
 
-        
-     // --- SOSTITUISCI QUESTE VARIABILI E FUNZIONI ---
-const TOUCH_OFFSET_Y = 60; // Il punto apparirà 60px sopra il dito
-
-function handleMove(clientX, clientY, isTouch) {
-    if (selectedPoint === null) return;
-
-    const rect = sourceCanvas.getBoundingClientRect();
-    const scaleX = sourceCanvas.width / rect.width;
-    const scaleY = sourceCanvas.height / rect.height;
-
-    // Applica l'offset solo se è un evento touch
-    const offsetY = isTouch ? TOUCH_OFFSET_Y : 0;
-    
-    const x = (clientX - rect.left) * scaleX;
-    const y = ((clientY - rect.top) - offsetY) * scaleY;
-
-    points[selectedPoint] = { 
-        x: Math.max(0, Math.min(sourceCanvas.width, x)), 
-        y: Math.max(0, Math.min(sourceCanvas.height, y)) 
-    };
-
-    renderPoints();
-    // Aggiorna lo zoom helper considerando l'offset
-    updateZoomHelper(points[selectedPoint].x, points[selectedPoint].y, clientX, clientY - offsetY);
-}
-
-// MANTIENI SOLO QUESTO LISTENER PER IL TOUCH
-// 2. Quando muovi il dito
-document.addEventListener('touchmove', (e) => {
-    if (selectedPoint !== null) {
-        // BLOCCA lo scroll durante tutto il movimento
-        if (e.cancelable) e.preventDefault(); 
-        
-        const touch = e.touches[0];
-        // Passa 'true' per attivare l'offset ed evitare che il dito copra il vertice
-        handleMove(touch.clientX, touch.clientY, true);
-    }
-}, { passive: false });
-
-        // Aggiorna gli Event Listeners
-// Funzione universale per sganciare il punto
-const stopDragging = () => {
-    if (selectedPoint !== null) {
-        zoomHelper.style.display = 'none';
-        
-        // Auto-rettifica al rilascio per feedback immediato
-        if (points.length === 4 && sourceImage) {
-            autoRectify(); 
-        }
-        
-        selectedPoint = null; // SGANCIA IL PUNTO
-        renderPoints(); 
-    }
-};
-
-// Eventi Globali di Rilascio
-window.addEventListener('mouseup', stopDragging);
-window.addEventListener('touchend', stopDragging);
-window.addEventListener('mouseleave', stopDragging); // Protezione se esci dal browser
-
-// Evento Movimento Mouse
-document.addEventListener('mousemove', (e) => {
-    if (selectedPoint !== null) {
-        handleMove(e.clientX, e.clientY, false);
-    }
-});
-
-// Sostituisci la funzione updateZoomHelper con questa "magnetica"
-function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
-    if (!sourceImage) return;
-    
-    zoomHelper.style.display = 'block';
-    // Usiamo variabili per rendere il codice leggibile
-    const zw = 160; 
-    const zh = 160; 
-    const margin = 15; // Margine di sicurezza dai bordi dello schermo
-    const offset = 60; // Distanza dal punto di contatto (più alta per non coprire col dito)
-
-    // 1. POSIZIONAMENTO ORIZZONTALE
-    // Proviamo a metterlo centrato sopra il dito
-    let left = screenX - zw / 2; 
-
-    // Controllo bordi laterali
-    if (left < margin) left = margin;
-    if (left + zw > window.innerWidth - margin) {
-        left = window.innerWidth - zw - margin;
-    }
-
-    // 2. POSIZIONAMENTO VERTICALE (Il vero problema su Mobile)
-    // Proviamo a metterlo SOPRA il dito (screenY è la coordinata del tocco)
-    let top = screenY - zh - offset;
-    
-    // Se esce in alto (top < margin), lo spostiamo SOTTO il dito
-    if (top < margin) {
-        top = screenY + offset; 
-    }
-    
-    // Se nonostante tutto esce in basso (perché siamo a fondo pagina)
-    // lo forziamo a risalire per restare visibile
-    const vh = window.innerHeight;
-    if (top + zh > vh - margin) {
-        top = vh - zh - margin;
-    }
-
-    // Applichiamo le coordinate
-    zoomHelper.style.left = left + 'px';
-    zoomHelper.style.top = top + 'px';
-    
-    // --- RENDERING ZOOM ---
-    const scaleX = sourceImage.width / sourceCanvas.width;
-    const scaleY = sourceImage.height / sourceCanvas.height;
-    
-    zoomCanvas.width = zw;
-    zoomCanvas.height = zh;
-    zoomCtx.imageSmoothingEnabled = false;
-    
-    const regionSize = 40; 
-    zoomCtx.drawImage(
-        sourceImage,
-        canvasX * scaleX - regionSize/2, 
-        canvasY * scaleY - regionSize/2, 
-        regionSize, regionSize,
-        0, 0, zw, zh
-    );
-    
-    // Mirino (Crosshair)
-    zoomCtx.strokeStyle = '#3b82f6'; // Blu per visibilità
-    zoomCtx.lineWidth = 2;
-    zoomCtx.beginPath();
-    zoomCtx.moveTo(zw/2, 0); zoomCtx.lineTo(zw/2, zh);
-    zoomCtx.moveTo(0, zh/2); zoomCtx.lineTo(zw, zh/2);
-    zoomCtx.stroke();
-}        
-        // View toggle per mobile
-        const viewToggle = document.querySelectorAll('.view-toggle button');
-        const sourceWrapper = document.getElementById('sourceWrapper');
-        const resultWrapper = document.getElementById('resultWrapper');
-
-        viewToggle.forEach(btn => {
-            btn.addEventListener('click', () => {
-                viewToggle.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const view = btn.dataset.view;
-                if (view === 'source') {
-                    sourceWrapper.classList.add('active');
-                    resultWrapper.classList.remove('active');
-                } else {
-                    sourceWrapper.classList.remove('active');
-                    resultWrapper.classList.add('active');
-                }
-            });
-        });
-
-        // Carica file
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    loadImage(event.target.result);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Fotocamera
-cameraBtn.addEventListener('click', async () => {
-    try {
-        // Richiediamo la risoluzione massima disponibile
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'environment',
-                width: { ideal: 4096 },
-                height: { ideal: 2160 }
-            } 
-        });
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        await video.play();
-
-        // Controllo Flash/Torcia (se supportato)
-        const track = stream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities();
-        
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:10000;display:flex;flex-direction:column;';
-        
-        video.style.cssText = 'width:100%;flex-grow:1;object-fit:contain;';
-        modal.appendChild(video);
-
-        const controls = document.createElement('div');
-        controls.style.cssText = 'padding:20px;display:flex;justify-content:space-around;background:#111;';
-        
-        // Bottone Flash
-        if (capabilities.torch) {
-            const flashBtn = document.createElement('button');
-            flashBtn.textContent = '🔦 Flash OFF';
-            flashBtn.className = 'btn btn-outline-light';
-            let flashOn = false;
-            flashBtn.onclick = () => {
-                flashOn = !flashOn;
-                track.applyConstraints({ advanced: [{ torch: flashOn }] });
-                flashBtn.textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash OFF';
-            };
-            controls.appendChild(flashBtn);
-        }
-
-        const captureBtn = document.createElement('button');
-        captureBtn.innerHTML = '📸 SCATTA';
-        captureBtn.className = 'btn btn-primary btn-lg';
-        captureBtn.onclick = () => {
-            const canvas = document.createElement('canvas');
-            // Usiamo le dimensioni REALI dello stream video
-            const settings = track.getSettings();
-            canvas.width = settings.width;
-            canvas.height = settings.height;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-            
-            stream.getTracks().forEach(t => t.stop());
-            document.body.removeChild(modal);
-            
-            loadImage(canvas.toDataURL('image/jpeg', 1.0));
-        };
-        
-        controls.appendChild(captureBtn);
-        modal.appendChild(controls);
-        document.body.appendChild(modal);
-
-    } catch (err) {
-        showStatus('Errore: ' + err.message);
-    }
-});
-
-        // Carica immagine
-        function loadImage(src) {
-            const img = new Image();
-            img.onload = () => {
-                sourceImage = img;
-                
-                // Ridimensiona canvas mantenendo aspect ratio
-                const maxWidth = 600;
-                const maxHeight = 600;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > maxWidth || height > maxHeight) {
-                    const ratio = Math.min(maxWidth / width, maxHeight / height);
-                    width *= ratio;
-                    height *= ratio;
-                }
-
-                sourceCanvas.width = width;
-                sourceCanvas.height = height;
-                sourceCtx.drawImage(img, 0, 0, width, height);
-
-                document.getElementById('sourcePlaceholder').style.display = 'none';
-                sourceCanvas.style.display = 'block';
-
-                // Auto-detect pagina bianca
-                const detectedCorners = detectWhitePage(sourceCanvas);
-                
-                if (detectedCorners) {
-                    points = detectedCorners;
-                    showStatus('📄 Pagina rilevata automaticamente! Regola i punti se necessario.');
-                } else {
-                    // Fallback: usa margini dall'immagine
-                    const margin = 20;
-                    points = [
-                        { x: margin, y: margin },
-                        { x: width - margin, y: margin },
-                        { x: width - margin, y: height - margin },
-                        { x: margin, y: height - margin }
-                    ];
-                    showStatus('Immagine caricata! Regola i 4 punti sul documento.');
-                }
-
-                renderPoints();
-                rectifyBtn.disabled = false;
-            };
-            img.src = src;
-        }
-
-        // Rileva automaticamente una pagina bianca nell'immagine
-        function detectWhitePage(canvas) {
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            const w = canvas.width;
-            const h = canvas.height;
-
-            // Converti in scala di grigi e applica threshold
-            const gray = new Uint8Array(w * h);
-            for (let i = 0; i < data.length; i += 4) {
-                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                gray[i / 4] = avg;
-            }
-
-            // Trova bordi usando Sobel semplificato
-            const edges = new Uint8Array(w * h);
-            const threshold = 30;
-
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    const idx = y * w + x;
-                    const gx = -gray[idx - w - 1] - 2 * gray[idx - 1] - gray[idx + w - 1] +
-                               gray[idx - w + 1] + 2 * gray[idx + 1] + gray[idx + w + 1];
-                    const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1] +
-                               gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
-                    const magnitude = Math.sqrt(gx * gx + gy * gy);
-                    edges[idx] = magnitude > threshold ? 255 : 0;
-                }
-            }
-
-            // Trova il contorno più grande e chiaro
-            const contour = findLargestBrightContour(gray, edges, w, h);
-            
-            if (contour && contour.length === 4) {
-                return contour;
-            }
-
-            return null;
-        }
-
-        // Trova il contorno più grande di un'area chiara
-        function findLargestBrightContour(gray, edges, w, h) {
-            // Cerca aree rettangolari chiare (possibile pagina)
-            const step = 10;
-            let bestRect = null;
-            let bestScore = 0;
-
-            for (let y = step; y < h - step; y += step) {
-                for (let x = step; x < w - step; x += step) {
-                    // Testa diverse dimensioni di rettangoli
-                    for (let rh = h / 3; rh < h - y - step; rh += step * 2) {
-                        for (let rw = w / 3; rw < w - x - step; rw += step * 2) {
-                            const rect = {
-                                x1: x, y1: y,
-                                x2: x + rw, y2: y,
-                                x3: x + rw, y3: y + rh,
-                                x4: x, y4: y + rh
-                            };
-
-                            const score = scoreRectangle(rect, gray, edges, w, h);
-                            
-                            if (score > bestScore) {
-                                bestScore = score;
-                                bestRect = rect;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (bestRect && bestScore > 0.5) {
-                return [
-                    { x: bestRect.x1, y: bestRect.y1 },
-                    { x: bestRect.x2, y: bestRect.y2 },
-                    { x: bestRect.x3, y: bestRect.y3 },
-                    { x: bestRect.x4, y: bestRect.y4 }
-                ];
-            }
-
-            return null;
-        }
-
-        // Assegna punteggio a un rettangolo (alta luminosità = pagina)
-        function scoreRectangle(rect, gray, edges, w, h) {
-            let brightnessSum = 0;
-            let edgeSum = 0;
-            let count = 0;
-
-            const x1 = Math.floor(rect.x1);
-            const y1 = Math.floor(rect.y1);
-            const x2 = Math.floor(rect.x3);
-            const y2 = Math.floor(rect.y3);
-
-            // Campiona interno del rettangolo
-            const step = 5;
-            for (let y = y1; y < y2; y += step) {
-                for (let x = x1; x < x2; x += step) {
-                    if (x >= 0 && x < w && y >= 0 && y < h) {
-                        brightnessSum += gray[y * w + x];
-                        count++;
-                    }
-                }
-            }
-
-            // Campiona bordi
-            for (let x = x1; x < x2; x += 2) {
-                if (x >= 0 && x < w) {
-                    if (y1 >= 0 && y1 < h) edgeSum += edges[y1 * w + x];
-                    if (y2 >= 0 && y2 < h) edgeSum += edges[y2 * w + x];
-                }
-            }
-            for (let y = y1; y < y2; y += 2) {
-                if (y >= 0 && y < h) {
-                    if (x1 >= 0 && x1 < w) edgeSum += edges[y * w + x1];
-                    if (x2 >= 0 && x2 < w) edgeSum += edges[y * w + x2];
-                }
-            }
-
-            const avgBrightness = brightnessSum / count;
-            const area = (x2 - x1) * (y2 - y1);
-            const imageArea = w * h;
-
-            // Punteggio: area chiara (>200), grandi dimensioni, bordi definiti
-            const brightnessScore = avgBrightness > 200 ? 1 : avgBrightness / 200;
-            const areaScore = Math.min(area / (imageArea * 0.3), 1);
-            const edgeScore = Math.min(edgeSum / 1000, 1);
-
-            return (brightnessScore * 0.5 + areaScore * 0.3 + edgeScore * 0.2);
-        }
-
-        // Renderizza punti
-        function renderPoints() {
-            // Rimuovi vecchi punti
-            pointElements.forEach(el => el.remove());
-            pointElements = [];
-
-            // Disegna linee prima
-            drawLines();
-
-            // Crea tutti i 4 punti
-            points.forEach((point, index) => {
-                const pointEl = document.createElement('div');
-                pointEl.className = 'point';
-                pointEl.style.left = point.x + 'px';
-                pointEl.style.top = point.y + 'px';
-                pointEl.style.position = 'absolute';
-                
-                // Cambia colore se è il punto selezionato
-                if (selectedPoint === index) {
-                    pointEl.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-                    pointEl.style.boxShadow = '0 0 0 2px #fbbf24, 0 4px 16px rgba(251, 191, 36, 0.8)';
-                }
-
-                const label = document.createElement('div');
-                label.className = 'point-label';
-                label.textContent = `P${index + 1}`;
-                
-                // Cambia colore label se selezionato
-                if (selectedPoint === index) {
-                    label.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-                }
-                
-                pointEl.appendChild(label);
-
-                // Mouse events
-                pointEl.addEventListener('mousedown', (e) => {
-                    selectedPoint = index;
-                    renderPoints(); // Re-render per aggiornare i colori
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-
-                // Touch events per mobile
-// 1. Quando tocchi il punto
-sourceCanvas.addEventListener('touchstart', (e) => {
-    // Impedisce al browser di ignorare il tocco
-    if (e.cancelable) e.preventDefault(); 
-
-    const touch = e.touches[0];
-    const rect = sourceCanvas.getBoundingClientRect();
-    
-    // Calcoliamo dove si trova il tocco rispetto al Canvas
-    const touchX = (touch.clientX - rect.left) * (sourceCanvas.width / rect.width);
-    const touchY = (touch.clientY - rect.top) * (sourceCanvas.height / rect.height);
-
-    // AREA DI CATTURA: Aumentata a 60 per smartphone
-    let minDist = 60; 
-    selectedPoint = null;
-
-    points.forEach((p, index) => {
-        const dist = Math.hypot(p.x - touchX, p.y - touchY);
-        if (dist < minDist) {
-            minDist = dist;
-            selectedPoint = index;
+    // 2. GESTIONE INPUT (FILE E FOTOCAMERA)
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => loadImage(event.target.result);
+            reader.readAsDataURL(file);
         }
     });
 
-    if (selectedPoint !== null) {
-        handleMove(touch.clientX, touch.clientY, true);
-    }
-}, { passive: false });
-
-                sourceContainer.appendChild(pointEl);
-                pointElements.push(pointEl);
+    cameraBtn.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 2160 } } 
             });
-        }
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            const track = stream.getVideoTracks()[0];
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:10000;display:flex;flex-direction:column;';
+            video.style.cssText = 'width:100%;flex-grow:1;object-fit:contain;';
+            modal.appendChild(video);
+            const controls = document.createElement('div');
+            controls.style.cssText = 'padding:20px;display:flex;justify-content:space-around;background:#111;';
+            const captureBtn = document.createElement('button');
+            captureBtn.innerHTML = '📸 SCATTA';
+            captureBtn.className = 'btn btn-primary btn-lg';
+            captureBtn.onclick = () => {
+                const canvas = document.createElement('canvas');
+                const settings = track.getSettings();
+                canvas.width = settings.width;
+                canvas.height = settings.height;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                stream.getTracks().forEach(t => t.stop());
+                document.body.removeChild(modal);
+                loadImage(canvas.toDataURL('image/jpeg', 1.0));
+            };
+            controls.appendChild(captureBtn);
+            modal.appendChild(controls);
+            document.body.appendChild(modal);
+        } catch (err) { showStatus('Errore: ' + err.message); }
+    });
 
-        // Disegna linee tra i punti con stile elegante
-        function drawLines() {
-            if (!sourceImage) return;
+    function loadImage(src) {
+        const img = new Image();
+        img.onload = () => {
+            sourceImage = img;
+            const maxWidth = window.innerWidth > 600 ? 600 : window.innerWidth - 40;
+            let width = img.width;
+            let height = img.height;
+            const ratio = Math.min(maxWidth / width, 600 / height);
+            width *= ratio; height *= ratio;
             
-            // Ridisegna l'immagine pulita
-            sourceCtx.drawImage(sourceImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
-            
-            // Disegna il poligono solo se ci sono almeno 2 punti
-            if (points.length >= 2) {
-                // Bordo esterno (glow)
-                sourceCtx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
-                sourceCtx.lineWidth = 6;
-                sourceCtx.setLineDash([]);
-                sourceCtx.lineJoin = 'round';
-                sourceCtx.lineCap = 'round';
-                
-                sourceCtx.beginPath();
-                sourceCtx.moveTo(points[0].x, points[0].y);
-                for (let i = 1; i < points.length; i++) {
-                    sourceCtx.lineTo(points[i].x, points[i].y);
-                }
-                if (points.length === 4) {
-                    sourceCtx.closePath();
-                }
-                sourceCtx.stroke();
-                
-                // Linea principale
-                sourceCtx.strokeStyle = '#3b82f6';
-                sourceCtx.lineWidth = 2;
-                sourceCtx.setLineDash([8, 4]);
-                
-                sourceCtx.beginPath();
-                sourceCtx.moveTo(points[0].x, points[0].y);
-                for (let i = 1; i < points.length; i++) {
-                    sourceCtx.lineTo(points[i].x, points[i].y);
-                }
-                if (points.length === 4) {
-                    sourceCtx.closePath();
-                }
-                sourceCtx.stroke();
-                
-                sourceCtx.setLineDash([]);
-                
-                // Disegna piccoli punti sui vertici del poligono
-                points.forEach((point, index) => {
-                    // Punto base
-                    sourceCtx.fillStyle = '#0f172a';
-                    sourceCtx.beginPath();
-                    sourceCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-                    sourceCtx.fill();
-                    
-                    // Punto colorato interno
-                    const isSelected = selectedPoint === index;
-                    sourceCtx.fillStyle = isSelected ? '#fbbf24' : '#3b82f6';
-                    sourceCtx.beginPath();
-                    sourceCtx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-                    sourceCtx.fill();
-                    
-                    // Glow per il punto selezionato
-                    if (isSelected) {
-                        sourceCtx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
-                        sourceCtx.lineWidth = 2;
-                        sourceCtx.beginPath();
-                        sourceCtx.arc(point.x, point.y, 8, 0, Math.PI * 2);
-                        sourceCtx.stroke();
-                    }
-                });
-            }
-        }
+            sourceCanvas.width = width;
+            sourceCanvas.height = height;
+            sourceCtx.drawImage(img, 0, 0, width, height);
+            document.getElementById('sourcePlaceholder').style.display = 'none';
+            sourceCanvas.style.display = 'block';
 
-        // Click per aggiungere punti
-        sourceCanvas.addEventListener('click', (e) => {
-            if (points.length >= 4) return;
-
-            const rect = sourceCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            points.push({ x, y });
+            // Reset punti e auto-detection (se disponibile nel tuo CSS/HTML)
+            const m = 40;
+            points = [{x:m, y:m}, {x:width-m, y:m}, {x:width-m, y:height-m}, {x:m, y:height-m}];
             renderPoints();
-
-            if (points.length === 4) {
-                rectifyBtn.disabled = false;
-                showStatus('4 punti selezionati! Clicca "Rettifica Prospettiva"');
-            }
-        });
-
-        // Drag punti (mouse)
-        document.addEventListener('mousemove', (e) => {
-            if (selectedPoint === null) return;
-
-            const rect = sourceCanvas.getBoundingClientRect();
-            const x = Math.max(0, Math.min(sourceCanvas.width, e.clientX - rect.left));
-            const y = Math.max(0, Math.min(sourceCanvas.height, e.clientY - rect.top));
-
-            points[selectedPoint] = { x, y };
-            renderPoints();
-            
-            // Mostra zoom helper
-            updateZoomHelper(x, y, e.clientX, e.clientY);
-        });
-
-     // Funzione universale per sganciare il punto
-        const handleRelease = () => {
-            if (selectedPoint !== null) {
-                // 1. Nascondi lo zoom helper
-                zoomHelper.style.display = 'none';
-                
-                // 2. Se abbiamo i 4 punti, ricalcola la rettificazione (UX fluida)
-                if (points.length === 4 && sourceImage) {
-                    autoRectify(); 
-                }
-                
-                // 3. IMPORTANTE: Resetta il punto selezionato a null
-                selectedPoint = null; 
-                
-                // 4. Rinfresca la grafica per togliere lo stato "attivo" dal punto
-                renderPoints(); 
-            }
+            rectifyBtn.disabled = false;
+            autoRectify();
         };
+        img.src = src;
+    }
 
-        // Applichiamo a entrambi per sicurezza
-        document.addEventListener('mouseup', handleRelease);
-        document.addEventListener('touchend', handleRelease);
-        // Protezione aggiuntiva se il mouse esce dalla finestra del browser
-        document.addEventListener('mouseleave', handleRelease);
+    // 3. TRASCINAMENTO E ZOOM
+    function getCanvasCoords(e) {
+        const rect = sourceCanvas.getBoundingClientRect();
+        return {
+            x: (e.clientX - rect.left) * (sourceCanvas.width / rect.width),
+            y: (e.clientY - rect.top) * (sourceCanvas.height / rect.height)
+        };
+    }
 
+    sourceCanvas.addEventListener('pointerdown', (e) => {
+        sourceCanvas.setPointerCapture(e.pointerId);
+        const coords = getCanvasCoords(e);
+        let minDist = 50; 
+        selectedPoint = null;
 
-        // Auto-rettifica (chiamata quando si rilascia un punto)
-function autoRectify() {
-    if (points.length !== 4 || !sourceImage) return;
-    
-    // 1. Ordina i punti dell'anteprima
-    const sorted = orderPointsClockwise(points);
-    
-    // 2. Calcola il rapporto di scala tra immagine reale e anteprima
-    const ratioX = sourceImage.width / sourceCanvas.width;
-    const ratioY = sourceImage.height / sourceCanvas.height;
-    
-    // 3. Scala i punti sulle coordinate reali per calcolare la dimensione finale corretta
-    const p0_real = { x: sorted[0].x * ratioX, y: sorted[0].y * ratioY };
-    const p1_real = { x: sorted[1].x * ratioX, y: sorted[1].y * ratioY };
-    const p2_real = { x: sorted[2].x * ratioX, y: sorted[2].y * ratioY };
-    const p3_real = { x: sorted[3].x * ratioX, y: sorted[3].y * ratioY };
-    
-    const widthTop = distance(p0_real, p1_real);
-    const widthBottom = distance(p3_real, p2_real);
-    const heightLeft = distance(p0_real, p3_real);
-    const heightRight = distance(p1_real, p2_real);
-    
-    // Dimensioni di output reali (alta risoluzione)
-    const realWidth = Math.round(Math.max(widthTop, widthBottom));
-    const realHeight = Math.round(Math.max(heightLeft, heightRight));
-    
-    // 4. Esegui la trasformazione (la funzione internamente userà questi parametri)
-    // Passiamo null per H perché la nuova applyPerspectiveTransform la ricalcola internamente
-    applyPerspectiveTransform(sourceCanvas, resultCanvas, null, realWidth, realHeight);
-    
-    // 5. Aggiorna interfaccia
-    document.getElementById('resultPlaceholder').style.display = 'none';
-    resultCanvas.style.display = 'block';
-    
-    saveJpgBtn.disabled = false;
-    savePdfBtn.disabled = false;
-}
-
-        // Reset punti
-        resetBtn.addEventListener('click', () => {
-            points = [];
-            pointElements.forEach(el => el.remove());
-            pointElements = [];
-            drawLines();
-            rectifyBtn.disabled = true;
-            showStatus('Punti reimpostati');
+        points.forEach((p, index) => {
+            const dist = Math.hypot(p.x - coords.x, p.y - coords.y);
+            if (dist < minDist) { minDist = dist; selectedPoint = index; }
         });
+        if (selectedPoint !== null) renderPoints();
+    });
 
-        // Rettifica prospettiva
-        rectifyBtn.addEventListener('click', () => {
-            if (points.length !== 4) {
-                showStatus('Seleziona esattamente 4 punti!');
-                return;
-            }
+    sourceCanvas.addEventListener('pointermove', (e) => {
+        if (selectedPoint === null) return;
+        const coords = getCanvasCoords(e);
+        points[selectedPoint] = {
+            x: Math.max(0, Math.min(sourceCanvas.width, coords.x)),
+            y: Math.max(0, Math.min(sourceCanvas.height, coords.y))
+        };
+        renderPoints();
+        updateZoomHelper(points[selectedPoint].x, points[selectedPoint].y, e.clientX, e.clientY);
+    });
 
-            // Ordina punti in senso orario: top-left, top-right, bottom-right, bottom-left
-            const sorted = orderPointsClockwise(points);
+    sourceCanvas.addEventListener('pointerup', (e) => {
+        if (selectedPoint !== null) {
+            sourceCanvas.releasePointerCapture(e.pointerId);
+            selectedPoint = null;
+            zoomHelper.style.display = 'none';
+            renderPoints();
+            autoRectify();
+        }
+    });
 
-            // Calcola le dimensioni dell'output basandosi sui lati del poligono
-            const widthTop = distance(sorted[0], sorted[1]);
-            const widthBottom = distance(sorted[3], sorted[2]);
-            const heightLeft = distance(sorted[0], sorted[3]);
-            const heightRight = distance(sorted[1], sorted[2]);
+    function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
+        zoomHelper.style.display = 'block';
+        const zw = 160, zh = 160;
+        let left = screenX - zw/2, top = screenY - zh - 60;
+        if (left < 10) left = 10;
+        if (top < 10) top = screenY + 60;
+        
+        zoomHelper.style.left = left + 'px';
+        zoomHelper.style.top = top + 'px';
 
-            // Usa la dimensione massima per preservare tutti i dettagli
-            const outputWidth = Math.round(Math.max(widthTop, widthBottom));
-            const outputHeight = Math.round(Math.max(heightLeft, heightRight));
+        const scaleX = sourceImage.width / sourceCanvas.width;
+        const scaleY = sourceImage.height / sourceCanvas.height;
+        zoomCanvas.width = zw; zoomCanvas.height = zh;
+        zoomCtx.imageSmoothingEnabled = false;
+        zoomCtx.drawImage(sourceImage, canvasX*scaleX-20, canvasY*scaleY-20, 40, 40, 0, 0, zw, zh);
+        
+        zoomCtx.strokeStyle = '#3b82f6'; zoomCtx.lineWidth = 2;
+        zoomCtx.beginPath(); zoomCtx.moveTo(zw/2,0); zoomCtx.lineTo(zw/2,zh); zoomCtx.moveTo(0,zh/2); zoomCtx.lineTo(zw,zh/2); zoomCtx.stroke();
+    }
 
-            // Imposta dimensioni output
-            resultCanvas.width = outputWidth;
-            resultCanvas.height = outputHeight;
+    function renderPoints() {
+        pointElements.forEach(el => el.remove());
+        pointElements = [];
+        sourceCtx.drawImage(sourceImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
+        sourceCtx.strokeStyle = '#3b82f6'; sourceCtx.lineWidth = 2;
+        sourceCtx.beginPath();
+        sourceCtx.moveTo(points[0].x, points[0].y);
+        points.forEach(p => sourceCtx.lineTo(p.x, p.y));
+        sourceCtx.closePath(); sourceCtx.stroke();
 
-            // Punti di destinazione (rettangolo perfetto)
-            const dstPoints = [
-                { x: 0, y: 0 },
-                { x: outputWidth, y: 0 },
-                { x: outputWidth, y: outputHeight },
-                { x: 0, y: outputHeight }
-            ];
-
-            // Calcola matrice di trasformazione omografica
-            const H = computeHomography(sorted, dstPoints);
-
-            // Applica la trasformazione prospettica
-            applyPerspectiveTransform(sourceCanvas, resultCanvas, H, outputWidth, outputHeight);
-            
-            document.getElementById('resultPlaceholder').style.display = 'none';
-            resultCanvas.style.display = 'block';
-
-            saveJpgBtn.disabled = false;
-            savePdfBtn.disabled = false;
-
-            // Auto-switch alla vista risultato su mobile
-            if (window.innerWidth < 1024) {
-                viewToggle[1].click();
-            }
-
-            showStatus('✨ Prospettiva rettificata perfettamente!');
+        points.forEach((p, i) => {
+            const el = document.createElement('div');
+            el.className = 'point';
+            el.style.cssText = `left:${p.x}px;top:${p.y}px;position:absolute;pointer-events:none;`;
+            if (selectedPoint === i) el.style.background = '#fbbf24';
+            sourceContainer.appendChild(el);
+            pointElements.push(el);
         });
+    }
 
-        // Ordina punti in senso orario partendo da top-left
-        function orderPointsClockwise(pts) {
-            // Trova il centroide
-            const center = pts.reduce((acc, p) => ({
-                x: acc.x + p.x / 4,
-                y: acc.y + p.y / 4
-            }), { x: 0, y: 0 });
+    // 4. MATEMATICA OMOGRAFICA
+    function distance(p1, p2) { return Math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2); }
+    
+    function orderPointsClockwise(pts) {
+        const center = pts.reduce((acc, p) => ({x:acc.x+p.x/4, y:acc.y+p.y/4}), {x:0, y:0});
+        return [...pts].sort((a,b) => Math.atan2(a.y-center.y, a.x-center.x) - Math.atan2(b.y-center.y, b.x-center.x));
+    }
 
-            // Ordina per angolo rispetto al centroide
-            const sorted = pts.slice().sort((a, b) => {
-                const angleA = Math.atan2(a.y - center.y, a.x - center.x);
-                const angleB = Math.atan2(b.y - center.y, b.x - center.x);
-                return angleA - angleB;
-            });
+    function invertHomography(H) {
+        const [[a,b,c],[d,e,f],[g,h,i]] = H;
+        const det = a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);
+        const invDet = 1/det;
+        return [
+            [(e*i-f*h)*invDet, (c*h-b*i)*invDet, (b*f-c*e)*invDet],
+            [(f*g-d*i)*invDet, (a*i-c*g)*invDet, (c*d-a*f)*invDet],
+            [(d*h-e*g)*invDet, (b*g-a*h)*invDet, (a*e-b*d)*invDet]
+        ];
+    }
 
-            // Trova il punto più in alto a sinistra (top-left)
-            let minIdx = 0;
-            let minSum = sorted[0].x + sorted[0].y;
-            for (let i = 1; i < 4; i++) {
-                const sum = sorted[i].x + sorted[i].y;
-                if (sum < minSum) {
-                    minSum = sum;
-                    minIdx = i;
+    function computeHomography(src, dst) {
+        const A = []; const b = [];
+        for (let i = 0; i < 4; i++) {
+            A.push([src[i].x, src[i].y, 1, 0, 0, 0, -dst[i].x*src[i].x, -dst[i].x*src[i].y]);
+            b.push(dst[i].x);
+            A.push([0, 0, 0, src[i].x, src[i].y, 1, -dst[i].y*src[i].x, -dst[i].y*src[i].y]);
+            b.push(dst[i].y);
+        }
+        const n = b.length;
+        for (let i=0; i<n; i++) {
+            let max = i;
+            for (let k=i+1; k<n; k++) if (Math.abs(A[k][i]) > Math.abs(A[max][i])) max = k;
+            [A[i], A[max]] = [A[max], A[i]]; [b[i], b[max]] = [b[max], b[i]];
+            for (let k=i+1; k<n; k++) {
+                const f = A[k][i] / A[i][i];
+                b[k] -= f * b[i];
+                for (let j=i; j<n; j++) A[k][j] -= f * A[i][j];
+            }
+        }
+        const x = new Array(n);
+        for (let i=n-1; i>=0; i--) {
+            x[i] = b[i];
+            for (let j=i+1; j<n; j++) x[i] -= A[i][j] * x[j];
+            x[i] /= A[i][i];
+        }
+        return [[x[0],x[1],x[2]], [x[3],x[4],x[5]], [x[6],x[7],1]];
+    }
+
+    // 5. FILTRI E NITIDEZZA
+    function applySharpen(imageData, amount) {
+        const w = imageData.width, h = imageData.height;
+        const output = new ImageData(new Uint8ClampedArray(imageData.data), w, h);
+        const k = [0, -amount, 0, -amount, 1 + 4 * amount, -amount, 0, -amount, 0];
+        for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+                const i = (y * w + x) * 4;
+                for (let c = 0; c < 3; c++) {
+                    let sum = 0;
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            sum += imageData.data[((y + ky) * w + (x + kx)) * 4 + c] * k[(ky + 1) * 3 + (kx + 1)];
+                        }
+                    }
+                    output.data[i + c] = sum;
                 }
             }
+        }
+        return output;
+    }
 
-            // Ruota l'array per iniziare da top-left
-            const result = [];
-            for (let i = 0; i < 4; i++) {
-                result.push(sorted[(minIdx + i) % 4]);
+    function applyFilters() {
+        if (!rectifiedImageData) return;
+        const contrast = Math.pow(contrastSlider.value / 100, 2);
+        const brightness = brightnessSlider.value / 100;
+        const mode = colorModeSelect.value;
+        const thr = parseInt(thresholdSlider.value);
+        
+        let img = new ImageData(new Uint8ClampedArray(rectifiedImageData.data), rectifiedImageData.width, rectifiedImageData.height);
+        const d = img.data;
+
+        for (let i = 0; i < d.length; i += 4) {
+            let r = d[i], g = d[i+1], b = d[i+2];
+            if (mode === 'grayscale' || mode === 'bw') {
+                r = g = b = (r * 0.299 + g * 0.587 + b * 0.114);
             }
-
-            return result;
+            r = ((r - 128) * contrast + 128) * brightness;
+            g = ((g - 128) * contrast + 128) * brightness;
+            b = ((b - 128) * contrast + 128) * brightness;
+            
+            if (mode === 'bw') {
+                const v = (r + g + b) / 3 > thr ? 255 : 0;
+                r = g = b = v;
+            }
+            d[i] = r; d[i+1] = g; d[i+2] = b;
         }
 
-        // Calcola la matrice di omografia (trasformazione prospettica)
-        function computeHomography(src, dst) {
-            // Costruisce il sistema lineare Ax = b per risolvere l'omografia
-            const A = [];
-            const b = [];
+        if (sharpnessSlider.value > 0) img = applySharpen(img, sharpnessSlider.value / 100);
+        resultCtx.putImageData(img, 0, 0);
+    }
 
-            for (let i = 0; i < 4; i++) {
-                const sx = src[i].x;
-                const sy = src[i].y;
-                const dx = dst[i].x;
-                const dy = dst[i].y;
+    // 6. RETTIFICA E ESPORTAZIONE
+    function autoRectify() {
+        if (!sourceImage || points.length < 4) return;
+        const ratioX = sourceImage.width / sourceCanvas.width;
+        const ratioY = sourceImage.height / sourceCanvas.height;
+        const sorted = orderPointsClockwise(points);
+        const realSrc = sorted.map(p => ({x: p.x*ratioX, y: p.y*ratioY}));
+        const w = Math.max(distance(realSrc[0], realSrc[1]), distance(realSrc[3], realSrc[2]));
+        const h = Math.max(distance(realSrc[0], realSrc[3]), distance(realSrc[1], realSrc[2]));
 
-                // Prima equazione per x
-                A.push([sx, sy, 1, 0, 0, 0, -dx * sx, -dx * sy]);
-                b.push(dx);
+        resultCanvas.width = w; resultCanvas.height = h;
+        const Hinv = invertHomography(computeHomography(realSrc, [{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}]));
 
-                // Seconda equazione per y
-                A.push([0, 0, 0, sx, sy, 1, -dy * sx, -dy * sy]);
-                b.push(dy);
+        const tCanvas = document.createElement('canvas');
+        tCanvas.width = sourceImage.width; tCanvas.height = sourceImage.height;
+        const tCtx = tCanvas.getContext('2d');
+        tCtx.drawImage(sourceImage, 0, 0);
+        const srcData = tCtx.getImageData(0,0,tCanvas.width,tCanvas.height);
+        const dstData = resultCtx.createImageData(w, h);
+
+        for (let y=0; y<h; y++) {
+            for (let x=0; x<w; x++) {
+                const den = Hinv[2][0]*x + Hinv[2][1]*y + Hinv[2][2];
+                const sx = (Hinv[0][0]*x + Hinv[0][1]*y + Hinv[0][2]) / den;
+                const sy = (Hinv[1][0]*x + Hinv[1][1]*y + Hinv[1][2]) / den;
+                if (sx>=0 && sx<srcData.width-1 && sy>=0 && sy<srcData.height-1) {
+                    const idx = (y*Math.floor(w)+x)*4;
+                    const sidx = (Math.floor(sy)*srcData.width + Math.floor(sx))*4;
+                    dstData.data[idx]=srcData.data[sidx];
+                    dstData.data[idx+1]=srcData.data[sidx+1];
+                    dstData.data[idx+2]=srcData.data[sidx+2];
+                    dstData.data[idx+3]=255;
+                }
             }
-
-            // Risolvi il sistema lineare usando eliminazione di Gauss
-            const h = solveLinearSystem(A, b);
-            h.push(1); // h8 = 1 (normalizzazione)
-
-            // Matrice 3x3 di omografia
-            return [
-                [h[0], h[1], h[2]],
-                [h[3], h[4], h[5]],
-                [h[6], h[7], h[8]]
-            ];
         }
+        rectifiedImageData = dstData;
+        applyFilters();
+        document.getElementById('resultPlaceholder').style.display = 'none';
+        resultCanvas.style.display = 'block';
+        saveJpgBtn.disabled = savePdfBtn.disabled = false;
+    }
 
-        // Applica trasformazione prospettica inversa
-function applyPerspectiveTransform(srcCanvas, dstCanvas, H, width, height) {
-    if (!sourceImage) return;
+    // 7. LISTENER PULSANTI E SLIDER
+    resetBtn.addEventListener('click', () => {
+        if (!sourceImage) return;
+        const m = 40;
+        points = [{x:m, y:m}, {x:sourceCanvas.width-m, y:m}, {x:sourceCanvas.width-m, y:sourceCanvas.height-m}, {x:m, y:sourceCanvas.height-m}];
+        renderPoints(); autoRectify();
+        showStatus('Vertici resettati');
+    });
 
-    // 1. Calcola il fattore di scala tra anteprima e foto originale
-    const ratioX = sourceImage.width / srcCanvas.width;
-    const ratioY = sourceImage.height / srcCanvas.height;
-
-    // 2. Scala i punti selezionati alle coordinate REALI della foto
-    const scaledSrcPoints = orderPointsClockwise(points).map(p => ({
-        x: p.x * ratioX,
-        y: p.y * ratioY
+    [contrastSlider, brightnessSlider, sharpnessSlider, thresholdSlider].forEach(s => s.addEventListener('input', () => {
+        const val = document.getElementById(s.id.replace('Slider', 'Value'));
+        if (val) val.textContent = s.value + (s.id.includes('sharpness') ? '' : '%');
+        applyFilters();
     }));
 
-    // 3. Calcola le dimensioni di output REALI (non quelle del canvas piccolo)
-    const realWidthTop = distance(scaledSrcPoints[0], scaledSrcPoints[1]);
-    const realWidthBottom = distance(scaledSrcPoints[3], scaledSrcPoints[2]);
-    const realHeightLeft = distance(scaledSrcPoints[0], scaledSrcPoints[3]);
-    const realHeightRight = distance(scaledSrcPoints[1], scaledSrcPoints[2]);
+    colorModeSelect.addEventListener('change', () => {
+        bwThresholdGroup.style.display = colorModeSelect.value === 'bw' ? 'flex' : 'none';
+        applyFilters();
+    });
 
-    const realOutWidth = Math.round(Math.max(realWidthTop, realWidthBottom));
-    const realOutHeight = Math.round(Math.max(realHeightLeft, realHeightRight));
+    saveJpgBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = `scan_${Date.now()}.jpg`;
+        link.href = resultCanvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+        showStatus('JPG salvato!');
+    });
 
-    // Aggiorna il canvas di destinazione alla risoluzione originale
-    dstCanvas.width = realOutWidth;
-    dstCanvas.height = realOutHeight;
-
-    // 4. Crea canvas temporaneo per estrarre i pixel originali
-    const fullResCanvas = document.createElement('canvas');
-    fullResCanvas.width = sourceImage.width;
-    fullResCanvas.height = sourceImage.height;
-    const fullResCtx = fullResCanvas.getContext('2d', { willReadFrequently: true });
-    fullResCtx.drawImage(sourceImage, 0, 0);
-
-    const dstPoints = [
-        { x: 0, y: 0 },
-        { x: realOutWidth, y: 0 },
-        { x: realOutWidth, y: realOutHeight },
-        { x: 0, y: realOutHeight }
-    ];
-
-    // 5. Ricalcola l'omografia per l'alta risoluzione
-    const realH = computeHomography(scaledSrcPoints, dstPoints);
-    const Hinv = invertHomography(realH);
-
-    const srcData = fullResCtx.getImageData(0, 0, fullResCanvas.width, fullResCanvas.height);
-    const dstCtx = dstCanvas.getContext('2d');
-    const dstData = dstCtx.createImageData(realOutWidth, realOutHeight);
-
-    // 6. Ciclo di trasformazione con Interpolazione Bilineare (Alta Qualità)
-    for (let y = 0; y < realOutHeight; y++) {
-        for (let x = 0; x < realOutWidth; x++) {
-            const denom = Hinv[2][0] * x + Hinv[2][1] * y + Hinv[2][2];
-            const srcX = (Hinv[0][0] * x + Hinv[0][1] * y + Hinv[0][2]) / denom;
-            const srcY = (Hinv[1][0] * x + Hinv[1][1] * y + Hinv[1][2]) / denom;
-
-            if (srcX >= 0 && srcX < fullResCanvas.width - 1 && srcY >= 0 && srcY < fullResCanvas.height - 1) {
-                const x0 = Math.floor(srcX);
-                const y0 = Math.floor(srcY);
-                const dx = srcX - x0;
-                const dy = srcY - y0;
-
-                const dstIdx = (y * realOutWidth + x) * 4;
-                const rowSize = fullResCanvas.width * 4;
-
-                for (let c = 0; c < 3; c++) {
-                    const i00 = (y0 * rowSize) + (x0 * 4) + c;
-                    const i10 = i00 + 4;
-                    const i01 = i00 + rowSize;
-                    const i11 = i01 + 4;
-
-                    const v = srcData.data[i00] * (1 - dx) * (1 - dy) +
-                              srcData.data[i10] * dx * (1 - dy) +
-                              srcData.data[i01] * (1 - dx) * dy +
-                              srcData.data[i11] * dx * dy;
-                    
-                    dstData.data[dstIdx + c] = v;
-                }
-                dstData.data[dstIdx + 3] = 255;
-            }
-        }
-    }
-
-    dstCtx.putImageData(dstData, 0, 0);
-    rectifiedImageData = dstData; // Salva per i filtri
-    
-    // Libera memoria
-    fullResCanvas.width = 0; 
-    fullResCanvas.height = 0;
-
-    applyFilters();
-}
-
-        // Inverti matrice di omografia 3x3
-        function invertHomography(H) {
-            const [[a, b, c], [d, e, f], [g, h, i]] = H;
-
-            const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-
-            if (Math.abs(det) < 1e-10) {
-                console.error('Matrice singolare, impossibile invertire');
-                return H; // Fallback
-            }
-
-            const invDet = 1 / det;
-
-            return [
-                [(e * i - f * h) * invDet, (c * h - b * i) * invDet, (b * f - c * e) * invDet],
-                [(f * g - d * i) * invDet, (a * i - c * g) * invDet, (c * d - a * f) * invDet],
-                [(d * h - e * g) * invDet, (b * g - a * h) * invDet, (a * e - b * d) * invDet]
-            ];
-        }
-
-        // Ordina punti in senso orario partendo da top-left
-        function sortPoints(pts) {
-            // Trova il centroide
-            const center = {
-                x: pts.reduce((sum, p) => sum + p.x, 0) / 4,
-                y: pts.reduce((sum, p) => sum + p.y, 0) / 4
-            };
-
-            return pts.sort((a, b) => {
-                const angleA = Math.atan2(a.y - center.y, a.x - center.x);
-                const angleB = Math.atan2(b.y - center.y, b.x - center.x);
-                return angleA - angleB;
-            });
-        }
-
-        // Calcola distanza tra due punti
-        function distance(p1, p2) {
-            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-        }
-
-        // Risolvi sistema lineare (implementazione base)
-        function solveLinearSystem(A, b) {
-            // Usa eliminazione di Gauss semplificata
-            const n = b.length;
-            const augmented = A.map((row, i) => [...row, b[i]]);
-
-            for (let i = 0; i < n; i++) {
-                let maxRow = i;
-                for (let k = i + 1; k < n; k++) {
-                    if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
-                        maxRow = k;
-                    }
-                }
-                [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
-
-                for (let k = i + 1; k < n; k++) {
-                    const factor = augmented[k][i] / augmented[i][i];
-                    for (let j = i; j <= n; j++) {
-                        augmented[k][j] -= factor * augmented[i][j];
-                    }
-                }
-            }
-
-            const x = new Array(n);
-            for (let i = n - 1; i >= 0; i--) {
-                x[i] = augmented[i][n];
-                for (let j = i + 1; j < n; j++) {
-                    x[i] -= augmented[i][j] * x[j];
-                }
-                x[i] /= augmented[i][i];
-            }
-
-            return x;
-        }
-
-        // Applica filtri
-function applyFilters() {
-    if (!rectifiedImageData) return;
-
-    // Guadagno esponenziale per contrasto e luminosità
-    const contrast = Math.pow(contrastSlider.value / 100, 2); // Elevato al quadrato per intensità
-    const brightness = (brightnessSlider.value / 100) * 1.1; 
-    const colorMode = colorModeSelect.value;
-    const threshold = parseInt(thresholdSlider.value);
-
-    let imageData = new ImageData(
-        new Uint8ClampedArray(rectifiedImageData.data),
-        rectifiedImageData.width,
-        rectifiedImageData.height
-    );
-
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        // Conversione colore/grigio immediata per velocità
-        let r = data[i], g = data[i+1], b = data[i+2];
-
-        if (colorMode === 'grayscale' || colorMode === 'bw') {
-            r = g = b = (r * 0.299 + g * 0.587 + b * 0.114);
-        }
-
-        // Formula Contrasto Intenso + Luminosità
-        data[i]   = Math.max(0, Math.min(255, ((r - 128) * contrast + 128) * brightness));
-        data[i+1] = Math.max(0, Math.min(255, ((g - 128) * contrast + 128) * brightness));
-        data[i+2] = Math.max(0, Math.min(255, ((b - 128) * contrast + 128) * brightness));
-
-        if (colorMode === 'bw') {
-            const val = (data[i] + data[i+1] + data[i+2]) / 3 > threshold ? 255 : 0;
-            data[i] = data[i+1] = data[i+2] = val;
-        }
-    }
-
-    if (sharpnessSlider.value > 0) {
-        imageData = applySharpen(imageData, sharpnessSlider.value / 100);
-    }
-
-    resultCtx.putImageData(imageData, 0, 0);
-}
-
-        // Applica nitidezza
-        function applySharpen(imageData, amount) {
-            const w = imageData.width;
-            const h = imageData.height;
-            const output = new ImageData(w, h);
-
-            const kernel = [
-                0, -1 * amount, 0,
-                -1 * amount, 1 + 4 * amount, -1 * amount,
-                0, -1 * amount, 0
-            ];
-
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    for (let c = 0; c < 3; c++) {
-                        let sum = 0;
-                        for (let ky = -1; ky <= 1; ky++) {
-                            for (let kx = -1; kx <= 1; kx++) {
-                                const idx = ((y + ky) * w + (x + kx)) * 4 + c;
-                                sum += imageData.data[idx] * kernel[(ky + 1) * 3 + (kx + 1)];
-                            }
-                        }
-                        output.data[(y * w + x) * 4 + c] = Math.max(0, Math.min(255, sum));
-                    }
-                    output.data[(y * w + x) * 4 + 3] = 255;
-                }
-            }
-
-            return output;
-        }
-
-        // Slider eventi
-        contrastSlider.addEventListener('input', () => {
-            contrastValue.textContent = contrastSlider.value + '%';
-            applyFilters();
+    savePdfBtn.addEventListener('click', () => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: resultCanvas.width > resultCanvas.height ? 'l' : 'p',
+            unit: 'px',
+            format: [resultCanvas.width, resultCanvas.height]
         });
+        pdf.addImage(resultCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, resultCanvas.width, resultCanvas.height);
+        pdf.save(`scan_${Date.now()}.pdf`);
+        showStatus('PDF salvato!');
+    });
 
-        brightnessSlider.addEventListener('input', () => {
-            brightnessValue.textContent = brightnessSlider.value + '%';
-            applyFilters();
-        });
+    function showStatus(msg) { status.textContent = msg; status.classList.add('show'); setTimeout(()=>status.classList.remove('show'), 2000); }
+</script>
 
-        sharpnessSlider.addEventListener('input', () => {
-            sharpnessValue.textContent = sharpnessSlider.value;
-            applyFilters();
-        });
-
-        colorModeSelect.addEventListener('change', () => {
-            // Mostra/nascondi controllo soglia B/N
-            if (colorModeSelect.value === 'bw') {
-                bwThresholdGroup.style.display = 'flex';
-            } else {
-                bwThresholdGroup.style.display = 'none';
-            }
-            applyFilters();
-        });
-
-        thresholdSlider.addEventListener('input', () => {
-            thresholdValue.textContent = thresholdSlider.value;
-            applyFilters();
-        });
-
-        // Salva JPG
-        saveJpgBtn.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'documento-scansionato-' + Date.now() + '.jpg';
-            link.href = resultCanvas.toDataURL('image/jpeg', 0.95);
-            link.click();
-            showStatus('JPG salvato con successo!');
-        });
-
-        // Salva PDF
-        savePdfBtn.addEventListener('click', () => {
-            const { jsPDF } = window.jspdf;
-            const imgData = resultCanvas.toDataURL('image/jpeg', 0.95);
-            
-            const pdf = new jsPDF({
-                orientation: resultCanvas.width > resultCanvas.height ? 'landscape' : 'portrait',
-                unit: 'px',
-                format: [resultCanvas.width, resultCanvas.height]
-            });
-
-            pdf.addImage(imgData, 'JPEG', 0, 0, resultCanvas.width, resultCanvas.height);
-            pdf.save('documento-scansionato-' + Date.now() + '.pdf');
-            showStatus('PDF salvato con successo!');
-        });
-
-        // Mostra status
-        function showStatus(message) {
-            status.textContent = message;
-            status.classList.add('show');
-            setTimeout(() => status.classList.remove('show'), 3000);
-        }
-    </script>
 </body>
 </html>
