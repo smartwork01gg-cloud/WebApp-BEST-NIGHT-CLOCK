@@ -489,6 +489,27 @@
         }
 
         /* Desktop */
+/* --- AGGIUNTA PER MOBILE --- */
+@media (max-width: 1023px) {
+    .controls {
+        padding: 8px;
+        gap: 6px;
+    }
+    .btn {
+        padding: 10px 4px;
+        font-size: 11px; /* Font leggermente più piccolo per far stare tutto */
+        min-width: 0;
+        flex: 1 1 30%; /* Forza 3 bottoni per riga */
+    }
+    .point {
+        width: 44px; /* Area di tocco più grande */
+        height: 44px;
+    }
+    .filter-group {
+        padding: 8px;
+    }
+}
+        
         @media (min-width: 1024px) {
             body {
                 padding: 20px;
@@ -731,6 +752,74 @@
         const zoomCtx = zoomCanvas.getContext('2d');
         const ZOOM_LEVEL = 5; // Fattore di ingrandimento
 
+        
+     // --- SOSTITUISCI QUESTE VARIABILI E FUNZIONI ---
+        //const ZOOM_LEVEL = 5;
+        const TOUCH_OFFSET_Y = 50; // Offset per non coprire il punto con il dito
+
+        function handleMove(clientX, clientY, isTouch) {
+            if (selectedPoint === null) return;
+
+            const rect = sourceCanvas.getBoundingClientRect();
+            
+            // Se è touch, applichiamo l'offset verso l'alto
+            const offsetY = isTouch ? TOUCH_OFFSET_Y : 0;
+            
+            const x = Math.max(0, Math.min(sourceCanvas.width, clientX - rect.left));
+            const y = Math.max(0, Math.min(sourceCanvas.height, clientY - rect.top - offsetY));
+
+            points[selectedPoint] = { x, y };
+            renderPoints();
+            
+            // Passiamo le coordinate per lo zoom helper
+            updateZoomHelper(x, y, clientX, clientY);
+        }
+
+        // Aggiorna gli Event Listeners
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY, false));
+        document.addEventListener('touchmove', (e) => {
+            if (selectedPoint !== null) {
+                handleMove(e.touches[0].clientX, e.touches[0].clientY, true);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Sostituisci la funzione updateZoomHelper con questa "magnetica"
+        function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
+            if (!sourceImage) return;
+            
+            zoomHelper.style.display = 'block';
+            const hw = 150; // larghezza zoomHelper
+            const hh = 150; // altezza zoomHelper
+
+            // Posizionamento: di base sopra il cursore/dito
+            let left = screenX - hw / 2;
+            let top = screenY - hh - 70;
+
+            // Vincoli per non uscire dallo schermo (UX Ergonomica)
+            if (left < 10) left = 10;
+            if (left + hw > window.innerWidth - 10) left = window.innerWidth - hw - 10;
+            if (top < 10) top = screenY + 40; // Se tocca il bordo alto, spostalo sotto
+
+            zoomHelper.style.left = left + 'px';
+            zoomHelper.style.top = top + 'px';
+            
+            // Logica di disegno dello zoom (rimane simile ma ottimizzata)
+            const scaleX = sourceImage.width / sourceCanvas.width;
+            const scaleY = sourceImage.height / sourceCanvas.height;
+            
+            zoomCanvas.width = hw;
+            zoomCanvas.height = hh;
+            zoomCtx.imageSmoothingEnabled = false;
+            
+            const size = 30; // area campionata
+            zoomCtx.drawImage(
+                sourceImage,
+                canvasX * scaleX - size/2, canvasY * scaleY - size/2, size, size,
+                0, 0, hw, hh
+            );
+        }        
+        
         // View toggle per mobile
         const viewToggle = document.querySelectorAll('.view-toggle button');
         const sourceWrapper = document.getElementById('sourceWrapper');
@@ -1188,67 +1277,6 @@
             selectedPoint = null;
         });
 
-        // Aggiorna zoom helper
-        function updateZoomHelper(canvasX, canvasY, screenX, screenY) {
-            if (!sourceImage) return;
-            
-            zoomHelper.style.display = 'block';
-            
-            // Posiziona lo zoom helper vicino al cursore
-            const offsetX = 80;
-            const offsetY = -80;
-            zoomHelper.style.left = (screenX + offsetX) + 'px';
-            zoomHelper.style.top = (screenY + offsetY) + 'px';
-            
-            // Dimensioni area da zoomare (30x30 pixel attorno al punto)
-            const zoomSize = 30;
-            const halfSize = zoomSize / 2;
-            
-            // Calcola le coordinate sorgente nell'immagine originale
-            const scaleX = sourceImage.width / sourceCanvas.width;
-            const scaleY = sourceImage.height / sourceCanvas.height;
-            const srcX = canvasX * scaleX;
-            const srcY = canvasY * scaleY;
-            
-            // Estrai la regione dall'immagine originale
-            const srcCanvas = document.createElement('canvas');
-            srcCanvas.width = zoomSize;
-            srcCanvas.height = zoomSize;
-            const srcCtx = srcCanvas.getContext('2d');
-            
-            srcCtx.drawImage(
-                sourceImage,
-                srcX - halfSize, srcY - halfSize, zoomSize, zoomSize,
-                0, 0, zoomSize, zoomSize
-            );
-            
-            // Applica contrasto aumentato per vedere meglio i pixel
-            const imageData = srcCtx.getImageData(0, 0, zoomSize, zoomSize);
-            const data = imageData.data;
-            const contrastBoost = 1.4; // Aumenta il contrasto del 40%
-            const brightnessBoost = 1.1; // Aumenta la luminosità del 10%
-            
-            for (let i = 0; i < data.length; i += 4) {
-                // Applica contrasto e luminosità aumentati
-                data[i] = ((data[i] - 128) * contrastBoost + 128) * brightnessBoost;
-                data[i + 1] = ((data[i + 1] - 128) * contrastBoost + 128) * brightnessBoost;
-                data[i + 2] = ((data[i + 2] - 128) * contrastBoost + 128) * brightnessBoost;
-                
-                // Clamp values
-                data[i] = Math.max(0, Math.min(255, data[i]));
-                data[i + 1] = Math.max(0, Math.min(255, data[i + 1]));
-                data[i + 2] = Math.max(0, Math.min(255, data[i + 2]));
-            }
-            
-            srcCtx.putImageData(imageData, 0, 0);
-            
-            // Disegna ingrandito sul canvas zoom
-            zoomCanvas.width = 150;
-            zoomCanvas.height = 150;
-            zoomCtx.imageSmoothingEnabled = false;
-            zoomCtx.drawImage(srcCanvas, 0, 0, zoomSize, zoomSize, 0, 0, 150, 150);
-        }
-
         // Auto-rettifica (chiamata quando si rilascia un punto)
         function autoRectify() {
             if (points.length !== 4 || !sourceImage) return;
@@ -1552,59 +1580,47 @@
         }
 
         // Applica filtri
-        function applyFilters() {
-            if (!rectifiedImageData) return;
+function applyFilters() {
+    if (!rectifiedImageData) return;
 
-            const contrast = contrastSlider.value / 100;
-            const brightness = brightnessSlider.value / 100;
-            const sharpness = sharpnessSlider.value / 100;
-            const colorMode = colorModeSelect.value;
-            const threshold = parseInt(thresholdSlider.value);
+    // Guadagno esponenziale per contrasto e luminosità
+    const contrast = Math.pow(contrastSlider.value / 100, 2); // Elevato al quadrato per intensità
+    const brightness = (brightnessSlider.value / 100) * 1.1; 
+    const colorMode = colorModeSelect.value;
+    const threshold = parseInt(thresholdSlider.value);
 
-            let imageData = new ImageData(
-                new Uint8ClampedArray(rectifiedImageData.data),
-                rectifiedImageData.width,
-                rectifiedImageData.height
-            );
+    let imageData = new ImageData(
+        new Uint8ClampedArray(rectifiedImageData.data),
+        rectifiedImageData.width,
+        rectifiedImageData.height
+    );
 
-            // Applica modalità colore
-            if (colorMode === 'grayscale') {
-                // Converti in scala di grigi
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    const gray = imageData.data[i] * 0.299 + 
-                                imageData.data[i + 1] * 0.587 + 
-                                imageData.data[i + 2] * 0.114;
-                    imageData.data[i] = gray;
-                    imageData.data[i + 1] = gray;
-                    imageData.data[i + 2] = gray;
-                }
-            } else if (colorMode === 'bw') {
-                // Converti in bianco e nero
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    const gray = imageData.data[i] * 0.299 + 
-                                imageData.data[i + 1] * 0.587 + 
-                                imageData.data[i + 2] * 0.114;
-                    const bw = gray > threshold ? 255 : 0;
-                    imageData.data[i] = bw;
-                    imageData.data[i + 1] = bw;
-                    imageData.data[i + 2] = bw;
-                }
-            }
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        // Conversione colore/grigio immediata per velocità
+        let r = data[i], g = data[i+1], b = data[i+2];
 
-            // Contrasto e luminosità
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                imageData.data[i] = ((imageData.data[i] - 128) * contrast + 128) * brightness;
-                imageData.data[i + 1] = ((imageData.data[i + 1] - 128) * contrast + 128) * brightness;
-                imageData.data[i + 2] = ((imageData.data[i + 2] - 128) * contrast + 128) * brightness;
-            }
-
-            // Nitidezza (unsharp mask semplificato)
-            if (sharpness > 0) {
-                imageData = applySharpen(imageData, sharpness);
-            }
-
-            resultCtx.putImageData(imageData, 0, 0);
+        if (colorMode === 'grayscale' || colorMode === 'bw') {
+            r = g = b = (r * 0.299 + g * 0.587 + b * 0.114);
         }
+
+        // Formula Contrasto Intenso + Luminosità
+        data[i]   = Math.max(0, Math.min(255, ((r - 128) * contrast + 128) * brightness));
+        data[i+1] = Math.max(0, Math.min(255, ((g - 128) * contrast + 128) * brightness));
+        data[i+2] = Math.max(0, Math.min(255, ((b - 128) * contrast + 128) * brightness));
+
+        if (colorMode === 'bw') {
+            const val = (data[i] + data[i+1] + data[i+2]) / 3 > threshold ? 255 : 0;
+            data[i] = data[i+1] = data[i+2] = val;
+        }
+    }
+
+    if (sharpnessSlider.value > 0) {
+        imageData = applySharpen(imageData, sharpnessSlider.value / 100);
+    }
+
+    resultCtx.putImageData(imageData, 0, 0);
+}
 
         // Applica nitidezza
         function applySharpen(imageData, amount) {
