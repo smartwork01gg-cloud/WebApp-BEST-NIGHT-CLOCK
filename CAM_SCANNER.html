@@ -180,6 +180,31 @@
             align-items: center;
         }
 
+        .filter-group select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0a0e17;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            color: #cbd5e0;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .filter-group select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .filter-group select option {
+            background: #1a1f2e;
+            color: #cbd5e0;
+            padding: 8px;
+        }
+
         .filter-group input[type="range"] {
             width: 100%;
             height: 6px;
@@ -582,6 +607,25 @@
             <div class="filter-controls">
                 <div class="filter-group">
                     <label>
+                        Modalità Colore
+                    </label>
+                    <select id="colorModeSelect">
+                        <option value="color">Colore</option>
+                        <option value="grayscale">Scala di Grigi</option>
+                        <option value="bw">Bianco e Nero</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" id="bwThresholdGroup" style="display: none;">
+                    <label>
+                        Soglia B/N
+                        <span class="value" id="thresholdValue">128</span>
+                    </label>
+                    <input type="range" id="thresholdSlider" min="0" max="255" value="128">
+                </div>
+
+                <div class="filter-group">
+                    <label>
                         Contrasto
                         <span class="value" id="contrastValue">100%</span>
                     </label>
@@ -666,9 +710,13 @@
         const contrastSlider = document.getElementById('contrastSlider');
         const brightnessSlider = document.getElementById('brightnessSlider');
         const sharpnessSlider = document.getElementById('sharpnessSlider');
+        const colorModeSelect = document.getElementById('colorModeSelect');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const bwThresholdGroup = document.getElementById('bwThresholdGroup');
         const contrastValue = document.getElementById('contrastValue');
         const brightnessValue = document.getElementById('brightnessValue');
         const sharpnessValue = document.getElementById('sharpnessValue');
+        const thresholdValue = document.getElementById('thresholdValue');
         const status = document.getElementById('status');
 
         let sourceImage = null;
@@ -1174,6 +1222,26 @@
                 0, 0, zoomSize, zoomSize
             );
             
+            // Applica contrasto aumentato per vedere meglio i pixel
+            const imageData = srcCtx.getImageData(0, 0, zoomSize, zoomSize);
+            const data = imageData.data;
+            const contrastBoost = 1.4; // Aumenta il contrasto del 40%
+            const brightnessBoost = 1.1; // Aumenta la luminosità del 10%
+            
+            for (let i = 0; i < data.length; i += 4) {
+                // Applica contrasto e luminosità aumentati
+                data[i] = ((data[i] - 128) * contrastBoost + 128) * brightnessBoost;
+                data[i + 1] = ((data[i + 1] - 128) * contrastBoost + 128) * brightnessBoost;
+                data[i + 2] = ((data[i + 2] - 128) * contrastBoost + 128) * brightnessBoost;
+                
+                // Clamp values
+                data[i] = Math.max(0, Math.min(255, data[i]));
+                data[i + 1] = Math.max(0, Math.min(255, data[i + 1]));
+                data[i + 2] = Math.max(0, Math.min(255, data[i + 2]));
+            }
+            
+            srcCtx.putImageData(imageData, 0, 0);
+            
             // Disegna ingrandito sul canvas zoom
             zoomCanvas.width = 150;
             zoomCanvas.height = 150;
@@ -1490,12 +1558,38 @@
             const contrast = contrastSlider.value / 100;
             const brightness = brightnessSlider.value / 100;
             const sharpness = sharpnessSlider.value / 100;
+            const colorMode = colorModeSelect.value;
+            const threshold = parseInt(thresholdSlider.value);
 
             let imageData = new ImageData(
                 new Uint8ClampedArray(rectifiedImageData.data),
                 rectifiedImageData.width,
                 rectifiedImageData.height
             );
+
+            // Applica modalità colore
+            if (colorMode === 'grayscale') {
+                // Converti in scala di grigi
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const gray = imageData.data[i] * 0.299 + 
+                                imageData.data[i + 1] * 0.587 + 
+                                imageData.data[i + 2] * 0.114;
+                    imageData.data[i] = gray;
+                    imageData.data[i + 1] = gray;
+                    imageData.data[i + 2] = gray;
+                }
+            } else if (colorMode === 'bw') {
+                // Converti in bianco e nero
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const gray = imageData.data[i] * 0.299 + 
+                                imageData.data[i + 1] * 0.587 + 
+                                imageData.data[i + 2] * 0.114;
+                    const bw = gray > threshold ? 255 : 0;
+                    imageData.data[i] = bw;
+                    imageData.data[i + 1] = bw;
+                    imageData.data[i + 2] = bw;
+                }
+            }
 
             // Contrasto e luminosità
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -1556,6 +1650,21 @@
 
         sharpnessSlider.addEventListener('input', () => {
             sharpnessValue.textContent = sharpnessSlider.value;
+            applyFilters();
+        });
+
+        colorModeSelect.addEventListener('change', () => {
+            // Mostra/nascondi controllo soglia B/N
+            if (colorModeSelect.value === 'bw') {
+                bwThresholdGroup.style.display = 'flex';
+            } else {
+                bwThresholdGroup.style.display = 'none';
+            }
+            applyFilters();
+        });
+
+        thresholdSlider.addEventListener('input', () => {
+            thresholdValue.textContent = thresholdSlider.value;
             applyFilters();
         });
 
