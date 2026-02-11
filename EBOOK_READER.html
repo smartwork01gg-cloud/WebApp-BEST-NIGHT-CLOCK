@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Reader Pro - TTS & UI Fix</title>
+    <title>3D Reader Pro - PDF TTS Fix</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -35,7 +35,7 @@
         #book-wrapper { position: relative; width: 500px; height: 700px; transform-origin: center center; display: none; margin: auto; }
         
         .page { background: var(--page-bg) !important; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .page img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .page img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
         
         .page-content { padding: 35px; color: var(--page-text) !important; line-height: 1.6; font-family: 'Georgia', serif; height: 100%; width: 100%; box-sizing: border-box; font-size: 18px; overflow: hidden; }
         .page-content img { max-width: 100% !important; max-height: 70% !important; object-fit: contain !important; display: block; margin: 10px auto; }
@@ -112,7 +112,7 @@
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-    const dbName = "ReaderV14_Final";
+    const dbName = "ReaderV15_TTS_Fixed";
     const initDB = () => new Promise(res => {
         const req = indexedDB.open(dbName, 1);
         req.onupgradeneeded = e => e.target.result.createObjectStore("books", { keyPath: "id" });
@@ -181,13 +181,20 @@
                     const unscaledVP = page.getViewport({ scale: 1 });
                     const scale = Math.min(500 / unscaledVP.width, 700 / unscaledVP.height);
                     const vp = page.getViewport({ scale: scale * 2 });
+                    
                     const canvas = document.createElement('canvas');
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                    const b64 = canvas.toDataURL('image/webp', 0.6);
-                    bookData.pages.push(b64);
-                    if(i === 1) bookData.cover = b64;
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = vp.width; canvas.height = vp.height;
+                    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                    
+                    bookData.pages.push(canvas.toDataURL('image/webp', 0.6));
+                    if(i === 1) bookData.cover = bookData.pages[0];
+
+                    // FIX ESTRAZIONE TESTO PDF
                     const textContent = await page.getTextContent();
-                    bookData.text.push(textContent.items.map(it => it.str).join(" "));
+                    const pageText = textContent.items.map(it => it.str).join(" ");
+                    bookData.text.push(pageText);
+
                     updateProgress(5 + (i / pdf.numPages * 95));
                 }
             } else if (ext === 'epub') {
@@ -224,7 +231,7 @@
             await db.transaction("books", "readwrite").objectStore("books").put(bookData);
             updateLibraryUI();
             loadBook(file.name);
-        } catch (e) { alert("Errore!"); updateProgress(0); }
+        } catch (e) { alert("Errore caricamento!"); updateProgress(0); }
     }
 
     async function loadBook(id) {
@@ -259,12 +266,15 @@
             pageFlip.loadFromHTML(container.querySelectorAll('.page'));
             document.getElementById('total-pages').innerText = pageFlip.getPageCount();
             document.getElementById('page-slider').max = pageFlip.getPageCount() - 1;
+            
             pageFlip.on('flip', (e) => {
                 document.getElementById('current-page').innerText = e.data + 1;
                 document.getElementById('page-slider').value = e.data;
                 saveBookmark(e.data);
-                if(isReading) { 
-                    setTimeout(startReading, 600); 
+                // Se la lettura è attiva, riparte sulla nuova pagina dopo il voltare della pagina
+                if(isReading) {
+                    synth.cancel();
+                    setTimeout(startReading, 600);
                 }
             });
             if(currentBook.bookmark) pageFlip.turnToPage(currentBook.bookmark);
@@ -313,20 +323,22 @@
     }
 
     function startReading() {
+        if (!isReading || !currentBook) return;
         synth.cancel();
-        if (!isReading) return;
 
         const idx = pageFlip.getCurrentPageIndex();
         let text = "";
 
+        // RECUPERO TESTO SPECIFICO PER TIPO FILE
         if (currentBook.type === 'pdf') {
-            text = currentBook.text[idx] || "";
+            text = (currentBook.text && currentBook.text[idx]) ? currentBook.text[idx] : "";
         } else {
             const pages = document.querySelectorAll('.page-content');
             text = pages[idx] ? pages[idx].innerText : "";
         }
 
-        if (!text.trim()) {
+        if (!text || text.trim().length < 2) {
+            // Se la pagina è vuota (es. solo immagine), passa alla prossima
             if (idx < pageFlip.getPageCount() - 1) {
                 pageFlip.flipNext();
             } else {
@@ -337,27 +349,35 @@
         }
 
         const msg = new SpeechSynthesisUtterance(text);
+        
+        // Impostazione Voce
         const voices = synth.getVoices();
         const selectedVoiceName = document.getElementById('voice-select').value;
-        msg.voice = voices.find(v => v.name === selectedVoiceName);
+        const voice = voices.find(v => v.name === selectedVoiceName);
+        if (voice) msg.voice = voice;
+        
+        // Impostazione Velocità
         msg.rate = parseFloat(document.getElementById('speed-select').value);
         
         msg.onend = () => {
             if (isReading) {
                 if (idx < pageFlip.getPageCount() - 1) {
-                    pageFlip.flipNext();
+                    pageFlip.flipNext(); // Questo attiverà l'evento 'flip' che richiama startReading
                 } else {
                     isReading = false;
                     document.getElementById('tts-btn').innerText = "🔊";
                 }
             }
         };
+
+        msg.onerror = () => { isReading = false; document.getElementById('tts-btn').innerText = "🔊"; };
         
         synth.speak(msg);
     }
 
     function showLibrary() { 
         synth.cancel(); isReading = false;
+        document.getElementById('tts-btn').innerText = "🔊";
         document.getElementById('book-wrapper').style.display='none'; 
         document.getElementById('library-overlay').style.display='block'; 
         updateLibraryUI();
@@ -374,13 +394,17 @@
     function loadVoices() {
         const voices = synth.getVoices();
         const voiceSelect = document.getElementById('voice-select');
-        voiceSelect.innerHTML = voices
-            .filter(v => v.lang.includes('it') || v.lang.includes('en'))
-            .map(v => `<option value="${v.name}">${v.name.substring(0,15)}</option>`)
+        // Filtra per voci italiane o inglesi come fallback
+        const filtered = voices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('en'));
+        voiceSelect.innerHTML = filtered
+            .map(v => `<option value="${v.name}">${v.name.substring(0,18)}</option>`)
             .join('');
     }
 
-    synth.onvoiceschanged = loadVoices;
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
     window.onload = () => { 
         updateLibraryUI(); 
         loadVoices();
