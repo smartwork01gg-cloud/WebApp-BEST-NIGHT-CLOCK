@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Reader Pro - Fix Totale</title>
+    <title>3D Reader Pro - Fix Navigazione</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -11,51 +11,37 @@
     <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 
     <style>
-/* Colori Giorno (Default) */
-:root { 
-    --accent: #e67e22; 
-    --bg: #f5f5f5; 
-    --panel: #ffffff; 
-    --text: #333333; 
-    --page-bg: #ffffff; 
-    --page-text: #333333;
-}
-
-/* Colori Notte */
-body.night-mode { 
-    --bg: #121212; 
-    --panel: #1e1e1e; 
-    --text: #e0e0e0; 
-    --page-bg: #2c2c2c; 
-    --page-text: #f0f0f0; 
-}
-
-/* EFFETTO NOTTE PER PDF: Inverte i colori dell'immagine */
-body.night-mode .pdf-page-img { 
-    filter: invert(0.9) hue-rotate(180deg) brightness(0.8); 
-}
-
-/* Applica il colore alle pagine dell'EPUB */
-body.night-mode .page { background: var(--page-bg) !important; }
-body.night-mode .page-content { color: var(--page-text) !important; }
-body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; color: var(--text); overflow: hidden; }
+        :root { --accent: #e67e22; --bg: #f5f5f5; --panel: #ffffff; --text: #333; --page-bg: #ffffff; --page-text: #333; }
+        body.night-mode { --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --page-bg: #2c2c2c; --page-text: #f0f0f0; }
+        
+        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; height: 100vh; color: var(--text); overflow: hidden; display: flex; flex-direction: column; }
+        
         #library-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; overflow-y: auto; padding: 20px; }
         .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; max-width: 1200px; margin: 20px auto; }
-        .book-card { background: var(--panel); border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid #333; }
-        .book-cover { width: 100%; height: 200px; object-fit: cover; background: #222; }
+        .book-card { background: var(--panel); border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid #444; }
+        .book-cover { width: 100%; height: 200px; object-fit: cover; background: #222; display: block; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: #c0392b; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; z-index: 10; }
-        .toolbar { background: var(--panel); padding: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); }
+
+        .toolbar { background: var(--panel); padding: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); z-index: 10; }
         .btn { background: var(--accent); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .viewport { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; position: relative; }
-        #book-wrapper { position: relative; width: 500px; height: 700px; display: none; transform-origin: center center; }
-        .page { background: white !important; overflow: hidden; width: 100%; height: 100%; }
-        .page-content { padding: 40px; color: #333; line-height: 1.6; font-family: 'Georgia', serif; height: 100%; overflow-y: auto; box-sizing: border-box; }
-        .page-content img { max-width: 100% !important; height: auto !important; display: block; margin: 10px auto; }
+        .viewport { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; position: relative; overflow: hidden; }
+        
+        /* Contenitore gestito dinamicamente */
+        #book-wrapper { position: relative; width: 500px; height: 700px; transform-origin: center center; display: none; margin: auto; }
+        .page { background: var(--page-bg) !important; width: 100%; height: 100%; overflow: hidden; }
+        .page-content { padding: 45px; color: var(--page-text) !important; line-height: 1.6; font-family: 'Georgia', serif; height: 100%; box-sizing: border-box; font-size: 18px; }
+        .page-content img { max-width: 100% !important; max-height: 80% !important; object-fit: contain; display: block; margin: 10px auto; }
+
+        body.night-mode .pdf-page-img { filter: invert(0.9) hue-rotate(180deg) brightness(0.8); }
         .nav-bar { background: var(--panel); padding: 10px 20px; border-top: 1px solid #333; }
         input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+        #paginator-tester { position: absolute; visibility: hidden; width: 410px; padding: 45px; line-height: 1.6; font-family: 'Georgia', serif; pointer-events: none; top: 0; }
     </style>
 </head>
 <body>
+
+<div id="paginator-tester"></div>
 
 <div id="library-overlay">
     <header style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto">
@@ -67,35 +53,26 @@ body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; dis
 
 <div class="toolbar">
     <button class="btn" onclick="showLibrary()">🏠 Home</button>
-	<button class="btn" id="theme-btn" onclick="toggleTheme()" style="background:#34495e">🌙 Notte</button>    
+    <button class="btn" id="theme-btn" onclick="toggleTheme()" style="background:#34495e">🌙 Notte</button>    
     <div id="status" style="font-size:12px; color:var(--accent)">Pronto</div>
     <div style="display:flex; gap:10px">
         <select id="voice-select" class="btn" style="background:#333"></select>
         <button id="tts-btn" class="btn" onclick="toggleTTS()">🔊 Leggi</button>
-		<select id="speed-select" class="btn" style="background:#333; width: 70px;">
-		    <option value="0.8">0.8x</option>
-		    <option value="1" selected>1x</option>
-		    <option value="1.2">1.2x</option>
-		    <option value="1.5">1.5x</option>
-		    <option value="2">2x</option>
-		</select>
-        
+        <select id="speed-select" class="btn" style="background:#333; width: 70px;">
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+        </select>
     </div>
 </div>
 
 <div class="viewport" id="viewport-main">
     <div id="book-wrapper">
-        <div id="book-container"></div>
-    </div>
+        </div>
 </div>
 
 <div class="nav-bar">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px">
         <span style="font-size:13px">Pagina: <span id="current-page">0</span> / <span id="total-pages">0</span></span>
-        <div>
-            <button class="btn" onclick="changeFontSize(-2)">A-</button>
-            <button class="btn" onclick="changeFontSize(2)">A+</button>
-        </div>
     </div>
     <input type="range" id="page-slider" min="0" value="0">
 </div>
@@ -107,224 +84,204 @@ body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; dis
     let isReading = false;
     const synth = window.speechSynthesis;
 
+    const NO_COVER = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='200' viewBox='0 0 150 200'%3E%3Crect width='150' height='200' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' fill='%23ccc' font-family='sans-serif' font-size='14' text-anchor='middle' dy='.3em'%3ELIBRO%3C/text%3E%3C/svg%3E";
+
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-    const dbName = "ReaderV7_Final";
+    const dbName = "ReaderV11_NavFix";
     const initDB = () => new Promise(res => {
         const req = indexedDB.open(dbName, 1);
         req.onupgradeneeded = e => e.target.result.createObjectStore("books", { keyPath: "id" });
         req.onsuccess = e => res(e.target.result);
     });
 
-    async function bufferToBase64(buffer, mime) {
-        return new Promise(r => {
-            const reader = new FileReader();
-            reader.onloadend = () => r(reader.result);
-            reader.readAsDataURL(new Blob([buffer], { type: mime }));
-        });
-    }
-
-    // ELABORAZIONE FILE
-async function processFile(file) {
-    const status = document.getElementById('status');
-    const ext = file.name.split('.').pop().toLowerCase();
-    let bookData = { id: file.name, type: ext, pages: [], text: [], cover: "", bookmark: 0 };
-
-    status.innerText = "Apertura archivio...";
-
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-
-        if (ext === 'pdf') {
-            // ... (codice PDF rimane identico) ...
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const vp = page.getViewport({ scale: 1.5 });
-                const canvas = document.createElement('canvas');
-                canvas.width = vp.width; canvas.height = vp.height;
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                const b64 = canvas.toDataURL('image/webp');
-                bookData.pages.push(b64);
-                if(i===1) bookData.cover = b64;
-                const txt = await page.getTextContent();
-                bookData.text.push(txt.items.map(s => s.str).join(' '));
-            }
-        } else if (ext === 'epub') {
-            // 1. USIAMO JSZIP DIRETTAMENTE PER LE IMMAGINI
-            const zip = await JSZip.loadAsync(arrayBuffer);
-            const imageMap = new Map();
-            
-            status.innerText = "Estrazione immagini...";
-            
-            // Scansioniamo tutti i file nel pacchetto ZIP
-            for (let fileName in zip.files) {
-                if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileName)) {
-                    const fileData = await zip.files[fileName].async("base64");
-                    const fileExt = fileName.split('.').pop().toLowerCase();
-                    const mime = fileExt === 'svg' ? 'image/svg+xml' : `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
-                    const b64 = `data:${mime};base64,${fileData}`;
-                    
-                    // Salviamo nella mappa usando il nome del file come chiave
-                    imageMap.set(fileName.split('/').pop(), b64);
-                }
-            }
-
-            // 2. USIAMO EPUB.JS SOLO PER IL TESTO E LA STRUTTURA
-            const book = ePub(arrayBuffer);
-            await book.opened;
-
-            // Tentativo cover standard
-            try {
-                const cUrl = await book.coverUrl();
-                if (cUrl) {
-                    const res = await fetch(cUrl);
-                    bookData.cover = await bufferToBase64(await res.arrayBuffer(), "image/jpeg");
-                }
-            } catch(e) {}
-
-            const spine = await book.loaded.spine;
-            for (const section of spine.spineItems) {
-                status.innerText = `Rendering: ${section.index + 1}/${spine.length}`;
-                await section.load(book.load.bind(book));
-                const doc = section.document;
-
-                // Sostituiamo le immagini nell'HTML della sezione
-                const imgs = doc.querySelectorAll('img');
-                imgs.forEach(img => {
-                    const src = img.getAttribute('src');
-                    if (src) {
-                        const pureName = src.split('/').pop();
-                        const b64 = imageMap.get(pureName);
-                        if (b64) {
-                            img.src = b64;
-                            img.removeAttribute('srcset');
-                        }
-                    }
-                });
-
-                bookData.pages.push(doc.body.innerHTML);
-                bookData.text.push(doc.body.innerText);
-                section.unload();
-            }
-        }
-
-        const db = await initDB();
-        await db.transaction("books", "readwrite").objectStore("books").put(bookData);
-        status.innerText = "Libro salvato!";
-        updateLibraryUI();
-        loadBook(file.name);
-    } catch (error) {
-        status.innerText = "Errore critico.";
-        console.error("Errore nel processo:", error);
-    }
-}
-    // CARICAMENTO LIBRO
-async function loadBook(id) {
-    const db = await initDB();
-    const req = db.transaction("books").objectStore("books").get(id);
-    
-    req.onsuccess = () => {
-        const book = req.result;
-        if(!book) return;
-        currentBook = book;
-        
-        // 1. Nascondi la libreria
-        document.getElementById('library-overlay').style.display = 'none';
-        
-        // 2. Prendi il viewport (il padre di tutto)
-        const viewport = document.getElementById('viewport-main');
-        viewport.innerHTML = ''; // Svuota tutto il vecchio contenuto per evitare conflitti
-
-        // 3. Ricrea da zero la struttura necessaria
-        const wrapper = document.createElement('div');
-        wrapper.id = 'book-wrapper';
-        wrapper.style.display = 'block'; // Rendilo subito visibile
-        
+    function fastPaginate(htmlContent) {
+        const tester = document.getElementById('paginator-tester');
+        tester.style.fontSize = currentFontSize + 'px';
+        const maxHeight = 610; 
         const container = document.createElement('div');
-        container.id = 'book-container';
-        
-        wrapper.appendChild(container);
-        viewport.appendChild(wrapper);
+        container.innerHTML = htmlContent;
+        const pages = [];
+        let currentPageContent = "";
 
-        // 4. Inserisci le pagine
-// Inserimento pagine
-        book.pages.forEach(p => {
-            const div = document.createElement('div');
-            div.className = 'page';
-            
-            if (book.type === 'pdf') {
-                // Aggiungiamo la classe "pdf-page-img" per permettere l'inversione colori
-                div.innerHTML = `<img src="${p}" class="pdf-page-img" style="width:100%;height:100%;object-fit:contain">`;
+        const addNode = (node) => {
+            const tempHtml = node.nodeType === 3 ? node.textContent : node.outerHTML;
+            tester.innerHTML = currentPageContent + tempHtml;
+
+            if (tester.offsetHeight > maxHeight) {
+                if (node.nodeType === 1 && node.childNodes.length > 1) {
+                    Array.from(node.childNodes).forEach(child => addNode(child));
+                } else if (node.nodeType === 3) {
+                    const words = node.textContent.split(' ');
+                    words.forEach(word => {
+                        tester.innerHTML = currentPageContent + word + " ";
+                        if (tester.offsetHeight > maxHeight) {
+                            pages.push(currentPageContent);
+                            currentPageContent = word + " ";
+                        } else {
+                            currentPageContent += word + " ";
+                        }
+                    });
+                } else {
+                    pages.push(currentPageContent);
+                    currentPageContent = tempHtml;
+                }
             } else {
-                div.innerHTML = `<div class="page-content" style="font-size:${currentFontSize}px">${p}</div>`;
+                currentPageContent += tempHtml;
             }
-            container.appendChild(div);
-        });
-        
-        // 5. Applica il ridimensionamento iniziale
-        resize();
+        };
 
-        // 6. Inizializza il Flip 3D (un piccolo delay è necessario per far digerire l'HTML al browser)
-        setTimeout(() => {
-            initFlip();
-        }, 300);
-    };
-}
+        Array.from(container.childNodes).forEach(node => addNode(node));
+        if (currentPageContent.trim()) pages.push(currentPageContent);
+        return pages.filter(p => p.trim().length > 0);
+    }
+
+    async function processFile(file) {
+        const status = document.getElementById('status');
+        const ext = file.name.split('.').pop().toLowerCase();
+        let bookData = { id: file.name, type: ext, pages: [], text: [], cover: "", bookmark: 0 };
+        status.innerText = "Salvataggio...";
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            if (ext === 'pdf') {
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                for (let i = 1; i <= Math.min(pdf.numPages, 500); i++) {
+                    const page = await pdf.getPage(i);
+                    const vp = page.getViewport({ scale: 1.2 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = vp.width; canvas.height = vp.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    const b64 = canvas.toDataURL('image/webp', 0.6);
+                    bookData.pages.push(b64);
+                    if(i===1) bookData.cover = b64;
+                    const txt = await page.getTextContent();
+                    bookData.text.push(txt.items.map(s => s.str).join(' '));
+                }
+            } else if (ext === 'epub') {
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                const imgMap = new Map();
+                for (let name in zip.files) {
+                    if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name)) {
+                        const b64 = await zip.files[name].async("base64");
+                        const fExt = name.split('.').pop().toLowerCase();
+                        imgMap.set(name.split('/').pop(), `data:image/${fExt === 'svg' ? 'svg+xml' : 'jpeg'};base64,${b64}`);
+                    }
+                }
+                const book = ePub(arrayBuffer);
+                await book.opened;
+                const spine = await book.loaded.spine;
+                
+                try {
+                    const cUrl = await book.coverUrl();
+                    if (cUrl) {
+                        const res = await fetch(cUrl);
+                        const blob = await res.blob();
+                        bookData.cover = await new Promise(r => { 
+                            const reader = new FileReader(); reader.onloadend = () => r(reader.result); reader.readAsDataURL(blob); 
+                        });
+                    }
+                } catch(e) { bookData.cover = NO_COVER; }
+
+                for (const section of spine.spineItems) {
+                    await section.load(book.load.bind(book));
+                    const doc = section.document;
+                    doc.querySelectorAll('img').forEach(i => {
+                        const src = i.getAttribute('src').split('/').pop();
+                        if(imgMap.has(src)) i.src = imgMap.get(src);
+                    });
+                    const pgs = fastPaginate(doc.body.innerHTML);
+                    pgs.forEach(p => {
+                        bookData.pages.push(p);
+                        const t = document.createElement('div'); t.innerHTML = p;
+                        bookData.text.push(t.innerText);
+                    });
+                    section.unload();
+                }
+            }
+            const db = await initDB();
+            await db.transaction("books", "readwrite").objectStore("books").put(bookData);
+            status.innerText = "Libro aggiunto!";
+            updateLibraryUI();
+            loadBook(file.name);
+        } catch (e) { status.innerText = "Errore!"; console.error(e); }
+    }
+
+    async function loadBook(id) {
+        const db = await initDB();
+        const req = db.transaction("books").objectStore("books").get(id);
+        req.onsuccess = () => {
+            currentBook = req.result;
+            if(!currentBook) return;
+            
+            // 1. Reset Interfaccia
+            document.getElementById('library-overlay').style.display = 'none';
+            const wrapper = document.getElementById('book-wrapper');
+            
+            // 2. Distruzione istanza precedente
+            if (pageFlip) {
+                try { pageFlip.destroy(); } catch(e) {}
+                pageFlip = null;
+            }
+
+            // 3. RICREAZIONE TOTALE DEL CONTENITORE (Cruciale per il rientro)
+            wrapper.innerHTML = '<div id="book-container"></div>';
+            const container = document.getElementById('book-container');
+            wrapper.style.display = 'block';
+
+            // 4. Inserimento Pagine
+            currentBook.pages.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'page';
+                div.innerHTML = currentBook.type === 'pdf' ? 
+                    `<img src="${p}" class="pdf-page-img" style="width:100%;height:100%;object-fit:contain">` : 
+                    `<div class="page-content">${p}</div>`;
+                container.appendChild(div);
+            });
+
+            resize();
+            // Piccolo delay extra per garantire il rendering del DOM
+            setTimeout(initFlip, 300);
+        };
+    }
 
     function initFlip() {
         const container = document.getElementById('book-container');
         if (!container || container.children.length === 0) return;
 
-        if (pageFlip) {
-            try { pageFlip.destroy(); } catch(e) {}
-        }
+        pageFlip = new St.PageFlip(container, {
+            width: 500, height: 700, showCover: false, usePortrait: true, mobileScrollSupport: true
+        });
+
+        pageFlip.loadFromHTML(container.querySelectorAll('.page'));
         
-        try {
-            pageFlip = new St.PageFlip(container, {
-                width: 500, height: 700, showCover: false, usePortrait: true,
-                mobileScrollSupport: true
-            });
-            
-         // Questo evento scatta OGNI VOLTA che una pagina finisce di girare
-            pageFlip.on('flip', (e) => {
-                console.log("Evento Flip rilevato. Nuova pagina:", e.data);
-                if (isReading) {
-                    // Un piccolo delay per lasciare che il DOM si assesti
-                    setTimeout(startReadingCurrentPage, 300);
-                }
-            });
-         
-            pageFlip.loadFromHTML(container.querySelectorAll('.page'));
-            
-            document.getElementById('total-pages').innerText = pageFlip.getPageCount();
-            document.getElementById('page-slider').max = pageFlip.getPageCount() - 1;
-            
-            pageFlip.on('flip', (e) => {
-                document.getElementById('current-page').innerText = e.data + 1;
-                document.getElementById('page-slider').value = e.data;
-                saveBookmark(e.data);
-            });
-            
-            if(currentBook.bookmark) pageFlip.turnToPage(currentBook.bookmark);
-            resize();
-        } catch (e) {
-            console.error("Errore PageFlip:", e);
+        document.getElementById('total-pages').innerText = pageFlip.getPageCount();
+        document.getElementById('page-slider').max = Math.max(0, pageFlip.getPageCount() - 1);
+        
+        pageFlip.on('flip', (e) => {
+            document.getElementById('current-page').innerText = e.data + 1;
+            document.getElementById('page-slider').value = e.data;
+            saveBookmark(e.data);
+            if(isReading) setTimeout(startReadingCurrentPage, 400);
+        });
+
+        if(currentBook.bookmark) {
+            pageFlip.turnToPage(currentBook.bookmark);
+            document.getElementById('current-page').innerText = currentBook.bookmark + 1;
+        } else {
+            document.getElementById('current-page').innerText = 1;
         }
     }
 
     function showLibrary() {
-        if (synth) synth.cancel();
+        if(synth) synth.cancel(); 
         isReading = false;
         
         if (pageFlip) {
             try { pageFlip.destroy(); } catch(e) {}
             pageFlip = null;
         }
-        
-        const container = document.getElementById('book-container');
-        if(container) container.innerHTML = '';
-        
+
         document.getElementById('book-wrapper').style.display = 'none';
         document.getElementById('library-overlay').style.display = 'block';
         updateLibraryUI();
@@ -335,194 +292,59 @@ async function loadBook(id) {
         const req = db.transaction("books").objectStore("books").getAll();
         req.onsuccess = () => {
             const grid = document.getElementById('book-grid');
-            if(!grid) return;
             grid.innerHTML = req.result.map(b => `
                 <div class="book-card" onclick="loadBook('${b.id.replace(/'/g, "\\'")}')">
                     <button class="del-btn" onclick="event.stopPropagation(); deleteBook('${b.id.replace(/'/g, "\\'")}')">×</button>
-                    <img src="${b.cover || ''}" class="book-cover" onerror="this.src='https://via.placeholder.com/150x200?text=Libro'">
-                    <div style="padding:10px; font-size:11px; font-weight:bold; color:#fff">${b.id}</div>
+                    <img src="${b.cover || NO_COVER}" class="book-cover" onerror="this.src='${NO_COVER}'">
+                    <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text); text-align:center">${b.id}</div>
                 </div>
             `).join('');
         };
+    }
+
+    async function deleteBook(id) {
+        if(!confirm("Eliminare?")) return;
+        const db = await initDB();
+        db.transaction("books", "readwrite").objectStore("books").delete(id);
+        updateLibraryUI();
     }
 
     async function saveBookmark(idx) {
         if(!currentBook) return;
         const db = await initDB();
         currentBook.bookmark = idx;
-        const tx = db.transaction("books", "readwrite");
-        tx.objectStore("books").put(currentBook);
-    }
-
-    async function deleteBook(id) {
-        if(confirm("Eliminare definitivamente questo libro?")) {
-            const db = await initDB();
-            db.transaction("books", "readwrite").objectStore("books").delete(id);
-            updateLibraryUI();
-        }
+        db.transaction("books", "readwrite").objectStore("books").put(currentBook);
     }
 
     function resize() {
         const wrap = document.getElementById('book-wrapper');
         const vp = document.getElementById('viewport-main');
         if (!wrap || !vp) return;
-
-        // Calcoliamo quanto spazio abbiamo nel contenitore nero
-        const containerW = vp.clientWidth - 20;
-        const containerH = vp.clientHeight - 20;
-
-        // Scala base per far stare la pagina nel monitor
-        let baseScale = Math.min(containerW / 500, containerH / 700);
-        
-        // Applichiamo lo zoom dell'utente (se è un PDF)
-        let finalScale = baseScale;
-        if (currentBook && currentBook.type === 'pdf') {
-            finalScale = baseScale * (window.pdfZoom || 1);
-            
-            // Se lo zoom è grande, permettiamo di scorrere la pagina
-            vp.style.overflow = (window.pdfZoom > 1) ? "auto" : "hidden";
-        }
-
-        wrap.style.transform = `scale(${finalScale})`;
-        
-        // Centratura corretta quando scalato
-        wrap.style.display = "block"; 
-        wrap.style.margin = "auto";
+        const scale = Math.min((vp.clientWidth - 20) / 500, (vp.clientHeight - 20) / 700);
+        wrap.style.transform = `scale(${scale})`;
     }
 
-    function changeFontSize(d) {
-        if (!currentBook) return;
-
-        if (currentBook.type === 'epub') {
-            currentFontSize += d;
-            document.querySelectorAll('.page-content').forEach(p => {
-                p.style.fontSize = currentFontSize + 'px';
-            });
-        } else {
-            // PDF: Gestione Zoom Reale
-            if (!window.pdfZoom) window.pdfZoom = 1;
-            
-            if (d > 0) window.pdfZoom += 0.2; // Ingrandisce del 20%
-            else window.pdfZoom -= 0.2;      // Rimpicciolisce del 20%
-
-            // Limiti per non sparire o diventare giganti
-            if (window.pdfZoom < 1) window.pdfZoom = 1;
-            if (window.pdfZoom > 5) window.pdfZoom = 5;
-
-            console.log("Zoom attuale PDF:", window.pdfZoom); // Per controllo in console
-            resize(); // Applica lo zoom
-        }
+    function toggleTheme() {
+        const isNight = document.body.classList.toggle('night-mode');
+        document.getElementById('theme-btn').innerText = isNight ? "☀️ Giorno" : "🌙 Notte";
+        localStorage.setItem('theme', isNight ? 'night' : 'day');
     }
-    
+
     function toggleTTS() {
-        if (isReading) { 
-            synth.cancel(); 
-            isReading = false; 
-            document.getElementById('tts-btn').innerText = "🔊 Leggi";
-        } else {
-            if (!currentBook || !pageFlip) return;
-            
-            isReading = true;
-            document.getElementById('tts-btn').innerText = "⏹️ Stop";
-            startReadingCurrentPage();
-        }
+        if (isReading) { synth.cancel(); isReading = false; document.getElementById('tts-btn').innerText = "🔊 Leggi"; }
+        else { isReading = true; document.getElementById('tts-btn').innerText = "⏹️ Stop"; startReadingCurrentPage(); }
     }
 
-    // Funzione isolata per gestire la lettura e il passaggio pagina
-function startReadingCurrentPage() {
-    // 1. Pulizia totale preventiva
-    window.speechSynthesis.cancel();
-    
-    if (!isReading || !pageFlip || !currentBook) return;
-
-    // 2. Recupero indice e testo
-    const currentIndex = pageFlip.getCurrentPageIndex();
-    let text = currentBook.text[currentIndex];
-
-    console.log("Tentativo lettura pagina:", currentIndex);
-
-    if (!text || text.trim().length === 0) {
-        console.log("Pagina vuota, salto alla prossima...");
-        setTimeout(moveToNextPage, 500);
-        return;
+    function startReadingCurrentPage() {
+        synth.cancel();
+        const idx = pageFlip.getCurrentPageIndex();
+        const msg = new SpeechSynthesisUtterance(currentBook.text[idx]);
+        msg.rate = parseFloat(document.getElementById('speed-select').value);
+        msg.onend = () => { if(isReading) pageFlip.flipNext(); };
+        const v = synth.getVoices().find(v => v.name === document.getElementById('voice-select').value);
+        if(v) msg.voice = v;
+        synth.speak(msg);
     }
-
-    // 3. Creazione dell'istanza di lettura
-    const msg = new SpeechSynthesisUtterance(text);
-    
-    // Configurazione voce e velocità
-    const selectedVoice = synth.getVoices().find(v => v.name === document.getElementById('voice-select').value);
-    if (selectedVoice) msg.voice = selectedVoice;
-    
-    msg.rate = parseFloat(document.getElementById('speed-select').value) || 1;
-    msg.lang = 'it-IT';
-
-    // 4. Gestione eventi
-    msg.onstart = () => {
-        console.log("Voce effettivamente partita per pagina:", currentIndex);
-    };
-
-    msg.onend = () => {
-        if (isReading) {
-            console.log("Pagina " + currentIndex + " finita. Volto pagina...");
-            // Usiamo un piccolo delay prima di voltare per non troncare l'ultima parola
-            setTimeout(moveToNextPage, 300);
-        }
-    };
-
-    msg.onerror = (event) => {
-        console.error("Errore Sintesi Vocale:", event);
-        // Se c'è un errore, proviamo a resettare e ripartire
-        if (isReading) {
-            window.speechSynthesis.cancel();
-            setTimeout(startReadingCurrentPage, 500);
-        }
-    };
-
-    // 5. Avvio forzato
-    // Alcuni browser richiedono un piccolo delay dopo il cancel() per "digerire" il nuovo comando
-    setTimeout(() => {
-        window.speechSynthesis.speak(msg);
-    }, 100);
-}
-
-
-function stopTTS() {
-    synth.cancel();
-    isReading = false;
-    document.getElementById('tts-btn').innerText = "🔊 Leggi";
-}
-    
-function moveToNextPage() {
-    if (!isReading || !pageFlip) return;
-
-    const currentIndex = pageFlip.getCurrentPageIndex();
-    const totalPages = pageFlip.getPageCount();
-
-    if (currentIndex < totalPages - 1) {
-        console.log("Eseguo flipNext...");
-        pageFlip.flipNext();
-        
-        // Invece di controllare solo l'animazione, aspettiamo un tempo certo 
-        // e poi forziamo la lettura
-        let checkCount = 0;
-        const waitInterval = setInterval(() => {
-            const state = pageFlip.getAnimationState();
-            checkCount++;
-            
-            // Se l'animazione è finita ('read') o se è passato troppo tempo (sicurezza)
-            if (state === 'read' || checkCount > 20) { 
-                clearInterval(waitInterval);
-                console.log("Sistema pronto per nuova pagina. Avvio voce.");
-                startReadingCurrentPage();
-            }
-        }, 200);
-    } else {
-        isReading = false;
-        document.getElementById('tts-btn').innerText = "🔊 Leggi";
-        console.log("Libro finito.");
-    }
-}
 
     window.addEventListener('resize', resize);
     document.getElementById('file-input').addEventListener('change', e => processFile(e.target.files[0]));
@@ -533,29 +355,7 @@ function moveToNextPage() {
         document.getElementById('voice-select').innerHTML = voices.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
     };
 
-    window.onload = updateLibraryUI;
-    function toggleTheme() {
-        const isNight = document.body.classList.toggle('night-mode');
-        const btn = document.getElementById('theme-btn');
-        
-        if (isNight) {
-            btn.innerText = "☀️ Giorno";
-            btn.style.background = "#f1c40f";
-            btn.style.color = "#000";
-        } else {
-            btn.innerText = "🌙 Notte";
-            btn.style.background = "#34495e";
-            btn.style.color = "#fff";
-        }
-        
-        // Salviamo la preferenza
-        localStorage.setItem('theme', isNight ? 'night' : 'day');
-    }
-
-    // Carica il tema salvato all'avvio
-    if (localStorage.getItem('theme') === 'night') {
-        toggleTheme();
-    }    
+    window.onload = () => { updateLibraryUI(); if (localStorage.getItem('theme') === 'night') toggleTheme(); };
 </script>
 </body>
 </html>
