@@ -753,45 +753,58 @@
         const brightness = document.getElementById('br').value;
         const contrast = document.getElementById('ct').value;
 
-        // Se AI attiva, disegna sfondo neutro
+        // Se AI attiva, usa compositing corretto
         if (aiOn && aiMask) {
+            // 1. Disegna sfondo neutro ICAO
             ctx.fillStyle = "#F5F5F5";
             ctx.fillRect(0, 0, cvs.width, cvs.height);
             
-            // Crea canvas per maschera con trasformazioni
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = cvs.width;
-            maskCanvas.height = cvs.height;
-            const maskCtx = maskCanvas.getContext('2d');
+            // 2. Crea canvas temporaneo per l'immagine processata
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = rawImg.width;
+            tempCanvas.height = rawImg.height;
+            const tempCtx = tempCanvas.getContext('2d');
             
-            maskCtx.save();
-            maskCtx.translate(px, py);
-            maskCtx.scale(sc, sc);
-            maskCtx.globalCompositeOperation = "destination-out";
-            maskCtx.drawImage(aiMask, 0, 0, rawImg.width, rawImg.height);
-            maskCtx.restore();
+            // 3. Disegna l'immagine originale
+            let filterString = `brightness(${brightness}%) contrast(${contrast}%)`;
+            if (beauty) {
+                filterString += ` saturate(115%) blur(0.4px)`;
+            }
+            tempCtx.filter = filterString;
+            tempCtx.drawImage(rawImg, 0, 0);
             
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.drawImage(maskCanvas, 0, 0);
-            ctx.globalCompositeOperation = "destination-over";
-        }
-
-        // Applica filtri
-        let filterString = `brightness(${brightness}%) contrast(${contrast}%)`;
-        
-        if (beauty) {
-            filterString += ` saturate(115%) blur(0.4px)`;
-            ctx.filter = filterString;
-            ctx.drawImage(rawImg, px, py, rawImg.width * sc, rawImg.height * sc);
+            // 4. Applica la maschera AI (destination-in = mostra solo dove c'è la persona)
+            tempCtx.globalCompositeOperation = "destination-in";
+            tempCtx.drawImage(aiMask, 0, 0);
             
-            // Beauty glow effect
-            ctx.globalAlpha = 0.4;
-            ctx.filter = `brightness(${brightness}%) blur(3px) contrast(110%)`;
-            ctx.drawImage(cvs, 0, 0);
-            ctx.globalAlpha = 1.0;
+            // 5. Disegna il risultato finale con zoom e posizione
+            ctx.drawImage(tempCanvas, px, py, rawImg.width * sc, rawImg.height * sc);
+            
+            // 6. Beauty glow effect se attivo
+            if (beauty) {
+                ctx.globalAlpha = 0.3;
+                ctx.filter = `brightness(${brightness}%) blur(3px) contrast(110%)`;
+                ctx.drawImage(tempCanvas, px, py, rawImg.width * sc, rawImg.height * sc);
+                ctx.globalAlpha = 1.0;
+            }
         } else {
-            ctx.filter = filterString;
-            ctx.drawImage(rawImg, px, py, rawImg.width * sc, rawImg.height * sc);
+            // Modalità normale senza AI
+            let filterString = `brightness(${brightness}%) contrast(${contrast}%)`;
+            
+            if (beauty) {
+                filterString += ` saturate(115%) blur(0.4px)`;
+                ctx.filter = filterString;
+                ctx.drawImage(rawImg, px, py, rawImg.width * sc, rawImg.height * sc);
+                
+                // Beauty glow effect
+                ctx.globalAlpha = 0.4;
+                ctx.filter = `brightness(${brightness}%) blur(3px) contrast(110%)`;
+                ctx.drawImage(cvs, 0, 0);
+                ctx.globalAlpha = 1.0;
+            } else {
+                ctx.filter = filterString;
+                ctx.drawImage(rawImg, px, py, rawImg.width * sc, rawImg.height * sc);
+            }
         }
         
         ctx.restore();
