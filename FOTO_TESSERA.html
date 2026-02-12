@@ -3,257 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIOMETRIC ID PRO - DRAG & ZOOM</title>
+    <title>BIOMETRIC ID - AI POWERED</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
-        :root { --amber: #ffb000; --cyan: #00f3ff; --bg: #020617; }
-        * { box-sizing: border-box; touch-action: none; } /* Impedisce il rimbalzo della pagina su mobile */
+        :root { --amber: #ffb000; --cyan: #00f3ff; --bg: #0d1117; --panel: #161b22; }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { background: var(--bg); color: #fff; font-family: system-ui, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* VISORE */
+        .viewport { position: relative; width: 100%; height: 50vh; flex-shrink: 0; background: #000; display: flex; justify-content: center; border-bottom: 1px solid #30363d; }
+        .frame { position: relative; width: 280px; height: 360px; background: #222; overflow: hidden; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        video, #editor { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        video { transform: scaleX(-1); z-index: 1; }
+        #editor { z-index: 2; display: none; cursor: move; }
         
-        body { 
-            background: var(--bg); color: #fff; font-family: sans-serif; 
-            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-        }
+        /* Guide visive minimali (SOLO RIFERIMENTO) */
+        .guides { position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: 0.7; }
+        .guide-line { stroke: var(--cyan); stroke-width: 1; stroke-dasharray: 5,5; }
+        .guide-zone { stroke: var(--amber); stroke-width: 2; fill: none; stroke-dasharray: 10,5; }
 
-        /* VISORE FISSO */
-        .viewer {
-            position: relative; width: 100%; height: 50vh; flex-shrink: 0;
-            background: #000; display: flex; justify-content: center; align-items: center;
-            border-bottom: 2px solid var(--cyan);
-        }
+        /* Loader AI */
+        #ai-loader { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 20; display: none; justify-content: center; align-items: center; flex-direction: column; color: var(--cyan); }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--cyan); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .canvas-container {
-            position: relative; width: 280px; height: 360px; /* Rapporto 35x45 */
-            overflow: hidden; background: #111;
-        }
-
-        video, #editor-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-        video { transform: scaleX(-1); object-fit: cover; z-index: 1; }
-        #editor-canvas { z-index: 2; display: none; cursor: move; }
-
-        .overlay { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
-
-        /* AREA CONTROLLI SCORREVOLE */
-        .controls {
-            flex-grow: 1; overflow-y: auto; padding: 20px;
-            background: rgba(10, 15, 30, 0.95); touch-action: pan-y;
-        }
-
-        .card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,243,255,0.1); }
+        /* CONTROLLI */
+        .controls { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--panel); touch-action: pan-y; }
+        .card { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         h3 { color: var(--cyan); font-size: 0.75rem; text-transform: uppercase; margin: 0 0 12px 0; }
-
-        .btn-main { background: var(--amber); color: #000; border: none; width: 100%; padding: 16px; font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-tool { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px; border-radius: 6px; flex: 1; font-size: 0.8rem; }
+        .btn-main { background: var(--amber); color: #000; border: none; width: 100%; padding: 15px; font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-tool { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px; border-radius: 6px; flex: 1; font-size: 0.75rem; cursor: pointer; }
         .btn-tool.active { background: var(--cyan); color: #000; }
-
-        .slider-row { margin-bottom: 15px; }
+        .slider-row { margin-bottom: 12px; }
         input[type="range"] { width: 100%; accent-color: var(--cyan); }
-        label { font-size: 0.75rem; color: #ccc; display: block; margin-bottom: 5px; }
+        label { font-size: 0.7rem; color: #8b949e; display: block; margin-bottom: 4px; }
 
-        select, input[type="number"] { width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid #334155; border-radius: 8px; }
-
-        #print-modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; overflow-y: auto; padding: 20px; color: #000; }
-        .a4-preview { width: 210mm; display: flex; flex-wrap: wrap; gap: 5mm; margin: 0 auto; padding: 10mm; }
-
-        @media print { .no-print { display: none; } #print-modal { position: absolute; display: block; } }
+        /* MODALE EXPORT */
+        #modal-export { display: none; position: fixed; inset: 0; background: #fff; z-index: 2000; padding: 20px; color: #000; overflow-y: auto; }
+        .a4-print { width: 210mm; display: flex; flex-wrap: wrap; gap: 5mm; margin: 0 auto; background: white; padding: 10mm; border: 1px solid #eee;}
+        @media print { .no-print { display: none; } #modal-export { position: absolute; display: block; } }
     </style>
 </head>
 <body>
 
-<div class="viewer no-print">
-    <div class="canvas-container">
+<div class="viewport no-print">
+    <div class="frame">
         <video id="webcam" autoplay playsinline></video>
-        <canvas id="editor-canvas"></canvas>
-        
-        <svg class="overlay" viewBox="0 0 350 450">
-            <path d="M0 0h350v450H0z" fill="rgba(0,0,0,0.5)" fill-rule="evenodd" mask="url(#m)"/>
-            <mask id="m"><rect width="350" height="450" fill="white"/><ellipse cx="175" cy="195" rx="85" ry="115" fill="black"/></mask>
-            <ellipse cx="175" cy="195" rx="85" ry="115" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10"/>
-            <line x1="0" y1="180" x2="350" y2="180" stroke="var(--amber)" stroke-width="1"/>
+        <canvas id="editor"></canvas>
+        <svg class="guides" viewBox="0 0 280 360">
+            <ellipse cx="140" cy="160" rx="70" ry="95" class="guide-zone" />
+            <line x1="40" y1="150" x2="240" y2="150" class="guide-line" />
+             <line x1="100" y1="255" x2="180" y2="255" class="guide-line" stroke="var(--amber)"/>
         </svg>
+        <div id="ai-loader"><div class="spinner"></div><div>Elaborazione AI...</div></div>
     </div>
 </div>
 
 <div class="controls no-print">
-    <div id="ui-capture">
-        <button class="btn-main" id="btn-snap">SCATTA FOTO</button>
+    <div id="cap-grp">
+        <button class="btn-main" id="snap-btn">SCATTA FOTO</button>
         <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="btn-tool" onclick="document.getElementById('file-in').click()">CARICA FILE</button>
-            <button class="btn-tool" id="btn-flip">GIRA CAMERA</button>
+            <button class="btn-tool" onclick="document.getElementById('f-in').click()">IMPORTA FILE</button>
+            <button class="btn-tool" id="flip-btn">GIRA CAMERA</button>
         </div>
-        <input type="file" id="file-in" hidden accept="image/*">
+        <input type="file" id="f-in" hidden accept="image/*">
     </div>
 
-    <div id="ui-edit" style="display:none">
+    <div id="edit-grp" style="display:none">
         <div class="card">
-            <h3>Fine Tuning & Filtri</h3>
-            <label>Zoom (o usa due dita / rotella)</label>
-            <input type="range" id="zoom-range" min="0.1" max="3" step="0.01" value="1">
-            
-            <div class="slider-row" style="margin-top:15px">
-                <label>Luminosità</label>
-                <input type="range" id="br" min="50" max="150" value="100">
+            <h3>AI & Ritocco</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn-tool" id="ai-bg-btn" style="flex:2; border-color: var(--amber); color:var(--amber)">✨ RIMUOVI SFONDO CON AI</button>
+                <button class="btn-tool" id="beauty-btn">BEAUTY</button>
             </div>
             <div class="slider-row">
-                <label>Contrasto</label>
-                <input type="range" id="ct" min="50" max="150" value="100">
+                <label>Zoom & Sposta (Touch/Mouse)</label>
+                <input type="range" id="zoom" min="0.1" max="3" step="0.01" value="1">
             </div>
-            <div class="btn-group" style="display:flex; gap:10px;">
-                <button class="btn-tool" id="btn-beauty">BEAUTY SCAN</button>
-                <button class="btn-tool" id="btn-autofix">AUTO-FIX</button>
+            <div class="slider-row">
+                <label>Luminosità</label>
+                <input type="range" id="bright" min="50" max="150" value="100">
             </div>
         </div>
 
         <div class="card">
-            <h3>Formato & Copie</h3>
-            <select id="fmt-select">
+            <h3>Output</h3>
+            <select id="fmt" style="width:100%; padding:10px; background:#0d1117; color:#fff; border:1px solid #30363d; border-radius:6px;">
                 <option value="35,45">Passaporto / CIE (35x45mm)</option>
                 <option value="30,40">Patente (30x40mm)</option>
                 <option value="50,50">Visto USA (50x50mm)</option>
             </select>
-            <label style="margin-top:10px">Numero di Copie</label>
-            <input type="number" id="copy-num" value="4" min="1">
         </div>
 
-        <button class="btn-main" id="btn-print">ANTEPRIMA DI STAMPA</button>
-        <button class="btn-tool" onclick="location.reload()" style="width:100%; margin-top:10px; color:red; border-color:red;">ANNULLA</button>
+        <button class="btn-main" id="export-view-btn">GENERA STAMPA / PDF</button>
+        <button class="btn-tool" onclick="location.reload()" style="width:100%; margin-top:10px; color:#ff5555; border-color:#ff5555;">ANNULLA</button>
     </div>
 </div>
 
-<div id="print-modal">
-    <div class="no-print" style="margin-bottom:20px; display:flex; gap:10px;">
-        <button class="btn-main" onclick="window.print()">STAMPA ORA</button>
-        <button class="btn-tool" onclick="document.getElementById('print-modal').style.display='none'" style="color:#000">CHIUDI</button>
+<div id="modal-export">
+    <div class="no-print" style="margin-bottom:20px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <button class="btn-main" onclick="window.print()" style="grid-column: span 2;">STAMPA</button>
+        <button class="btn-tool" id="dl-jpg" style="color:#000; border-color:#ccc">SCARICA JPG</button>
+        <button class="btn-tool" id="dl-pdf" style="color:#000; border-color:#ccc">SCARICA PDF</button>
+        <button class="btn-tool" onclick="document.getElementById('modal-export').style.display='none'" style="grid-column: span 2; color:#000; border-color:#ccc">INDIETRO</button>
     </div>
-    <div class="a4-preview" id="grid"></div>
+    <div class="a4-print" id="pg"></div>
 </div>
-
-
 
 <script>
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('editor-canvas');
-    const ctx = canvas.getContext('2d');
+    const vid = document.getElementById('webcam');
+    const cvs = document.getElementById('editor');
+    const ctx = cvs.getContext('2d');
+    const loader = document.getElementById('ai-loader');
     
-    let img = new Image();
-    let posX = 0, posY = 0, scale = 1.0;
-    let isDragging = false, lastX, lastY, lastDist = 0;
-    let beauty = false, currentFacing = "user";
+    let srcImg = new Image();
+    // Canvas offscreen per processare l'immagine originale con l'AI
+    let processCanvas = document.createElement('canvas'); 
+    let processCtx = processCanvas.getContext('2d');
+    let segmentedMask = null; // Conterrà la maschera generata dall'AI
 
-    // 1. Inizializzazione Fotocamera
+    let px=0, py=0, sc=1.0, dragging=false, lx, ly, ld=0, beauty=false, useAI=false, side="user";
+
+    // --- SETUP AI MEDIAPIPE ---
+    const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
+    selfieSegmentation.setOptions({ modelSelection: 1 }); // 1 = landscape model (più preciso ma più lento)
+    selfieSegmentation.onResults(onAIResults);
+
+    // --- FOTOCAMERA ---
     async function startCam() {
-        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacing, width: 1280 } });
-        video.srcObject = s;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: side, width: 1280, height: 720 } });
+            vid.srcObject = stream;
+        } catch(e) { alert("Errore Fotocamera"); }
     }
     startCam();
-    document.getElementById('btn-flip').onclick = () => { currentFacing = currentFacing === "user" ? "environment" : "user"; startCam(); };
+    document.getElementById('flip-btn').onclick = () => { side = (side==="user"?"environment":"user"); startCam(); };
 
-    // 2. Setup Editor (Scatto o Caricamento)
-    function setupEditor(src) {
-        document.getElementById('ui-capture').style.display = 'none';
-        document.getElementById('ui-edit').style.display = 'block';
-        video.style.display = 'none';
-        canvas.style.display = 'block';
-        
-        img = new Image();
-        img.onload = () => {
-            canvas.width = 700; canvas.height = 900;
-            // Calcolo scala iniziale "cover"
-            scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-            posX = (canvas.width - img.width * scale) / 2;
-            posY = (canvas.height - img.height * scale) / 2;
-            document.getElementById('zoom-range').value = scale;
-            render();
+    // --- EDITOR ---
+    function loadEditor(src) {
+        document.getElementById('cap-grp').style.display = 'none';
+        document.getElementById('edit-grp').style.display = 'block';
+        vid.style.display = 'none'; cvs.style.display = 'block';
+        srcImg = new Image();
+        srcImg.onload = () => {
+            cvs.width = 700; cvs.height = 900; // Risoluzione di lavoro alta
+            sc = Math.max(cvs.width/srcImg.width, cvs.height/srcImg.height);
+            px = (cvs.width - srcImg.width * sc)/2;
+            py = (cvs.height - srcImg.height * sc)/2;
+            document.getElementById('zoom').value = sc;
+            drawFinal();
         };
-        img.src = src;
+        srcImg.src = src;
     }
 
-    document.getElementById('btn-snap').onclick = () => {
-        const t = document.createElement('canvas');
-        t.width = video.videoWidth; t.height = video.videoHeight;
-        const tc = t.getContext('2d');
-        if(currentFacing === "user") { tc.translate(t.width, 0); tc.scale(-1, 1); }
-        tc.drawImage(video, 0, 0);
-        setupEditor(t.toDataURL('image/jpeg'));
+    document.getElementById('snap-btn').onclick = () => {
+        const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;
+        const x = c.getContext('2d');
+        if(side==="user") { x.translate(c.width, 0); x.scale(-1, 1); }
+        x.drawImage(vid, 0, 0);
+        loadEditor(c.toDataURL('image/jpeg'));
+    };
+    document.getElementById('f-in').onchange = (e) => {
+        const r = new FileReader(); r.onload = (f) => loadEditor(f.target.result); r.readAsDataURL(e.target.files[0]);
     };
 
-    document.getElementById('file-in').onchange = (e) => {
-        const r = new FileReader();
-        r.onload = (ev) => setupEditor(ev.target.result);
-        r.readAsDataURL(e.target.files[0]);
+    // --- LOGICA AI ---
+    document.getElementById('ai-bg-btn').onclick = async function() {
+        if(useAI) { // Disattiva AI
+             useAI = false; this.classList.remove('active'); segmentedMask = null; drawFinal(); return;
+        }
+        // Attiva AI
+        this.classList.add('active');
+        loader.style.display = 'flex';
+        // Prepara l'immagine per l'AI (deve essere processata alla sua risoluzione nativa)
+        processCanvas.width = srcImg.width; processCanvas.height = srcImg.height;
+        processCtx.drawImage(srcImg, 0, 0);
+        // Invia all'AI
+        await selfieSegmentation.send({image: processCanvas});
     };
 
-    // 3. Logica di Rendering
-    function render() {
-        const br = document.getElementById('br').value;
-        const ct = document.getElementById('ct').value;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.filter = `brightness(${br}%) contrast(${ct}%) blur(${beauty ? 0.6 : 0}px)`;
-        ctx.drawImage(img, posX, posY, img.width * scale, img.height * scale);
+    function onAIResults(results) {
+        // L'AI ci restituisce una maschera di segmentazione
+        segmentedMask = results.segmentationMask;
+        useAI = true;
+        loader.style.display = 'none';
+        drawFinal();
     }
 
-    // 4. GESTIONE TRASCINAMENTO (Drag) E ZOOM
-    const getEvPos = (e) => ({ x: e.touches ? e.touches[0].clientX : e.clientX, y: e.touches ? e.touches[0].clientY : e.clientY });
-
-    const handleStart = (e) => {
-        if (e.touches && e.touches.length === 2) {
-            lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        } else {
-            isDragging = true;
-            const p = getEvPos(e);
-            lastX = p.x; lastY = p.y;
+    // --- RENDERING FINALE ---
+    function drawFinal() {
+        ctx.save();
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        
+        const b = document.getElementById('bright').value;
+        
+        // 1. Disegna Sfondo (se AI attiva)
+        if(useAI && segmentedMask) {
+            ctx.fillStyle = "#F2F4F7"; // Grigio ICAO neutro chiarissimo
+            ctx.fillRect(0,0, cvs.width, cvs.height);
+            
+            // PREPARIAMO LA MASCHERA SUL CANVAS PRINCIPALE
+            // Dobbiamo disegnare la maschera AI rispettando zoom e posizione attuali dell'utente
+            ctx.save();
+             // Applica le trasformazioni di zoom/pan dell'utente anche alla maschera
+            ctx.translate(px, py);
+            ctx.scale(sc, sc);
+            
+            // Usiamo la composizione per "ritagliare"
+            ctx.globalCompositeOperation = "destination-out";
+            // Disegniamo la maschera (che è nera dove c'è lo sfondo, trasparente dove c'è la persona)
+            // È necessario invertire la logica di default di mediapipe per destination-out
+            ctx.drawImage(segmentedMask, 0, 0, srcImg.width, srcImg.height);
+            
+            ctx.restore();
+            // Ora il canvas ha un buco a forma di persona sullo sfondo grigio.
+            // Il prossimo disegno andrà "sotto" questo buco.
+            ctx.globalCompositeOperation = "destination-over";
         }
+
+        // 2. Applica Filtri all'immagine sorgente
+        let filterString = `brightness(${b}%) contrast(105%)`;
+        if(beauty) filterString += ` saturate(115%) blur(1px)`;
+        ctx.filter = filterString;
+
+        // 3. Disegna l'immagine sorgente (persona)
+        ctx.drawImage(srcImg, px, py, srcImg.width * sc, srcImg.height * sc);
+        
+        // Se beauty è attivo, aggiungi un secondo passaggio di "glow" per la pelle
+        if(beauty) {
+            ctx.globalAlpha = 0.4;
+            ctx.filter = `brightness(${b}%) blur(3px)`;
+            // Usiamo 'source-atop' per applicare il glow solo dove abbiamo appena disegnato la persona
+            if(useAI) ctx.globalCompositeOperation = "source-atop";
+            ctx.drawImage(cvs, 0, 0);
+        }
+
+        ctx.restore();
+    }
+
+
+    // --- INTERAZIONE (Drag & Zoom) ---
+    const getP = (e) => ({ x: e.touches?e.touches[0].clientX:e.clientX, y: e.touches?e.touches[0].clientY:e.clientY });
+    cvs.onmousedown = cvs.ontouchstart = (e) => {
+        if(e.touches && e.touches.length===2) ld = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        else { dragging=true; const p=getP(e); lx=p.x; ly=p.y; }
     };
-
-    const handleMove = (e) => {
-        if (e.touches && e.touches.length === 2) {
-            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            const delta = dist / lastDist;
-            scale *= delta;
-            lastDist = dist;
-            document.getElementById('zoom-range').value = scale;
-            render();
-        } else if (isDragging) {
-            const p = getEvPos(e);
-            const dx = (p.x - lastX) * (canvas.width / canvas.offsetWidth);
-            const dy = (p.y - lastY) * (canvas.height / canvas.offsetHeight);
-            posX += dx; posY += dy;
-            lastX = p.x; lastY = p.y;
-            render();
-        }
+    window.onmousemove = window.ontouchmove = (e) => {
+        if(e.touches && e.touches.length===2) { e.preventDefault(); const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); sc*=(d/ld); ld=d; document.getElementById('zoom').value=sc; }
+        else if(dragging) { const p=getP(e); px+=(p.x-lx)*(cvs.width/cvs.offsetWidth); py+=(p.y-ly)*(cvs.height/cvs.offsetHeight); lx=p.x; ly=p.y; }
+        drawFinal();
     };
+    window.onmouseup = window.ontouchend = () => { dragging=false; ld=0; };
+    cvs.onwheel = (e) => { e.preventDefault(); sc*=(e.deltaY<0?1.1:0.9); document.getElementById('zoom').value=sc; drawFinal(); };
 
-    canvas.addEventListener('mousedown', handleStart);
-    canvas.addEventListener('touchstart', handleStart);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('touchmove', handleMove, { passive: false });
-    window.addEventListener('mouseup', () => isDragging = false);
-    window.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
+    // --- UI & EXPORT ---
+    document.getElementById('beauty-btn').onclick = function() { beauty=!beauty; this.classList.toggle('active'); drawFinal(); };
+    document.getElementById('zoom').oninput = (e) => { sc=e.target.value; drawFinal(); };
+    document.getElementById('bright').oninput = drawFinal;
 
-    // Zoom con rotella
-    canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        scale *= (e.deltaY < 0 ? 1.05 : 0.95);
-        document.getElementById('zoom-range').value = scale;
-        render();
-    }, { passive: false });
-
-    // Slider Zoom
-    document.getElementById('zoom-range').oninput = function() { scale = parseFloat(this.value); render(); };
-
-    // 5. Filtri e Stampa
-    document.getElementById('br').oninput = render;
-    document.getElementById('ct').oninput = render;
-    document.getElementById('btn-beauty').onclick = function() { beauty = !beauty; this.classList.toggle('active'); render(); };
-    document.getElementById('btn-autofix').onclick = () => { document.getElementById('br').value = 110; document.getElementById('ct').value = 115; render(); };
-
-    document.getElementById('btn-print').onclick = () => {
-        const g = document.getElementById('grid'); g.innerHTML = '';
-        const uri = canvas.toDataURL('image/jpeg', 1.0);
-        const [w, h] = document.getElementById('fmt-select').value.split(',');
-        for (let i = 0; i < document.getElementById('copy-num').value; i++) {
-            const i = new Image(); i.src = uri; i.style.width = w+"mm"; i.style.height = h+"mm"; i.style.border = "0.1mm solid #ddd";
-            g.appendChild(i);
-        }
-        document.getElementById('print-modal').style.display = 'block';
+    document.getElementById('export-view-btn').onclick = () => {
+        const g = document.getElementById('pg'); g.innerHTML = '';
+        const d = cvs.toDataURL('image/jpeg', 0.98);
+        const [w, h] = document.getElementById('fmt').value.split(',');
+        for(let i=0; i<4; i++) { const m=new Image(); m.src=d; m.style.width=w+"mm"; m.style.height=h+"mm"; m.style.border="1px solid #eee"; g.appendChild(m); }
+        document.getElementById('modal-export').style.display = 'block';
+    };
+    document.getElementById('dl-jpg').onclick = () => { const a=document.createElement('a'); a.download='foto_biometrica.jpg'; a.href=cvs.toDataURL('image/jpeg', 1.0); a.click(); };
+    document.getElementById('dl-pdf').onclick = () => {
+        const pdf = new jspdf.jsPDF(); const d = cvs.toDataURL('image/jpeg', 1.0); const [w, h] = document.getElementById('fmt').value.split(',').map(Number);
+        pdf.addImage(d,'JPEG',10,10,w,h); pdf.addImage(d,'JPEG',10+w+5,10,w,h); pdf.addImage(d,'JPEG',10,10+h+5,w,h); pdf.addImage(d,'JPEG',10+w+5,10+h+5,w,h);
+        pdf.save("documento.pdf");
     };
 </script>
 </body>
