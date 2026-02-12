@@ -3,198 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CERTIFIED BIOMETRIC ID PRO</title>
+    <title>BIOMETRIC ID PRO - ICAO COMPLIANT</title>
     <style>
-        :root { --amber: #ffb000; --cyan: #00f3ff; --glass: #0a0f1e; }
-        body { background: #020617; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
-
-        /* VIEWPORT ICAO STANDARD 35:45 */
-        .viewport-container {
-            position: relative; width: 100vw; height: calc(100vw * 45 / 35); 
-            max-width: 400px; max-height: calc(400px * 45 / 35);
-            margin: 0 auto; background: #000; overflow: hidden;
-            border-bottom: 2px solid var(--cyan);
+        :root { --amber: #ffb000; --cyan: #00f3ff; --bg: #020617; --panel: rgba(15, 23, 42, 0.95); }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
 
-        #video, #editor-canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        #video { transform: scaleX(-1); z-index: 1; }
-        #editor-canvas { z-index: 2; display: none; }
-
-        /* MASCHERA ICAO UFFICIALE */
-        .biometric-overlay {
-            position: absolute; inset: 0; z-index: 100; pointer-events: none;
+        /* VISORE SUPERIORE FISSO */
+        .viewer-section {
+            position: relative; width: 100%; height: 55vh; flex-shrink: 0;
+            background: #000; display: flex; justify-content: center; align-items: center;
+            border-bottom: 2px solid var(--cyan); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        .scroll-area { height: calc(100vh - 500px); overflow-y: auto; padding: 15px; background: var(--glass); }
-        .panel { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(0,243,255,0.2); }
-        
-        .btn-main { background: var(--amber); color: #000; border: none; width: 100%; padding: 16px; font-size: 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-tool { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 8px; border-radius: 4px; flex: 1; font-size: 0.7rem; }
-        
-        input[type="range"] { width: 100%; accent-color: var(--cyan); }
-        label { font-size: 0.7rem; color: var(--cyan); }
+        .canvas-box {
+            position: relative; width: 80vw; max-width: 320px; aspect-ratio: 35/45;
+            background: #111; overflow: hidden;
+        }
 
-        #print-preview { display: none; position: fixed; inset: 0; background: #fff; z-index: 2000; padding: 10mm; }
-        .a4-sheet { width: 210mm; display: flex; flex-wrap: wrap; gap: 5mm; }
+        video, #main-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        video { object-fit: cover; transform: scaleX(-1); z-index: 1; }
+        #main-canvas { z-index: 2; touch-action: none; cursor: move; display: none; }
 
-        @media print { .no-print { display: none; } #print-preview { position: absolute; display: block; } }
+        /* SAGOMA BIOMETRICA ICAO */
+        .icao-overlay {
+            position: absolute; inset: 0; z-index: 10; pointer-events: none;
+        }
+
+        /* AREA COMANDI SCORREVOLE */
+        .controls-section {
+            flex-grow: 1; overflow-y: auto; padding: 20px;
+            background: var(--panel); border-top: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        h3 { color: var(--cyan); font-size: 0.75rem; text-transform: uppercase; margin: 0 0 12px 0; letter-spacing: 1px; }
+
+        .btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
+        .btn { 
+            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--cyan);
+            background: transparent; color: var(--cyan); font-weight: bold; cursor: pointer; font-size: 0.8rem;
+        }
+        .btn.active { background: var(--cyan); color: #000; }
+        .btn-primary { background: var(--amber); color: #000; border: none; width: 100%; padding: 16px; font-size: 1rem; margin-top: 10px; }
+
+        .slider-row { margin-bottom: 15px; }
+        .slider-row label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px; color: #ccc; }
+        input[type="range"] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+        select, input[type="number"] {
+            width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid #334155; border-radius: 8px; font-size: 0.9rem;
+        }
+
+        /* STAMPA */
+        #print-modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; overflow-y: auto; color: #000; padding: 20px; }
+        .a4-preview { width: 210mm; min-height: 297mm; display: flex; flex-wrap: wrap; gap: 5mm; margin: 0 auto; padding: 10mm; background: white; }
+        
+        @media print { .no-print { display: none; } #print-modal { position: absolute; display: block; } }
     </style>
 </head>
 <body>
 
-<div class="app-container no-print">
-    <div class="viewport-container">
-        <video id="video" autoplay playsinline></video>
-        <canvas id="editor-canvas"></canvas>
+<div class="viewer-section no-print">
+    <div class="canvas-box">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="main-canvas"></canvas>
         
-        <svg class="biometric-overlay" viewBox="0 0 350 450">
+        <svg class="icao-overlay" viewBox="0 0 350 450">
             <defs>
-                <mask id="icao-mask">
-                    <rect width="350" height="450" fill="white" />
-                    <ellipse cx="175" cy="205" rx="80" ry="110" fill="black" />
+                <mask id="hole">
+                    <rect width="350" height="450" fill="white"/>
+                    <ellipse cx="175" cy="195" rx="85" ry="115" fill="black"/>
                 </mask>
             </defs>
-            <rect width="350" height="450" fill="rgba(0,0,0,0.6)" mask="url(#icao-mask)" />
-            
-            <ellipse cx="175" cy="205" rx="80" ry="110" fill="transparent" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="5,5"/>
-            <line x1="0" y1="180" x2="350" y2="180" stroke="rgba(255,255,255,0.3)" stroke-width="1"/> <line x1="100" y1="315" x2="250" y2="315" stroke="var(--amber)" stroke-width="2"/> <text x="175" y="340" fill="var(--amber)" font-size="12" text-anchor="middle" font-family="monospace">POSIZIONA MENTO QUI</text>
+            <rect width="350" height="450" fill="rgba(0,0,0,0.6)" mask="url(#hole)"/>
+            <ellipse cx="175" cy="195" rx="85" ry="115" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10,5"/>
+            <line x1="0" y1="180" x2="350" y2="180" stroke="var(--amber)" stroke-width="1" stroke-dasharray="5,5"/>
+            <text x="175" y="420" fill="var(--cyan)" font-size="14" text-anchor="middle" font-weight="bold" font-family="monospace">ALLINEAMENTO ICAO</text>
         </svg>
-    </div>
-
-    <div class="scroll-area">
-        <div id="ui-capture" style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="btn-main" id="shutter">SCATTA FOTO (AUTO-ENHANCE)</button>
-            <button class="btn-tool" id="switch-cam">CAMBIA FOTOCAMERA</button>
-        </div>
-
-        <div id="ui-edit" style="display:none">
-            <div class="panel">
-                <h3>FILTRI INTELLIGENTI</h3>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-tool" onclick="applySmartFilter('vivid')">VIVIDO</button>
-                    <button class="btn-tool" onclick="applySmartFilter('soft')">SOFT SKIN</button>
-                    <button class="btn-tool" id="bg-clear">SFONDO CHIARO</button>
-                </div>
-            </div>
-            
-            <div class="panel">
-                <label>Luminosità</label>
-                <input type="range" id="br" min="80" max="140" value="100" oninput="draw()">
-                <label>Contrasto</label>
-                <input type="range" id="ct" min="80" max="140" value="100" oninput="draw()">
-            </div>
-
-            <button class="btn-main" id="print-trigger">GENERA FOGLIO A4</button>
-            <button class="btn-tool" id="retake" style="margin-top:10px; width:100%">RIFAI SCATTO</button>
-        </div>
     </div>
 </div>
 
-<div id="print-preview">
-    <button class="no-print btn-main" onclick="window.print()" style="margin-bottom:20px">STAMPA PDF / CARTA</button>
-    <div class="a4-sheet" id="print-grid"></div>
+<div class="controls-section no-print">
+    <div id="step-capture">
+        <button class="btn-primary" id="btn-snap">SCATTA FOTO ORA</button>
+        <div class="btn-group" style="margin-top:10px;">
+            <button class="btn" onclick="document.getElementById('file-input').click()">CARICA FILE</button>
+            <button class="btn" id="btn-flip">GIRA CAMERA</button>
+        </div>
+        <input type="file" id="file-input" hidden accept="image/*">
+    </div>
+
+    <div id="step-edit" style="display:none">
+        <div class="card">
+            <h3>Laboratorio Filtri</h3>
+            <div class="slider-row">
+                <label>Luminosità <span id="val-br">100%</span></label>
+                <input type="range" id="input-br" min="50" max="150" value="100">
+            </div>
+            <div class="slider-row">
+                <label>Contrasto <span id="val-ct">100%</span></label>
+                <input type="range" id="input-ct" min="50" max="150" value="100">
+            </div>
+            <div class="slider-row">
+                <label>Nitidezza <span id="val-sh">0</span></label>
+                <input type="range" id="input-sh" min="0" max="100" value="0">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="btn-beauty">BEAUTY SCAN</button>
+                <button class="btn" id="btn-autofix">AUTO-BILANCIAMENTO</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Standard & Stampa</h3>
+            <label style="font-size: 0.7rem; margin-bottom: 5px; display: block;">Formato Documento</label>
+            <select id="select-fmt">
+                <option value="35,45">Passaporto / CIE (35x45mm)</option>
+                <option value="30,40">Patente di Guida (30x40mm)</option>
+                <option value="50,50">Visto USA / India (50x50mm)</option>
+            </select>
+            
+            <div style="margin-top:10px;">
+                <label style="font-size: 0.7rem; margin-bottom: 5px; display: block;">Numero di Copie</label>
+                <input type="number" id="input-copies" value="4" min="1" max="24">
+            </div>
+        </div>
+
+        <button class="btn-primary" id="btn-preview">GENERA ANTEPRIMA A4</button>
+        <button class="btn" onclick="location.reload()" style="width:100%; margin-top:10px; border-color:#f44336; color:#f44336;">ANNULLA E RIFÀ</button>
+    </div>
+</div>
+
+<div id="print-modal">
+    <div class="no-print" style="display:flex; gap:10px; margin-bottom:20px;">
+        <button class="btn-primary" onclick="window.print()" style="flex:2">STAMPA / SALVA PDF</button>
+        <button class="btn" onclick="document.getElementById('print-modal').style.display='none'" style="flex:1; color:#000">CHIUDI</button>
+    </div>
+    <div class="a4-preview" id="a4-grid"></div>
 </div>
 
 
 
 <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('editor-canvas');
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('main-canvas');
     const ctx = canvas.getContext('2d');
-    let currentStream, currentFacingMode = "user";
-    let rawImg = new Image();
-    let offX = 0, offY = 0, zoom = 1.0;
+    const fileIn = document.getElementById('file-input');
+    
+    let img = new Image();
+    let posX = 0, posY = 0, scale = 1.0;
+    let isDragging = false, lastX, lastY, lastDist = 0;
+    let facing = "user", beautyActive = false;
 
-    // Avvio automatico
+    // INIZIALIZZAZIONE CAMERA
     async function startCam() {
-        if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-        currentStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: currentFacingMode, width: {ideal: 1280} } 
-        });
-        video.srcObject = currentStream;
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: 1280 } });
+        video.srcObject = stream;
     }
     startCam();
 
-    document.getElementById('switch-cam').onclick = () => {
-        currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-        startCam();
-    };
+    document.getElementById('btn-flip').onclick = () => { facing = facing === "user" ? "environment" : "user"; startCam(); };
 
-    // Scatto con Auto-Enhance
-    document.getElementById('shutter').onclick = () => {
-        canvas.width = 350; canvas.height = 450;
-        const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-        const x = (canvas.width - video.videoWidth * scale) / 2;
-        const y = (canvas.height - video.videoHeight * scale) / 2;
-
-        ctx.save();
-        if(currentFacingMode === "user") { ctx.scale(-1, 1); ctx.drawImage(video, x, y, video.videoWidth * scale, video.videoHeight * scale); }
-        else { ctx.drawImage(video, x, y, video.videoWidth * scale, video.videoHeight * scale); }
-        ctx.restore();
-
-        rawImg.src = canvas.toDataURL('image/jpeg');
-        rawImg.onload = () => {
-            document.getElementById('ui-capture').style.display = 'none';
-            document.getElementById('ui-edit').style.display = 'block';
-            video.style.display = 'none';
-            canvas.style.display = 'block';
-            draw();
+    // ACQUISIZIONE
+    function enterEditMode(source) {
+        document.getElementById('step-capture').style.display = 'none';
+        document.getElementById('step-edit').style.display = 'block';
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+        
+        img = new Image();
+        img.onload = () => {
+            canvas.width = 700; canvas.height = 900;
+            const sW = canvas.width / img.width;
+            const sH = canvas.height / img.height;
+            scale = Math.max(sW, sH);
+            posX = (canvas.width - img.width * scale) / 2;
+            posY = (canvas.height - img.height * scale) / 2;
+            render();
         };
-    };
-
-    function draw() {
-        const br = document.getElementById('br').value;
-        const ct = document.getElementById('ct').value;
-        ctx.filter = `brightness(${br}%) contrast(${ct}%)`;
-        ctx.drawImage(rawImg, offX, offY, canvas.width * zoom, canvas.height * zoom);
+        img.src = source;
     }
 
-    // Filtro Sfondo Chiaro (Semplificato)
-    document.getElementById('bg-clear').onclick = () => {
-        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            // Se il pixel è molto scuro o molto saturo (non sfondo), lo saltiamo
-            // Se il pixel tende al grigio/colore muro, lo schiariamo
-            let avg = (data[i] + data[i+1] + data[i+2]) / 3;
-            if (avg > 100) { // Soglia sfondo
-                data[i] = Math.min(255, data[i] + 40);
-                data[i+1] = Math.min(255, data[i+1] + 40);
-                data[i+2] = Math.min(255, data[i+2] + 40);
-            }
-        }
-        ctx.putImageData(imageData, 0, 0);
-        rawImg.src = canvas.toDataURL(); // Salva lo stato
+    document.getElementById('btn-snap').onclick = () => {
+        const temp = document.createElement('canvas');
+        temp.width = video.videoWidth; temp.height = video.videoHeight;
+        const tCtx = temp.getContext('2d');
+        if(facing === "user") { tCtx.translate(temp.width, 0); tCtx.scale(-1, 1); }
+        tCtx.drawImage(video, 0, 0);
+        enterEditMode(temp.toDataURL('image/jpeg'));
     };
 
-    function applySmartFilter(type) {
-        if(type === 'vivid') {
-            document.getElementById('br').value = 110;
-            document.getElementById('ct').value = 120;
-        } else {
-            ctx.filter = 'blur(0.5px) brightness(105%)';
+    fileIn.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => enterEditMode(ev.target.result);
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    // RENDERING & FILTRI
+    function render() {
+        const br = document.getElementById('input-br').value;
+        const ct = document.getElementById('input-ct').value;
+        const sh = document.getElementById('input-sh').value;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Applicazione filtri combinati
+        ctx.filter = `brightness(${br}%) contrast(${ct}%) grayscale(${beautyActive ? 5 : 0}%) blur(${beautyActive ? 0.6 : 0}px)`;
+        
+        ctx.drawImage(img, posX, posY, img.width * scale, img.height * scale);
+        
+        // Simulo nitidezza tramite overlay selettivo (opzionale)
+        if(sh > 0) {
+            ctx.globalAlpha = sh / 200;
+            ctx.drawImage(canvas, 1, 1);
+            ctx.globalAlpha = 1.0;
         }
-        draw();
+
+        document.getElementById('val-br').innerText = br + '%';
+        document.getElementById('val-ct').innerText = ct + '%';
+        document.getElementById('val-sh').innerText = sh;
     }
 
-    // Interazione Touch
-    let isMoving = false, startX, startY;
-    canvas.ontouchstart = (e) => { isMoving = true; startX = e.touches[0].clientX - offX; startY = e.touches[0].clientY - offY; };
-    canvas.ontouchmove = (e) => { if(isMoving) { offX = e.touches[0].clientX - startX; offY = e.touches[0].clientY - startY; draw(); } };
-    canvas.ontouchend = () => isMoving = false;
+    // INTERAZIONE MULTI-TOUCH & MOUSE
+    canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        scale *= delta;
+        render();
+    }, { passive: false });
 
-    document.getElementById('retake').onclick = () => location.reload();
+    canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        }
+    });
 
-    document.getElementById('print-trigger').onclick = () => {
-        const grid = document.getElementById('print-grid');
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (isDragging && e.touches.length === 1) {
+            posX += (e.touches[0].clientX - lastX) * (canvas.width / canvas.offsetWidth);
+            posY += (e.touches[0].clientY - lastY) * (canvas.height / canvas.offsetHeight);
+            lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale *= (dist / lastDist);
+            lastDist = dist;
+        }
+        render();
+    }, { passive: false });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('touchend', () => { isDragging = false; lastDist = 0; });
+
+    // LOGICA PULSANTI
+    document.querySelectorAll('input[type=range]').forEach(i => i.oninput = render);
+    
+    document.getElementById('btn-beauty').onclick = function() {
+        beautyActive = !beautyActive;
+        this.classList.toggle('active');
+        render();
+    };
+
+    document.getElementById('btn-autofix').onclick = () => {
+        document.getElementById('input-br').value = 110;
+        document.getElementById('input-ct').value = 115;
+        render();
+    };
+
+    // PREVIEW STAMPA
+    document.getElementById('btn-preview').onclick = () => {
+        const grid = document.getElementById('a4-grid');
         grid.innerHTML = '';
-        const imgUri = canvas.toDataURL('image/jpeg', 1.0);
-        for (let i = 0; i < document.getElementById('copies').value; i++) {
-            const img = new Image(); img.src = imgUri;
-            img.style.width = "35mm"; img.style.height = "45mm"; img.style.border = "0.1mm solid #eee";
-            grid.appendChild(img);
+        const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+        const [w, h] = document.getElementById('select-fmt').value.split(',');
+        const copies = document.getElementById('input-copies').value;
+
+        for (let i = 0; i < copies; i++) {
+            const el = new Image(); el.src = dataUrl;
+            el.style.width = w + "mm"; el.style.height = h + "mm";
+            el.style.border = "0.1mm solid #ddd";
+            grid.appendChild(el);
         }
-        document.getElementById('print-preview').style.display = 'block';
+        document.getElementById('print-modal').style.display = 'block';
     };
 </script>
 </body>
